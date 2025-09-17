@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: disciple-api-staging
+
+resources:
+- ../../base
+
+namePrefix: staging-
+
+commonLabels:
+  app.kubernetes.io/environment: staging
+  app.kubernetes.io/instance: staging
+
+patchesStrategicMerge:
+- deployment-patch.yaml
+- configmap-patch.yaml
+- sealedsecret-patch.yaml
+
+images:
+- name: ghcr.io/getvoicify/disciple-api-express
+  newTag: latest  # This will be replaced with prerelease version
+
+replicas:
+- name: disciple-api
+  count: 2
