@@ -21,6 +21,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          ref: main
 
       - name: Update staging tag in values file
         run: |
@@ -33,7 +34,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add argocd/values.yaml
           git commit -m "deploy: update staging to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
-          git push
+          git push origin main
 
       - name: Comment on release
         uses: actions/github-script@v7
@@ -72,6 +73,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          ref: main
 
       - name: Update production tag in values file
         run: |
@@ -84,7 +86,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add argocd/values.yaml
           git commit -m "deploy: update production to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
-          git push
+          git push origin main
 
       - name: Comment on release
         uses: actions/github-script@v7
