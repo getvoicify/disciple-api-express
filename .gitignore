@@ -1,0 +1,214 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+.coverage
+*.cover
+.hypothesis/
+.pytest_cache/
+junit.xml
+test-results/
+
+# Logs
+logs/
+*.log
+log/
+*.pid
+*.seed
+*.pid.lock
+
+# Runtime data
+pids
+lib-cov
+.grunt
+.lock-wscript
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+postgres_data/
+redis_data/
+data/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
+*.cert
+
+# Documentation build
+docs/_build/
+site/
+
+# Monitoring
+.monitoring/
+grafana/
+prometheus/
+
+# Secrets
+secrets/
+*.secret
+.secrets/
+
+# Session
+session/
+sessions/
+
+# Upload directories
+uploads/
+public/uploads/
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# Webpack
+.webpack/
+
+# Serverless
+.serverless/
+
+# Firebase
+.firebase/
+.firebaserc
+
+# Netlify
+.netlify/
+
+# Vercel
+.vercel/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Rust
+target/
+Cargo.lock
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+vendor/
+
+# Java
+*.class
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# Ruby
+*.gem
+*.rbc
+.bundle/
+.config/
+
+# PHP
+composer.phar
+/vendor/
+
+# Misc
+*.seed
+*.csv
+*.dat
+*.out
+*.gz
+*.swp
+.notes/
+TODO.md
+NOTES.md
+CODE_REVIEW.md
+init.sql
