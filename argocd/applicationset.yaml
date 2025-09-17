@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: disciple-api
+  name: disciple-api-preview
   namespace: argocd
 spec:
   generators:
@@ -16,43 +16,28 @@ spec:
         labels:
         - preview
       requeueAfterSeconds: 300
-  # Generator for static environments (staging & production)
-  - list:
-      elements:
-      - environment: staging
-        targetRevision: HEAD
-        imageTag: "{{.values.stagingTag}}"
-        replicas: "2"
-      - environment: production
-        targetRevision: HEAD
-        imageTag: "{{.values.productionTag}}"
-        replicas: "3"
   template:
     metadata:
-      name: 'disciple-api-{{environment}}{{#if (eq environment "preview")}}-pr-{{number}}{{/if}}'
+      name: 'disciple-api-preview-pr-{{number}}'
       labels:
         app.kubernetes.io/name: disciple-api
-        app.kubernetes.io/environment: '{{environment}}'
-        {{#if number}}
+        app.kubernetes.io/environment: preview
         app.kubernetes.io/pr-number: '{{number}}'
-        {{/if}}
       annotations:
         argocd.argoproj.io/sync-wave: "1"
-        {{#if number}}
-        argocd.argoproj.io/cleanup-on-completion: "true"
         link.argocd.argoproj.io/external-link: https://github.com/getvoicify/disciple-api-express/pull/{{number}}
-        {{/if}}
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
     spec:
       project: default
       source:
         repoURL: https://github.com/getvoicify/disciple-api-express.git
-        targetRevision: '{{#if head_sha}}{{head_sha}}{{else}}{{targetRevision}}{{/if}}'
-        path: 'k8s/overlays/{{environment}}'
+        targetRevision: '{{head_sha}}'
+        path: 'k8s/overlays/preview'
         kustomize:
           images:
-          - 'ghcr.io/getvoicify/disciple-api-express:{{#if head_sha}}pr-{{number}}-{{head_sha}}{{else}}{{imageTag}}{{/if}}'
+          - 'ghcr.io/getvoicify/disciple-api-express:pr-{{number}}-{{head_sha}}'
           patches:
-          {{#if number}}
           # Preview environment patches
           - target:
               kind: Deployment
@@ -91,19 +76,9 @@ spec:
               - op: replace
                 path: /metadata/namespace
                 value: disciple-api-preview-{{number}}
-          {{else}}
-          # Staging/Production environment patches
-          - target:
-              kind: Deployment
-              name: disciple-api
-            patch: |
-              - op: replace
-                path: /spec/replicas
-                value: {{replicas}}
-          {{/if}}
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{#if number}}disciple-api-preview-{{number}}{{else}}disciple-api-{{environment}}{{/if}}'
+        namespace: 'disciple-api-preview-{{number}}'
       syncPolicy:
         automated:
           prune: true
@@ -118,11 +93,64 @@ spec:
             duration: 5s
             factor: 2
             maxDuration: 3m
-      {{#if number}}
-      # Preview environments should be cleaned up
       info:
       - name: 'Pull Request'
         value: 'https://github.com/getvoicify/disciple-api-express/pull/{{number}}'
       - name: 'Preview URL'
-        value: 'https://pr-{{number}}.preview.disciple-api.example.com'
-      {{/if}}
+        value: 'https://pr-{{number}}.preview.infra.api.pottersville.church'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: disciple-api-environments
+  namespace: argocd
+spec:
+  generators:
+  # Generator for static environments (staging & production)
+  - list:
+      elements:
+      - environment: staging
+        namespace: disciple-api-staging
+        imageTag: "latest"
+        replicas: 2
+      - environment: production
+        namespace: disciple-api-production
+        imageTag: "latest"
+        replicas: 3
+  template:
+    metadata:
+      name: 'disciple-api-{{environment}}'
+      labels:
+        app.kubernetes.io/name: disciple-api
+        app.kubernetes.io/environment: '{{environment}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/getvoicify/disciple-api-express.git
+        targetRevision: HEAD
+        path: 'k8s/overlays/{{environment}}'
+        helm:
+          valueFiles:
+          - '../../argocd/values.yaml'
+        kustomize:
+          images:
+          - 'ghcr.io/getvoicify/disciple-api-express:{{imageTag}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
