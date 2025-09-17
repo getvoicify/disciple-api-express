@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/getvoicify/disciple-api-express/compare/v1.1.2...v1.1.3) (2025-09-17)
+
+
+### 🐛 Bug Fixes
+
+* checkout main branch in deploy workflow ([ce926e1](https://github.com/getvoicify/disciple-api-express/commit/ce926e12ca319c48201d15ac18ba95b2310c663d))
+
 ## [1.1.2](https://github.com/getvoicify/disciple-api-express/compare/v1.1.1...v1.1.2) (2025-09-17)
 
 
