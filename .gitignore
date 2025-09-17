@@ -124,6 +124,7 @@ prometheus/
 secrets/
 *.secret
 .secrets/
+*secret.yaml
 
 # Session
 session/

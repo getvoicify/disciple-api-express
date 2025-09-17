@@ -1,0 +1,20 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  annotations:
+    sealedsecrets.bitnami.com/cluster-wide: "true"
+  creationTimestamp: null
+  name: image-pull-secret
+  namespace: disciple-api
+spec:
+  encryptedData:
+    .dockerconfigjson: AgAmP62NeoMsAuJCAnRxxd/4xYbiR40f5YDWO7arp8qBk/ox8v17n15YT7zl6k5nh4INKDzoQZCVqKdCyvzI2R5qOSz5ab39Az/vso1/Ks629o4mldSLHq9iHapGmTtIxx2OAhahSuN7raRZ7OqFwDQUtYNxT3C9Cs+JJSyf+vgDzf/cqhqz18bt6VpDZ/ToCEWRzxZfyw8o2/OKyrluYAo+CAQi2J3Oqu9ngLpn6sNZaLiAfQ7JX4Q3bc9MchHusvZdUOf7fCXm4Dc3gQagpI9V5NbmNy8j5DMsOSNpFbJDkLviPPLuDtBQkpU1lcqXqEnz9YDqz4d+/5PJUaL24gfFLcO0IysyLXRydFuZ0bM01b2nYB09GxIyRvLwNZ1Gqy4V5bZTZnKUq0oCdfRjkbo4lncWiDcMg3X/hqRWYMQ+yvRdO9r7h9iyGfTBmjKOdNJGHv63maVaTqWD2zd8N9hBBEsDSMZLBEgTvxUwZSjmRmxmaeF0i8j4u5sJf90VLlcUFjROJnuLzxekUHrLzX9rchqeu0yOfZsXgqvw8mZX2CHpveyxs1+nGSU5nNYLD/dPh0xWHBZTvqx1OKEqumRCvqE9HjqhESlw6HHbc9j6weKvopnNxBePiofh2V7zyV66T2eJiCmSl31HWIwwq8SyO7CHN3vyuHXZUuji6NhzNKQotW8jYyS3NltjEAdf0WkahSsfphHymrp5Yxz+PzE7unu1urCCC+8P1BhpYT3OHBZRmk68HkmYADoqkQKo4SVSC1ah1Hd+SY4OwksAHxwD3LvV1Nzl097O+xyxeRcZ5f3qX/7ziSQPuCV5T5J8CZJEZzmdWzuocJkWMsUHJQFRTEAofg==
+  template:
+    metadata:
+      annotations:
+        sealedsecrets.bitnami.com/cluster-wide: "true"
+      creationTimestamp: null
+      name: image-pull-secret
+      namespace: disciple-api
+    type: kubernetes.io/dockerconfigjson

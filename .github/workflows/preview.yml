@@ -1,0 +1,187 @@
+name: Preview Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches:
+      - main
+      - master
+  pull_request_target:
+    types: [closed]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Build and push preview image
+  build-preview:
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      pr_number: ${{ github.event.number }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint --if-present
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=pr-${{ github.event.number }}-{{sha}},enable=true
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=pr-${{ github.event.number }}
+            BUILD_DATE=${{ github.event.pull_request.updated_at }}
+            COMMIT_SHA=${{ github.event.pull_request.head.sha }}
+
+      - name: Comment PR with preview info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('🚀 Preview Environment')
+            );
+
+            const body = `## 🚀 Preview Environment
+
+            **Status**: 🔄 Deploying...
+            **Docker Image**: \`${{ steps.meta.outputs.tags }}\`
+            **Commit**: \`${{ github.event.pull_request.head.sha }}\`
+            **Namespace**: \`disciple-api-preview-${{ github.event.number }}\`
+
+            ArgoCD ApplicationSet will automatically create this preview environment from the PR.
+
+            **Preview URL**: https://pr-${{ github.event.number }}.preview.disciple-api.example.com (available once deployed)
+            **ArgoCD Application**: \`disciple-api-preview-pr-${{ github.event.number }}\`
+
+            ---
+            *This comment will be updated when the deployment is complete.*`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  # Trigger ArgoCD sync for preview environment
+  trigger-preview-deployment:
+    runs-on: ubuntu-latest
+    needs: build-preview
+    if: github.event.action != 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')
+    steps:
+      - name: Trigger ArgoCD Application Refresh
+        run: |
+          echo "Preview environment will be automatically created by ArgoCD ApplicationSet"
+          echo "PR Number: ${{ needs.build-preview.outputs.pr_number }}"
+          echo "Image Tag: ${{ needs.build-preview.outputs.image_tag }}"
+
+          # Optional: If you have ArgoCD CLI access, you can trigger a refresh
+          # argocd app get disciple-api-preview-pr-${{ needs.build-preview.outputs.pr_number }} --refresh
+
+  # Cleanup preview environment when PR is closed
+  cleanup-preview:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    permissions:
+      packages: write
+      pull-requests: write
+    steps:
+      - name: Delete preview Docker images
+        run: |
+          # Note: GitHub doesn't provide an easy way to delete specific image tags via Actions
+          # This would typically be handled by retention policies or manual cleanup
+          echo "Preview Docker image cleanup: ghcr.io/${{ github.repository }}:pr-${{ github.event.number }}-*"
+          echo "Consider setting up image retention policies in GitHub Packages settings"
+
+      - name: Comment PR with cleanup info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## 🧹 Preview Environment Cleanup
+
+            **Status**: ✅ Cleaned up
+            **Action**: PR closed/merged
+            **Namespace**: \`disciple-api-preview-${{ github.event.number }}\`
+            **ArgoCD Application**: \`disciple-api-preview-pr-${{ github.event.number }}\`
+
+            The preview environment for this PR has been automatically cleaned up by ArgoCD ApplicationSet.
+
+            ---
+            *Preview resources have been removed.*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+      - name: Trigger ArgoCD Application Cleanup
+        run: |
+          echo "ArgoCD ApplicationSet will automatically cleanup preview environment"
+          echo "PR Number: ${{ github.event.number }}"
+
+          # Optional: If you have ArgoCD CLI access, you can trigger explicit cleanup
+          # argocd app delete disciple-api-preview-pr-${{ github.event.number }} --cascade

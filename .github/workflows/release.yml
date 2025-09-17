@@ -54,6 +54,7 @@ jobs:
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
       new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -87,6 +88,7 @@ jobs:
         if: steps.semantic.outputs.new_release_published == 'true'
         run: |
           echo "New version: ${{ steps.semantic.outputs.new_release_version }}"
+          echo "Release type: prerelease (will be deployed to staging)"
           echo "Release notes: ${{ steps.semantic.outputs.new_release_notes }}"
 
   # Docker build and push job - only when a new release is published
@@ -122,7 +124,6 @@ jobs:
             type=semver,pattern={{major}},value=${{ needs.release.outputs.new_release_version }}
             type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.new_release_version }}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-,suffix=-{{date 'YYYYMMDD'}},format=short
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

@@ -1,0 +1,112 @@
+name: Deploy to Environments
+
+on:
+  release:
+    types: [published, edited]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Deploy to staging when a prerelease is published
+  deploy-staging:
+    runs-on: ubuntu-latest
+    if: github.event.release.prerelease == true
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Update staging tag in values file
+        run: |
+          echo "Updating staging deployment to version ${{ github.event.release.tag_name }}"
+          sed -i 's/stagingTag: ".*"/stagingTag: "${{ github.event.release.tag_name }}"/' argocd/values.yaml
+
+      - name: Commit staging deployment update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add argocd/values.yaml
+          git commit -m "deploy: update staging to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
+          git push
+
+      - name: Comment on release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `🚀 **Staging Deployment Triggered**
+
+            **Version**: \`${{ github.event.release.tag_name }}\`
+            **Environment**: Staging
+            **Image**: \`ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}\`
+            **Namespace**: \`disciple-api-staging\`
+
+            ArgoCD will automatically deploy this version to the staging environment.
+
+            **Staging URL**: https://staging.disciple-api.example.com
+            **ArgoCD Application**: \`disciple-api-staging\`
+
+            To promote this release to production, edit this release and uncheck "This is a prerelease".`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.release.id }},
+              body: body
+            });
+
+  # Deploy to production when prerelease flag is removed
+  deploy-production:
+    runs-on: ubuntu-latest
+    if: github.event.release.prerelease == false && github.event.action == 'edited'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Update production tag in values file
+        run: |
+          echo "Updating production deployment to version ${{ github.event.release.tag_name }}"
+          sed -i 's/productionTag: ".*"/productionTag: "${{ github.event.release.tag_name }}"/' argocd/values.yaml
+
+      - name: Commit production deployment update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add argocd/values.yaml
+          git commit -m "deploy: update production to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
+          git push
+
+      - name: Comment on release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `🎉 **Production Deployment Triggered**
+
+            **Version**: \`${{ github.event.release.tag_name }}\`
+            **Environment**: Production
+            **Image**: \`ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}\`
+            **Namespace**: \`disciple-api-production\`
+
+            ArgoCD will automatically deploy this version to the production environment.
+
+            **Production URL**: https://disciple-api.example.com
+            **ArgoCD Application**: \`disciple-api-production\`
+
+            🚀 Release is now live in production!`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.release.id }},
+              body: body
+            });

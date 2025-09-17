@@ -1,0 +1,128 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: disciple-api
+  namespace: argocd
+spec:
+  generators:
+  # Generator for preview environments (PR-based)
+  - pullRequest:
+      github:
+        owner: getvoicify
+        repo: disciple-api-express
+        tokenRef:
+          secretName: github-token
+          key: token
+        labels:
+        - preview
+      requeueAfterSeconds: 300
+  # Generator for static environments (staging & production)
+  - list:
+      elements:
+      - environment: staging
+        targetRevision: HEAD
+        imageTag: "{{.values.stagingTag}}"
+        replicas: "2"
+      - environment: production
+        targetRevision: HEAD
+        imageTag: "{{.values.productionTag}}"
+        replicas: "3"
+  template:
+    metadata:
+      name: 'disciple-api-{{environment}}{{#if (eq environment "preview")}}-pr-{{number}}{{/if}}'
+      labels:
+        app.kubernetes.io/name: disciple-api
+        app.kubernetes.io/environment: '{{environment}}'
+        {{#if number}}
+        app.kubernetes.io/pr-number: '{{number}}'
+        {{/if}}
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+        {{#if number}}
+        argocd.argoproj.io/cleanup-on-completion: "true"
+        link.argocd.argoproj.io/external-link: https://github.com/getvoicify/disciple-api-express/pull/{{number}}
+        {{/if}}
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/getvoicify/disciple-api-express.git
+        targetRevision: '{{#if head_sha}}{{head_sha}}{{else}}{{targetRevision}}{{/if}}'
+        path: 'k8s/overlays/{{environment}}'
+        kustomize:
+          images:
+          - 'ghcr.io/getvoicify/disciple-api-express:{{#if head_sha}}pr-{{number}}-{{head_sha}}{{else}}{{imageTag}}{{/if}}'
+          patches:
+          {{#if number}}
+          # Preview environment patches
+          - target:
+              kind: Deployment
+              name: disciple-api
+            patch: |
+              - op: replace
+                path: /metadata/namespace
+                value: disciple-api-preview-{{number}}
+              - op: replace
+                path: /spec/replicas
+                value: 1
+          - target:
+              kind: Service
+              name: disciple-api
+            patch: |
+              - op: replace
+                path: /metadata/namespace
+                value: disciple-api-preview-{{number}}
+          - target:
+              kind: ConfigMap
+              name: disciple-api-config
+            patch: |
+              - op: replace
+                path: /metadata/namespace
+                value: disciple-api-preview-{{number}}
+              - op: add
+                path: /data/PR_NUMBER
+                value: "{{number}}"
+              - op: add
+                path: /data/PR_BRANCH
+                value: "{{branch}}"
+          - target:
+              kind: SealedSecret
+              name: disciple-api-secrets
+            patch: |
+              - op: replace
+                path: /metadata/namespace
+                value: disciple-api-preview-{{number}}
+          {{else}}
+          # Staging/Production environment patches
+          - target:
+              kind: Deployment
+              name: disciple-api
+            patch: |
+              - op: replace
+                path: /spec/replicas
+                value: {{replicas}}
+          {{/if}}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{#if number}}disciple-api-preview-{{number}}{{else}}disciple-api-{{environment}}{{/if}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      {{#if number}}
+      # Preview environments should be cleaned up
+      info:
+      - name: 'Pull Request'
+        value: 'https://github.com/getvoicify/disciple-api-express/pull/{{number}}'
+      - name: 'Preview URL'
+        value: 'https://pr-{{number}}.preview.disciple-api.example.com'
+      {{/if}}

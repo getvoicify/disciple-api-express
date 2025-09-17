@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: disciple-api-preview
+
+resources:
+- ../../base
+
+namePrefix: preview-
+
+commonLabels:
+  app.kubernetes.io/environment: preview
+  app.kubernetes.io/instance: preview
+
+patchesStrategicMerge:
+- deployment-patch.yaml
+- configmap-patch.yaml
+- sealedsecret-patch.yaml
+
+images:
+- name: ghcr.io/getvoicify/disciple-api-express
+  newTag: pr-123  # This will be replaced by ArgoCD
+
+replicas:
+- name: disciple-api
+  count: 1
