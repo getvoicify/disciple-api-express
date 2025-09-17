@@ -9,8 +9,8 @@ productionTag: "latest"  # This will be updated by GitHub Actions
 
 # Global configuration
 global:
-  domain: "disciple-api.example.com"
-  previewDomain: "preview.disciple-api.example.com"
+  domain: "infra.api.pottersville.church"
+  previewDomain: "preview.infra.api.pottersville.church"
 
 environments:
   staging:
