@@ -112,11 +112,11 @@ spec:
       - environment: staging
         namespace: disciple-api-staging
         imageTag: "latest"
-        replicas: 2
+        replicas: "2"
       - environment: production
         namespace: disciple-api-production
         imageTag: "latest"
-        replicas: 3
+        replicas: "3"
   template:
     metadata:
       name: 'disciple-api-{{environment}}'
@@ -131,9 +131,6 @@ spec:
         repoURL: https://github.com/getvoicify/disciple-api-express.git
         targetRevision: HEAD
         path: 'k8s/overlays/{{environment}}'
-        helm:
-          valueFiles:
-          - '../../argocd/values.yaml'
         kustomize:
           images:
           - 'ghcr.io/getvoicify/disciple-api-express:{{imageTag}}'

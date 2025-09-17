@@ -6,21 +6,43 @@ namespace: disciple-api-preview
 resources:
 - ../../base
 
-namePrefix: preview-
-
 commonLabels:
   app.kubernetes.io/environment: preview
   app.kubernetes.io/instance: preview
 
-patchesStrategicMerge:
-- deployment-patch.yaml
-- configmap-patch.yaml
-- sealedsecret-patch.yaml
+patches:
+- target:
+    kind: Deployment
+    name: disciple-api
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 1
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: 64Mi
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/cpu
+      value: 50m
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: 256Mi
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/cpu
+      value: 500m
+- target:
+    kind: ConfigMap
+    name: disciple-api-config
+  patch: |-
+    - op: add
+      path: /data/NODE_ENV
+      value: preview
+    - op: add
+      path: /data/LOG_LEVEL
+      value: debug
+
 
 images:
 - name: ghcr.io/getvoicify/disciple-api-express
   newTag: pr-123  # This will be replaced by ArgoCD
 
-replicas:
-- name: disciple-api
-  count: 1

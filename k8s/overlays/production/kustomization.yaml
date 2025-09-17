@@ -6,21 +6,42 @@ namespace: disciple-api-production
 resources:
 - ../../base
 
-namePrefix: production-
-
 commonLabels:
   app.kubernetes.io/environment: production
   app.kubernetes.io/instance: production
 
-patchesStrategicMerge:
-- deployment-patch.yaml
-- configmap-patch.yaml
-- sealedsecret-patch.yaml
+patches:
+- target:
+    kind: Deployment
+    name: disciple-api
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 3
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: 256Mi
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/cpu
+      value: 200m
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: 1Gi
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/cpu
+      value: 2000m
+- target:
+    kind: ConfigMap
+    name: disciple-api-config
+  patch: |-
+    - op: add
+      path: /data/NODE_ENV
+      value: production
+    - op: add
+      path: /data/LOG_LEVEL
+      value: warn
 
 images:
 - name: ghcr.io/getvoicify/disciple-api-express
   newTag: latest  # This will be replaced with stable release version
 
-replicas:
-- name: disciple-api
-  count: 3
