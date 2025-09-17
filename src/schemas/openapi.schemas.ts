@@ -177,7 +177,7 @@ export const errorResponseSchema = {
 
 export const healthResponseSchema = {
     type: 'object',
-    required: ['status', 'timestamp', 'version', 'database', 'uptime'],
+    required: ['status', 'timestamp', 'version', 'database', 'uptime', 'environment'],
     properties: {
         status: {
             type: 'string',
@@ -192,8 +192,8 @@ export const healthResponseSchema = {
         },
         version: {
             type: 'string',
-            description: 'API version',
-            example: '1.0.0'
+            description: 'API semantic version',
+            example: '1.2.3'
         },
         database: {
             type: 'string',
@@ -205,6 +205,24 @@ export const healthResponseSchema = {
             type: 'number',
             description: 'Server uptime in seconds',
             example: 3600.5
+        },
+        environment: {
+            type: 'string',
+            enum: ['development', 'staging', 'production', 'test'],
+            description: 'Current environment',
+            example: 'production'
+        },
+        buildDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Build timestamp',
+            nullable: true
+        },
+        commitSha: {
+            type: 'string',
+            description: 'Git commit SHA of the build',
+            example: 'a1b2c3d4',
+            nullable: true
         }
     }
 };

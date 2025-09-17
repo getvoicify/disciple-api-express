@@ -61,7 +61,7 @@ app.use(express.json());
  */
 app.get('/api/health', async (req, res) => {
     const timestamp = new Date().toISOString();
-    let dbStatus = 'unknown';
+    let dbStatus: string;
 
     try {
         // Ping the database with a simple query
@@ -75,12 +75,17 @@ app.get('/api/health', async (req, res) => {
     const isHealthy = dbStatus === 'connected';
     const status = isHealthy ? 'healthy' : 'unhealthy';
 
+    const version = process.env.APP_VERSION || process.env.npm_package_version || '0.0.0-development';
+
     res.status(isHealthy ? 200 : 503).json({
         status,
         timestamp,
-        version: '1.0.0',
+        version,
         database: dbStatus,
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        buildDate: process.env.BUILD_DATE,
+        commitSha: process.env.COMMIT_SHA
     });
 });
 

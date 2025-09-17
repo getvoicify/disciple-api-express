@@ -1,0 +1,187 @@
+name: Release and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Test job runs on all PRs and pushes
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint --if-present
+
+      - name: Run tests
+        run: npm test --if-present
+
+      - name: Build TypeScript
+        run: npm run build
+
+  # Semantic release job - only on main branch
+  release:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      packages: write
+      id-token: write
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        with:
+          semantic_version: 23
+          extra_plugins: |
+            @semantic-release/changelog@6
+            @semantic-release/git@10
+            conventional-changelog-conventionalcommits@7
+
+      - name: Output release version
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          echo "New version: ${{ steps.semantic.outputs.new_release_version }}"
+          echo "Release notes: ${{ steps.semantic.outputs.new_release_notes }}"
+
+  # Docker build and push job - only when a new release is published
+  docker:
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.new_release_version }}
+            type=semver,pattern={{major}},value=${{ needs.release.outputs.new_release_version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.new_release_version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-,suffix=-{{date 'YYYYMMDD'}},format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.release.outputs.new_release_version }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            COMMIT_SHA=${{ github.sha }}
+
+      - name: Generate SBOM (Software Bill of Materials)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release.outputs.new_release_version }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+
+  # Optional: Scan the image for vulnerabilities
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [release, docker]
+    if: needs.release.outputs.new_release_published == 'true'
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release.outputs.new_release_version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Optional: Deploy notification
+  notify:
+    runs-on: ubuntu-latest
+    needs: [release, docker]
+    if: needs.release.outputs.new_release_published == 'true'
+    steps:
+      - name: Send deployment notification
+        run: |
+          echo "🚀 Successfully deployed version ${{ needs.release.outputs.new_release_version }} to ghcr.io"
+          echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release.outputs.new_release_version }}"
+          echo "🏷️ Tags: latest, ${{ needs.release.outputs.new_release_version }}"

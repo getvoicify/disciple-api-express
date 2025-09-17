@@ -1,5 +1,10 @@
 # Multi-stage Dockerfile for Node.js API
 
+# Build arguments
+ARG VERSION=dev
+ARG BUILD_DATE
+ARG COMMIT_SHA
+
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
@@ -18,6 +23,12 @@ RUN npm run build
 
 # Stage 3: Production
 FROM node:20-alpine AS runner
+
+# Re-declare build arguments for this stage
+ARG VERSION=dev
+ARG BUILD_DATE
+ARG COMMIT_SHA
+
 WORKDIR /app
 
 # Install PostgreSQL client for migrations
@@ -26,6 +37,21 @@ RUN apk add --no-cache postgresql-client
 # Add non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
+
+# Add labels for image metadata
+LABEL org.opencontainers.image.title="Disciple API" \
+      org.opencontainers.image.description="Church and worship API for managing notes and scripture references" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${COMMIT_SHA}" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/tom/disciple-api" \
+      org.opencontainers.image.documentation="https://github.com/tom/disciple-api/blob/main/README.md"
+
+# Set version as environment variable
+ENV APP_VERSION=${VERSION} \
+    BUILD_DATE=${BUILD_DATE} \
+    COMMIT_SHA=${COMMIT_SHA}
 
 # Copy dependencies from deps stage
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
