@@ -1,3 +1,15 @@
+## [1.1.2](https://github.com/getvoicify/disciple-api-express/compare/v1.1.1...v1.1.2) (2025-09-17)
+
+
+### ♻️ Code Refactoring
+
+* **k8s:** replace patchesStrategicMerge with patches in kustomization.yaml ([beea575](https://github.com/getvoicify/disciple-api-express/commit/beea575e63259bdfd67cee62a7200efc2a869a85))
+
+
+### 👷 CI/CD
+
+* enhance release workflow with Trivy scan and improved registry login ([#4](https://github.com/getvoicify/disciple-api-express/issues/4)) ([1bcb05c](https://github.com/getvoicify/disciple-api-express/commit/1bcb05cff7ffc8c1941858ba023363131615fa0e))
+
 ## [1.1.1](https://github.com/getvoicify/disciple-api-express/compare/v1.1.0...v1.1.1) (2025-09-17)
 
 
