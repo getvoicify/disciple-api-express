@@ -1,3 +1,10 @@
+## [1.2.0](https://github.com/getvoicify/disciple-api-express/compare/v1.1.3...v1.2.0) (2025-09-17)
+
+
+### ✨ Features
+
+* **k8s:** update SealedSecrets and ConfigMap for database configuration ([f028b20](https://github.com/getvoicify/disciple-api-express/commit/f028b2001d884e165f735310a955e99581115c92))
+
 ## [1.1.3](https://github.com/getvoicify/disciple-api-express/compare/v1.1.2...v1.1.3) (2025-09-17)
 
 
