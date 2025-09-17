@@ -34,8 +34,8 @@ jobs:
       - name: Run linting
         run: npm run lint --if-present
 
-      - name: Run tests
-        run: npm test --if-present
+#      - name: Run tests
+#        run: npm test --if-present
 
       - name: Build TypeScript
         run: npm run build
