@@ -17,6 +17,8 @@ spec:
         app.kubernetes.io/name: disciple-api
         app.kubernetes.io/component: api
     spec:
+      imagePullSecrets:
+      - name: image-pull-secret
       containers:
       - name: api
         image: ghcr.io/getvoicify/disciple-api-express:latest
