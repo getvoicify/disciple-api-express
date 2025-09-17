@@ -1,3 +1,15 @@
+## [1.1.1](https://github.com/getvoicify/disciple-api-express/compare/v1.1.0...v1.1.1) (2025-09-17)
+
+
+### ♻️ Code Refactoring
+
+* split ApplicationSet for preview and static environments ([#3](https://github.com/getvoicify/disciple-api-express/issues/3)) ([82733eb](https://github.com/getvoicify/disciple-api-express/commit/82733eb0f2b9789f7445de258424cf53266bee72))
+
+
+### 👷 CI/CD
+
+* update success comment for GitHub releases in semantic-release config ([#2](https://github.com/getvoicify/disciple-api-express/issues/2)) ([1d6653e](https://github.com/getvoicify/disciple-api-express/commit/1d6653e0c1d2c419cf3f60b97ae1dcf40209ae1f))
+
 ## [1.1.0](https://github.com/getvoicify/disciple-api-express/compare/v1.0.0...v1.1.0) (2025-09-17)
 
 
