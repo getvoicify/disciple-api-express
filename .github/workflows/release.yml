@@ -187,14 +187,36 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-  # Optional: Deploy notification
-  notify:
+  # Deploy to staging automatically
+  deploy-staging:
     runs-on: ubuntu-latest
     needs: [release, docker]
     if: needs.release.outputs.new_release_published == 'true'
+    permissions:
+      contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: main
+
+      - name: Update staging tag in ApplicationSet
+        run: |
+          echo "Updating staging deployment to version ${{ needs.release.outputs.new_release_version }}"
+          sed -i '/environment: staging/,/environment: production/s/imageTag: ".*"/imageTag: "${{ needs.release.outputs.new_release_version }}"/' argocd/applicationset.yaml
+
+      - name: Commit staging deployment update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add argocd/applicationset.yaml
+          git commit -m "deploy: update staging to ${{ needs.release.outputs.new_release_version }} [skip ci]" || exit 0
+          git push origin main
+
       - name: Send deployment notification
         run: |
-          echo "🚀 Successfully deployed version ${{ needs.release.outputs.new_release_version }} to ghcr.io"
+          echo "🚀 Successfully deployed version ${{ needs.release.outputs.new_release_version }} to staging"
           echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release.outputs.new_release_version }}"
-          echo "🏷️ Tags: latest, ${{ needs.release.outputs.new_release_version }}"
+          echo "🌐 Staging URL: https://staging.infra.api.pottersville.church"
