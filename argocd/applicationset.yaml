@@ -111,7 +111,7 @@ spec:
       elements:
       - environment: staging
         namespace: disciple-api-staging
-        imageTag: "v1.1.3"
+        imageTag: "1.3.1"
         replicas: "2"
       - environment: production
         namespace: disciple-api-production
