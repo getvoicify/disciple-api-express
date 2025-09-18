@@ -70,7 +70,7 @@ argocd app sync disciple-api-preview-pr-<NUMBER>
 - **Preview**: https://pr-{number}.preview.disciple-api.example.com
 
 ## Notes
-- The ApplicationSet uses the `values.yaml` file to track which versions are deployed
-- GitHub Actions will automatically update this file when releases are created
+- The ApplicationSet directly contains the image tags for each environment
+- GitHub Actions will automatically update the ApplicationSet when releases are created
 - Preview environments are automatically cleaned up when PRs are closed
 - You'll need to update the domain names in the ApplicationSet to match your actual domains

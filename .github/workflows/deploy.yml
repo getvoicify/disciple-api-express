@@ -23,16 +23,16 @@ jobs:
           fetch-depth: 0
           ref: main
 
-      - name: Update staging tag in values file
+      - name: Update staging tag in ApplicationSet
         run: |
           echo "Updating staging deployment to version ${{ github.event.release.tag_name }}"
-          sed -i 's/stagingTag: ".*"/stagingTag: "${{ github.event.release.tag_name }}"/' argocd/values.yaml
+          sed -i '/environment: staging/,/environment: production/s/imageTag: ".*"/imageTag: "${{ github.event.release.tag_name }}"/' argocd/applicationset.yaml
 
       - name: Commit staging deployment update
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add argocd/values.yaml
+          git add argocd/applicationset.yaml
           git commit -m "deploy: update staging to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
           git push origin main
 
@@ -75,16 +75,16 @@ jobs:
           fetch-depth: 0
           ref: main
 
-      - name: Update production tag in values file
+      - name: Update production tag in ApplicationSet
         run: |
           echo "Updating production deployment to version ${{ github.event.release.tag_name }}"
-          sed -i 's/productionTag: ".*"/productionTag: "${{ github.event.release.tag_name }}"/' argocd/values.yaml
+          sed -i '/environment: production/,/replicas:/s/imageTag: ".*"/imageTag: "${{ github.event.release.tag_name }}"/' argocd/applicationset.yaml
 
       - name: Commit production deployment update
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add argocd/values.yaml
+          git add argocd/applicationset.yaml
           git commit -m "deploy: update production to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
           git push origin main
 
