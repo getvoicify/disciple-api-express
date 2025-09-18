@@ -43,9 +43,19 @@ patches:
     - op: add
       path: /data/DB_PORT
       value: "6543"
+- target:
+    kind: Ingress
+    name: disciple-api
+  patch: |-
+    - op: replace
+      path: /spec/tls/0/hosts/0
+      value: staging.infra.api.pottersville.church
+    - op: replace
+      path: /spec/rules/0/host
+      value: staging.infra.api.pottersville.church
+    - op: replace
+      path: /spec/tls/0/secretName
+      value: disciple-api-staging-tls
 
 
-images:
-- name: ghcr.io/getvoicify/disciple-api-express
-  newTag: latest  # This will be replaced with prerelease version
 

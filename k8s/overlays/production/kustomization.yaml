@@ -40,8 +40,18 @@ patches:
     - op: add
       path: /data/LOG_LEVEL
       value: warn
+- target:
+    kind: Ingress
+    name: disciple-api
+  patch: |-
+    - op: replace
+      path: /spec/tls/0/hosts/0
+      value: infra.api.pottersville.church
+    - op: replace
+      path: /spec/rules/0/host
+      value: infra.api.pottersville.church
+    - op: replace
+      path: /spec/tls/0/secretName
+      value: disciple-api-production-tls
 
-images:
-- name: ghcr.io/getvoicify/disciple-api-express
-  newTag: latest  # This will be replaced with stable release version
 
