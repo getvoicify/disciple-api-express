@@ -1,3 +1,10 @@
+## [1.6.0](https://github.com/getvoicify/disciple-api-express/compare/v1.5.0...v1.6.0) (2025-09-18)
+
+
+### ✨ Features
+
+* **argocd:** add bootstrap application and kustomization for disciple-api ([7d34179](https://github.com/getvoicify/disciple-api-express/commit/7d34179f54ceffc70118929b06e7c110d5c23d51))
+
 ## [1.5.0](https://github.com/getvoicify/disciple-api-express/compare/v1.4.0...v1.5.0) (2025-09-18)
 
 
