@@ -1,3 +1,20 @@
+## [1.3.0](https://github.com/getvoicify/disciple-api-express/compare/v1.2.1...v1.3.0) (2025-09-18)
+
+
+### ✨ Features
+
+* **ci:** add GitHub prerelease plugin for semantic-release ([1cbf41a](https://github.com/getvoicify/disciple-api-express/commit/1cbf41a072e3df94c7049be30e2e06e274e05075))
+
+
+### ♻️ Code Refactoring
+
+* **ci:** migrate environment tags from `values.yaml` to `applicationset.yaml` ([9879912](https://github.com/getvoicify/disciple-api-express/commit/98799126acb9694df61680f7e06b3198b315881f))
+
+
+### 🔧 Chores
+
+* **tsconfig:** exclude `semantic-release-github-prerelease.js` from compilation ([d7ad1d9](https://github.com/getvoicify/disciple-api-express/commit/d7ad1d91bb88efab74387ee2ea00516cc7a08729))
+
 ## [1.2.1](https://github.com/getvoicify/disciple-api-express/compare/v1.2.0...v1.2.1) (2025-09-18)
 
 
