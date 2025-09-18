@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/getvoicify/disciple-api-express/compare/v1.2.0...v1.2.1) (2025-09-18)
+
+
+### ♻️ Code Refactoring
+
+* **ci:** migrate environment tags from `values.yaml` to `applicationset.yaml` ([d708c74](https://github.com/getvoicify/disciple-api-express/commit/d708c740b8659f9c57f9f764d364b4bc6bacaab9))
+
 ## [1.2.0](https://github.com/getvoicify/disciple-api-express/compare/v1.1.3...v1.2.0) (2025-09-17)
 
 
