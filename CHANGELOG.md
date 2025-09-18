@@ -1,3 +1,10 @@
+## [1.4.0](https://github.com/getvoicify/disciple-api-express/compare/v1.3.1...v1.4.0) (2025-09-18)
+
+
+### ✨ Features
+
+* **k8s:** add Ingress resource and environment-specific patches for `disciple-api` ([4ca7c06](https://github.com/getvoicify/disciple-api-express/commit/4ca7c0665fdb86be6b74c52ec07f8b481e9ecf24))
+
 ## [1.3.1](https://github.com/getvoicify/disciple-api-express/compare/v1.3.0...v1.3.1) (2025-09-18)
 
 
