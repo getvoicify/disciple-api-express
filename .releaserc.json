@@ -1,18 +1,5 @@
 {
-  "branches": [
-    {
-      "name": "main",
-      "prerelease": "beta"
-    },
-    {
-      "name": "master",
-      "prerelease": "beta"
-    },
-    {
-      "name": "stable",
-      "prerelease": false
-    }
-  ],
+  "branches": ["main", "master"],
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
@@ -76,14 +63,6 @@
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
-    [
-      "@semantic-release/github",
-      {
-        "successComment": "🎉 This PR is included in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- GitHub Container Registry: `ghcr.io/getvoicify/disciple-api-express:${nextRelease.version}`\n- [GitHub release](https://github.com/getvoicify/disciple-api-express/releases/tag/${nextRelease.gitTag}) (prerelease)\n- [Staging Environment](https://staging.disciple-api.example.com)\n\n**Note**: This release is marked as prerelease and deployed to staging. To promote to production, manually edit the GitHub release to remove the prerelease flag.\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀",
-        "releasedLabels": ["released"],
-        "addReleases": "bottom",
-        "draftRelease": false
-      }
-    ]
+    "./semantic-release-github-prerelease.js"
   ]
 }
