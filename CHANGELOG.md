@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/getvoicify/disciple-api-express/compare/v1.3.0...v1.3.1) (2025-09-18)
+
+
+### ♻️ Code Refactoring
+
+* **ci:** consolidate deploy logic and streamline workflows ([6194feb](https://github.com/getvoicify/disciple-api-express/commit/6194feb8fb7e7a00c0928d8a77f4901fa077faf9))
+
 ## [1.3.0](https://github.com/getvoicify/disciple-api-express/compare/v1.2.1...v1.3.0) (2025-09-18)
 
 
