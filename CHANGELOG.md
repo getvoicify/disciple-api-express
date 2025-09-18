@@ -1,3 +1,10 @@
+## [1.5.0](https://github.com/getvoicify/disciple-api-express/compare/v1.4.0...v1.5.0) (2025-09-18)
+
+
+### ✨ Features
+
+* **config:** add environment-specific `apis` paths in Swagger config and enable `removeComments` in tsconfig ([#5](https://github.com/getvoicify/disciple-api-express/issues/5)) ([54f5433](https://github.com/getvoicify/disciple-api-express/commit/54f54330afb5f521ce0a2d693bff278bc55fcff1))
+
 ## [1.4.0](https://github.com/getvoicify/disciple-api-express/compare/v1.3.1...v1.4.0) (2025-09-18)
 
 
