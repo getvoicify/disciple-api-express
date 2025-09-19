@@ -8,17 +8,17 @@ import {jwtVerify} from "jose";
 import {validate} from "../../utils/validate.middleware";
 import {
 	ChurchDeleteInput,
-	ChurchFetchInput,
+	ChurchFetchInput, ChurchIdInput,
 	ChurchUpdateInput,
 	ChurchUpdateParamsInput,
-	CreateChurchInput, UpdateChurchInput
+	CreateChurchInput
 } from "../schemas";
 import {churchListEndpoint, ChurchListFilterSchema} from "./churchList.endpoint";
 import {churchSearchEndpoint, ChurchSearchInput} from "./churchSearch.endpoint";
 import {churchFetchEndpoint} from "./churchFetch.endpoint";
 import {churchDeleteEndpoint} from "./churchDelete.endpoint";
-import {z} from "zod";
 import {churchUpdateEndpoint} from "./churchUpdate.endpoint";
+import {churchApproveEndpoint} from "./admin/churchApprove.endpoint";
 
 
 export const churchesRouter = (
@@ -33,7 +33,12 @@ export const churchesRouter = (
 	} = process.env;
 	const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
-	router.delete('churchId', [
+	router.post(':churchId/approve', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params')
+	], churchApproveEndpoint(approvalService));
+
+	router.delete(':churchId', [
 		tokenVerifier(true),
 		validate(ChurchDeleteInput, 'params')
 	], churchDeleteEndpoint(churchService));

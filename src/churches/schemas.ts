@@ -147,7 +147,7 @@ export const InvitationInput = z.object({
 	role: MemberRole.default('Member').optional()
 });
 
-const ChurchIdInput = z.object({
+export const ChurchIdInput = z.object({
 	churchId: z.uuid(),
 })
 
