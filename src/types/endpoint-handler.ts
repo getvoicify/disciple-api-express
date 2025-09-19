@@ -1,3 +1,8 @@
 import express from 'express';
+import {User} from "../utils/validate-token.middleware";
 
-export type EndpointHandler = (req: express.Request, res: express.Response) => Promise<void>;
+
+type EndpointRequest = express.Request & {
+    user?: User;
+};
+export type EndpointHandler = (req: EndpointRequest, res: express.Response) => Promise<void>;

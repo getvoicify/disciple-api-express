@@ -22,6 +22,7 @@ import {churchApproveEndpoint} from "./admin/churchApprove.endpoint";
 import {churchRejectEndpoint} from "./admin/churchReject.endpoint";
 import {churchApprovalHistoryEndpoint} from "./admin/churchApprovalHistory.endpoint";
 import {churchPendingListEndpoint} from "./admin/churchPendingList.endpoint";
+import {churchMembershipJoinEndpoint} from "./membership/churchMembershipJoin.endpoint";
 
 
 export const churchesRouter = (
@@ -39,7 +40,9 @@ export const churchesRouter = (
 	router.get('/pending', [
 		tokenVerifier(true),
 		validate(PendingChurchListQueryInput, 'query'),
-	], churchPendingListEndpoint(approvalService))
+	], churchPendingListEndpoint(approvalService));
+
+	// Admin endpoints
 	router.get(':churchId/approval-history', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
@@ -55,6 +58,22 @@ export const churchesRouter = (
 		validate(ChurchIdInput, 'params'),
 		validate(RejectionInput, 'body'),
 	], churchRejectEndpoint(approvalService));
+
+	// Membership endpoints
+
+	router.post(':churchId/join', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params')
+	], churchMembershipJoinEndpoint(membershipService));
+
+	router.post(':churchId/leave', [tokenVerifier(true)],);
+	router.get(':churchId/members', [tokenVerifier(false)],);
+	router.post(':churchId/invite', [tokenVerifier(true)],);
+	router.post(':churchId/accept-invitation', [tokenVerifier(true)],);
+	router.post(':churchId/decline-invitation', [tokenVerifier(true)],);
+	router.post(':churchId/remove-member', [tokenVerifier(true)],);
+	router.post(':churchId/ban-member', [tokenVerifier(true)],);
+	router.put(':churchId/update-role', [tokenVerifier(true)],);
 
 	router.delete(':churchId', [
 		tokenVerifier(true),

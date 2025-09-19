@@ -3,7 +3,7 @@ import {Middleware} from "./middleware";
 import {handleAsync} from "./handle-async";
 import * as jose from "jose";
 
-export type User = jose.JWTPayload;
+export type User = jose.JWTPayload[];
 
 const tokenValidateMiddleware = (
 	verifier: Verifier,
