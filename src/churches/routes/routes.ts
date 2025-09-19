@@ -11,7 +11,7 @@ import {
 	ChurchFetchInput, ChurchIdInput,
 	ChurchUpdateInput,
 	ChurchUpdateParamsInput,
-	CreateChurchInput, RejectionInput
+	CreateChurchInput, PendingChurchListQueryInput, RejectionInput
 } from "../schemas";
 import {churchListEndpoint, ChurchListFilterSchema} from "./churchList.endpoint";
 import {churchSearchEndpoint, ChurchSearchInput} from "./churchSearch.endpoint";
@@ -35,6 +35,10 @@ export const churchesRouter = (
 	} = process.env;
 	const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
+	router.get('/pending', [
+		tokenVerifier(true),
+		validate(PendingChurchListQueryInput, 'query'),
+	], )
 	router.get(':churchId/approval-history', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')

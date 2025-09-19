@@ -155,6 +155,11 @@ export const ChurchFetchInput = ChurchIdInput;
 export const ChurchDeleteInput = ChurchIdInput;
 export const ChurchUpdateParamsInput = ChurchIdInput;
 export const ChurchUpdateInput = UpdateChurchInput.extend({ version: z.number() });
+export const PendingChurchListQueryInput = z.object({
+	page: z.coerce.number().int().positive().optional(),
+	pageSize: z.coerce.number().int().positive().max(100).optional(),
+	name: z.string().optional().nullable(),
+});
 
 // Type exports
 export type ApprovalStatus = z.infer<typeof ApprovalStatus>;
