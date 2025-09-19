@@ -11,7 +11,7 @@ import {
 	ChurchFetchInput, ChurchIdInput,
 	ChurchUpdateInput,
 	ChurchUpdateParamsInput,
-	CreateChurchInput
+	CreateChurchInput, RejectionInput
 } from "../schemas";
 import {churchListEndpoint, ChurchListFilterSchema} from "./churchList.endpoint";
 import {churchSearchEndpoint, ChurchSearchInput} from "./churchSearch.endpoint";
@@ -19,6 +19,7 @@ import {churchFetchEndpoint} from "./churchFetch.endpoint";
 import {churchDeleteEndpoint} from "./churchDelete.endpoint";
 import {churchUpdateEndpoint} from "./churchUpdate.endpoint";
 import {churchApproveEndpoint} from "./admin/churchApprove.endpoint";
+import {churchRejectEndpoint} from "./admin/churchReject.endpoint";
 
 
 export const churchesRouter = (
@@ -37,6 +38,12 @@ export const churchesRouter = (
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
 	], churchApproveEndpoint(approvalService));
+
+	router.post(':churchId/reject', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params'),
+		validate(RejectionInput, 'body'),
+	], churchRejectEndpoint(approvalService));
 
 	router.delete(':churchId', [
 		tokenVerifier(true),
