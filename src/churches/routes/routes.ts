@@ -8,10 +8,14 @@ import {jwtVerify} from "jose";
 import {validate} from "../../utils/validate.middleware";
 import {
 	ChurchDeleteInput,
-	ChurchFetchInput, ChurchIdInput,
+	ChurchFetchInput,
+	ChurchIdInput,
 	ChurchUpdateInput,
 	ChurchUpdateParamsInput,
-	CreateChurchInput, PendingChurchListQueryInput, RejectionInput
+	CreateChurchInput,
+	InvitationInput,
+	PendingChurchListQueryInput,
+	RejectionInput
 } from "../schemas";
 import {churchListEndpoint, ChurchListFilterSchema} from "./churchList.endpoint";
 import {churchSearchEndpoint, ChurchSearchInput} from "./churchSearch.endpoint";
@@ -25,6 +29,7 @@ import {churchPendingListEndpoint} from "./admin/churchPendingList.endpoint";
 import {churchMembershipJoinEndpoint} from "./membership/churchMembershipJoin.endpoint";
 import {churchMembershipLeaveEndpoint} from "./membership/churchMembershipLeave.endpoint";
 import {churchMembershipListEndpoint} from "./membership/churchMembershipList.endpoint";
+import {churchMembershipInviteEndpoint} from "./membership/churchMembershipInvite.endpoint";
 
 
 export const churchesRouter = (
@@ -78,7 +83,11 @@ export const churchesRouter = (
 		validate(ChurchIdInput, 'params')
 	], churchMembershipListEndpoint(membershipService));
 
-	router.post(':churchId/invite', [tokenVerifier(true)],);
+	router.post(':churchId/invite', [
+		tokenVerifier(true),
+		validate(InvitationInput, 'body')
+	], churchMembershipInviteEndpoint(membershipService));
+
 	router.post(':churchId/accept-invitation', [tokenVerifier(true)],);
 	router.post(':churchId/decline-invitation', [tokenVerifier(true)],);
 	router.post(':churchId/remove-member', [tokenVerifier(true)],);
