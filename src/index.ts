@@ -11,6 +11,7 @@ import {ChurchServiceImpl} from "./churches/service";
 import {ChurchMembershipServiceImpl} from "./churches/membership-service";
 import {ChurchApprovalServiceImpl} from "./churches/approval-service";
 import {churchesRouter} from "./churches/routes/routes";
+import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 
 dotenv.config();
 
@@ -104,6 +105,8 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService));
 app.use('/api/notes', notesRouter(noteService));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

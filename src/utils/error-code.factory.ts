@@ -1,15 +1,50 @@
-export default (err: Error) => {
-	const message = err.message;
-	if (message.includes('not found')) {
-		return 404;
+import { isAppError, hasStatusCode } from './errors';
+
+/**
+ * Factory function to determine HTTP status code from an error
+ * @param err - The error to extract status code from
+ * @returns The appropriate HTTP status code
+ */
+export default function errorCodeFactory(err: unknown): number {
+	// If it's our custom AppError, use its status code
+	if (isAppError(err)) {
+		return err.statusCode;
 	}
 
-	if (
-		message.includes('version conflict') ||
-		message.includes('Version mismatch')
-	) {
-		return 409;
+	// If the error has a statusCode property, use it
+	if (hasStatusCode(err)) {
+		return err.statusCode;
 	}
 
+	// For standard errors, check the message for patterns (backward compatibility)
+	if (err instanceof Error) {
+		const message = err.message.toLowerCase();
+
+		if (message.includes('not found')) {
+			return 404;
+		}
+
+		if (message.includes('unauthorized')) {
+			return 401;
+		}
+
+		if (message.includes('forbidden')) {
+			return 403;
+		}
+
+		if (
+			message.includes('version conflict') ||
+			message.includes('version mismatch') ||
+			message.includes('already exists')
+		) {
+			return 409;
+		}
+
+		if (message.includes('validation') || message.includes('invalid')) {
+			return 400;
+		}
+	}
+
+	// Default to 400 for unknown errors
 	return 400;
 }

@@ -10,6 +10,12 @@ import {
   ApprovalInput as ApprovalInputSchema,
   RejectionInput as RejectionInputSchema
 } from './schemas';
+import {
+  NotFoundError,
+  BusinessLogicError,
+  InvalidFormatError,
+  InternalServerError
+} from '../utils/errors';
 
 export interface ApprovalHistory {
   churchId: string;
@@ -44,32 +50,32 @@ export class ChurchApprovalServiceImpl implements ChurchApprovalService {
     // Find the church
     const church = await this.churchRepository.findById(churchId);
     if (!church) {
-      throw new Error('Church not found');
+      throw new NotFoundError('Church', churchId);
     }
 
     // Validate current status
     if (church.approvalStatus === 'Approved') {
-      throw new Error('Church is already approved');
+      throw new BusinessLogicError('Church is already approved', 409);
     }
 
     if (church.approvalStatus === 'Rejected') {
-      throw new Error('Cannot approve a rejected church. Church must be resubmitted first');
+      throw new BusinessLogicError('Cannot approve a rejected church. Church must be resubmitted first');
     }
 
     if (church.approvalStatus !== 'Pending') {
-      throw new Error('Church must be in pending status to be approved');
+      throw new BusinessLogicError('Church must be in pending status to be approved');
     }
 
     // Perform approval
     const approvalResult = await this.churchRepository.approve(churchId, approverId);
     if (!approvalResult) {
-      throw new Error('Failed to approve church');
+      throw new InternalServerError('Failed to approve church');
     }
 
     // Return updated church
     const updatedChurch = await this.churchRepository.findById(churchId);
     if (!updatedChurch) {
-      throw new Error('Failed to retrieve updated church');
+      throw new InternalServerError('Failed to retrieve updated church');
     }
 
     return updatedChurch;
@@ -83,32 +89,32 @@ export class ChurchApprovalServiceImpl implements ChurchApprovalService {
     // Find the church
     const church = await this.churchRepository.findById(churchId);
     if (!church) {
-      throw new Error('Church not found');
+      throw new NotFoundError('Church', churchId);
     }
 
     // Validate current status
     if (church.approvalStatus === 'Approved') {
-      throw new Error('Cannot reject an approved church');
+      throw new BusinessLogicError('Cannot reject an approved church');
     }
 
     if (church.approvalStatus === 'Rejected') {
-      throw new Error('Church is already rejected');
+      throw new BusinessLogicError('Church is already rejected', 409);
     }
 
     if (church.approvalStatus !== 'Pending') {
-      throw new Error('Church must be in pending status to be rejected');
+      throw new BusinessLogicError('Church must be in pending status to be rejected');
     }
 
     // Perform rejection
     const rejectionResult = await this.churchRepository.reject(churchId, rejectorId, validated.reason);
     if (!rejectionResult) {
-      throw new Error('Failed to reject church');
+      throw new InternalServerError('Failed to reject church');
     }
 
     // Return updated church
     const updatedChurch = await this.churchRepository.findById(churchId);
     if (!updatedChurch) {
-      throw new Error('Failed to retrieve updated church');
+      throw new InternalServerError('Failed to retrieve updated church');
     }
 
     return updatedChurch;
@@ -128,7 +134,7 @@ export class ChurchApprovalServiceImpl implements ChurchApprovalService {
 
     const church = await this.churchRepository.findById(churchId);
     if (!church) {
-      throw new Error('Church not found');
+      throw new NotFoundError('Church', churchId);
     }
 
     return {
@@ -149,7 +155,7 @@ export class ChurchApprovalServiceImpl implements ChurchApprovalService {
     try {
       uuidSchema.parse(id);
     } catch (error) {
-      throw new Error('Invalid UUID format');
+      throw new InvalidFormatError('UUID', 'Valid UUID v4 format');
     }
   }
 }

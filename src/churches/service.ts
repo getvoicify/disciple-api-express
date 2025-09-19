@@ -11,6 +11,13 @@ import {
   UpdateChurchInput as UpdateChurchSchema,
   ChurchFilters as ChurchFiltersSchema
 } from './schemas';
+import {
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  MissingRequiredFieldError,
+  InvalidFormatError
+} from '../utils/errors';
 
 export interface ChurchService {
   createChurch(input: CreateChurchInput, ownerId: string): Promise<Church>;
@@ -34,7 +41,7 @@ export class ChurchServiceImpl implements ChurchService {
     // Validate owner ID
     this.validateUUID(ownerId);
     if (!ownerId || ownerId.trim() === '') {
-      throw new Error('Owner ID is required');
+      throw new MissingRequiredFieldError('Owner ID');
     }
 
     return this.repository.create(validated, ownerId);
@@ -46,12 +53,12 @@ export class ChurchServiceImpl implements ChurchService {
     const validated = UpdateChurchSchema.parse(input);
 
     if (typeof version !== 'number' || version < 1) {
-      throw new Error('Valid version is required for optimistic locking');
+      throw new ValidationError('Valid version is required for optimistic locking');
     }
 
     const church = await this.repository.update(id, validated, version);
     if (!church) {
-      throw new Error('Church not found or version conflict');
+      throw new ConflictError('Church not found or version conflict');
     }
 
     return church;
@@ -62,7 +69,7 @@ export class ChurchServiceImpl implements ChurchService {
 
     const deleted = await this.repository.delete(id);
     if (!deleted) {
-      throw new Error('Church not found');
+      throw new NotFoundError('Church', id);
     }
   }
 
@@ -71,7 +78,7 @@ export class ChurchServiceImpl implements ChurchService {
 
     const church = await this.repository.findById(id);
     if (!church) {
-      throw new Error('Church not found');
+      throw new NotFoundError('Church', id);
     }
 
     return church;
@@ -79,12 +86,12 @@ export class ChurchServiceImpl implements ChurchService {
 
   async getChurchBySlug(slug: string): Promise<Church> {
     if (!slug || slug.trim() === '') {
-      throw new Error('Slug is required');
+      throw new MissingRequiredFieldError('Slug');
     }
 
     const church = await this.repository.findBySlug(slug);
     if (!church) {
-      throw new Error('Church not found');
+      throw new NotFoundError('Church', slug);
     }
 
     return church;
@@ -131,7 +138,7 @@ export class ChurchServiceImpl implements ChurchService {
     this.validateUUID(id);
 
     if (typeof version !== 'number' || version < 1) {
-      throw new Error('Valid version is required for optimistic locking');
+      throw new ValidationError('Valid version is required for optimistic locking');
     }
 
     // Clear rejection data when resubmitting
@@ -142,7 +149,7 @@ export class ChurchServiceImpl implements ChurchService {
 
     const church = await this.repository.update(id, updateInput, version);
     if (!church) {
-      throw new Error('Church not found or version conflict');
+      throw new ConflictError('Church not found or version conflict');
     }
 
     return church;
@@ -153,7 +160,7 @@ export class ChurchServiceImpl implements ChurchService {
     try {
       uuidSchema.parse(id);
     } catch (error) {
-      throw new Error('Invalid UUID format');
+      throw new InvalidFormatError('UUID', 'Valid UUID v4 format');
     }
   }
 }
