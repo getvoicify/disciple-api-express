@@ -23,6 +23,7 @@ import {churchRejectEndpoint} from "./admin/churchReject.endpoint";
 import {churchApprovalHistoryEndpoint} from "./admin/churchApprovalHistory.endpoint";
 import {churchPendingListEndpoint} from "./admin/churchPendingList.endpoint";
 import {churchMembershipJoinEndpoint} from "./membership/churchMembershipJoin.endpoint";
+import {churchMembershipLeaveEndpoint} from "./membership/churchMembershipLeave.endpoint";
 
 
 export const churchesRouter = (
@@ -66,7 +67,11 @@ export const churchesRouter = (
 		validate(ChurchIdInput, 'params')
 	], churchMembershipJoinEndpoint(membershipService));
 
-	router.post(':churchId/leave', [tokenVerifier(true)],);
+	router.post(':churchId/leave', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params')
+	], churchMembershipLeaveEndpoint(membershipService));
+
 	router.get(':churchId/members', [tokenVerifier(false)],);
 	router.post(':churchId/invite', [tokenVerifier(true)],);
 	router.post(':churchId/accept-invitation', [tokenVerifier(true)],);
