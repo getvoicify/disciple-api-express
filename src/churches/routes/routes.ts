@@ -21,6 +21,7 @@ import {churchUpdateEndpoint} from "./churchUpdate.endpoint";
 import {churchApproveEndpoint} from "./admin/churchApprove.endpoint";
 import {churchRejectEndpoint} from "./admin/churchReject.endpoint";
 import {churchApprovalHistoryEndpoint} from "./admin/churchApprovalHistory.endpoint";
+import {churchPendingListEndpoint} from "./admin/churchPendingList.endpoint";
 
 
 export const churchesRouter = (
@@ -38,7 +39,7 @@ export const churchesRouter = (
 	router.get('/pending', [
 		tokenVerifier(true),
 		validate(PendingChurchListQueryInput, 'query'),
-	], )
+	], churchPendingListEndpoint(approvalService))
 	router.get(':churchId/approval-history', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
