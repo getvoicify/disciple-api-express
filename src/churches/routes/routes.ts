@@ -20,6 +20,7 @@ import {churchDeleteEndpoint} from "./churchDelete.endpoint";
 import {churchUpdateEndpoint} from "./churchUpdate.endpoint";
 import {churchApproveEndpoint} from "./admin/churchApprove.endpoint";
 import {churchRejectEndpoint} from "./admin/churchReject.endpoint";
+import {churchApprovalHistoryEndpoint} from "./admin/churchApprovalHistory.endpoint";
 
 
 export const churchesRouter = (
@@ -33,6 +34,11 @@ export const churchesRouter = (
 		IAM_REALM,
 	} = process.env;
 	const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
+
+	router.get(':churchId/approval-history', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params')
+	], churchApprovalHistoryEndpoint(approvalService));
 
 	router.post(':churchId/approve', [
 		tokenVerifier(true),
