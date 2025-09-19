@@ -151,6 +151,14 @@ export const ChurchIdInput = z.object({
 	churchId: z.uuid(),
 })
 
+export const UserIdInput = z.object({
+	userId: z.uuid(),
+})
+
+export const UpdateRoleInput = z.object({
+	role: MemberRole,
+})
+
 export const ChurchFetchInput = ChurchIdInput;
 export const ChurchDeleteInput = ChurchIdInput;
 export const ChurchUpdateParamsInput = ChurchIdInput;

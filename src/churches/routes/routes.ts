@@ -15,7 +15,9 @@ import {
 	CreateChurchInput,
 	InvitationInput,
 	PendingChurchListQueryInput,
-	RejectionInput
+	RejectionInput,
+	UserIdInput,
+	UpdateRoleInput
 } from "../schemas";
 import {churchListEndpoint, ChurchListFilterSchema} from "./churchList.endpoint";
 import {churchSearchEndpoint, ChurchSearchInput} from "./churchSearch.endpoint";
@@ -30,6 +32,11 @@ import {churchMembershipJoinEndpoint} from "./membership/churchMembershipJoin.en
 import {churchMembershipLeaveEndpoint} from "./membership/churchMembershipLeave.endpoint";
 import {churchMembershipListEndpoint} from "./membership/churchMembershipList.endpoint";
 import {churchMembershipInviteEndpoint} from "./membership/churchMembershipInvite.endpoint";
+import {churchMembershipAcceptInviteEndpoint} from "./membership/churchMembershipAcceptInvite.endpoint";
+import {churchMembershipDeclineInviteEndpoint} from "./membership/churchMembershipDeclineInvite.endpoint";
+import {churchMembershipRemoveMemberEndpoint} from "./membership/churchMembershipRemoveMember.endpoint";
+import {churchMembershipBanEndpoint} from "./membership/churchMembershipBan.endpoint";
+import {churchMembershipUpdateRoleEndpoint} from "./membership/churchMembershipUpdateRole.endpoint";
 
 
 export const churchesRouter = (
@@ -88,11 +95,34 @@ export const churchesRouter = (
 		validate(InvitationInput, 'body')
 	], churchMembershipInviteEndpoint(membershipService));
 
-	router.post(':churchId/accept-invitation', [tokenVerifier(true)],);
-	router.post(':churchId/decline-invitation', [tokenVerifier(true)],);
-	router.post(':churchId/remove-member', [tokenVerifier(true)],);
-	router.post(':churchId/ban-member', [tokenVerifier(true)],);
-	router.put(':churchId/update-role', [tokenVerifier(true)],);
+	router.post(':churchId/accept-invitation', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params')
+	], churchMembershipAcceptInviteEndpoint(membershipService));
+
+	router.post(':churchId/decline-invitation', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params')
+	], churchMembershipDeclineInviteEndpoint(membershipService));
+
+	router.delete(':churchId/members/:userId', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params'),
+		validate(UserIdInput, 'params')
+	], churchMembershipRemoveMemberEndpoint(membershipService));
+
+	router.post(':churchId/members/:userId/ban', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params'),
+		validate(UserIdInput, 'params')
+	], churchMembershipBanEndpoint(membershipService));
+
+	router.put(':churchId/members/:userId/role', [
+		tokenVerifier(true),
+		validate(ChurchIdInput, 'params'),
+		validate(UserIdInput, 'params'),
+		validate(UpdateRoleInput, 'body')
+	], churchMembershipUpdateRoleEndpoint(membershipService));
 
 	router.delete(':churchId', [
 		tokenVerifier(true),
