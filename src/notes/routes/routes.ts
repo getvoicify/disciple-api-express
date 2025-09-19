@@ -21,30 +21,30 @@ export const notesRouter = (service: NoteService) => {
     const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
     router.get('/:noteId', [
-        tokenVerifier,
+        tokenVerifier(),
         validate(NoteFetchParamsInput, 'params'),
     ], noteFetchEndpoint(service));
 
     router.put('/:noteId', [
-        tokenVerifier,
+        tokenVerifier(),
         validate(NoteUpdateParamsInput, 'params'),
         validate(UpdateNoteInput, 'body')
     ], noteUpdateEndpoint(service));
 
     router.delete('/:noteId', [
-        tokenVerifier,
+        tokenVerifier(),
         validate(NoteDeleteParamsInput, 'params'),
     ], noteDeleteEndpoint(service));
 
     router.get('/', [
-        tokenVerifier,
+        tokenVerifier(),
         validate(ListFilterSchema, 'query')
     ], noteListEndpoint(service));
 
     router.post(
         '/',
         [
-            tokenVerifier,
+            tokenVerifier(),
             validate(CreateNoteInput)
         ],
         noteCreateEndpoint(service),

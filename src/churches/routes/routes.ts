@@ -1,0 +1,69 @@
+import {Router} from 'express';
+import type {ChurchService} from "../service";
+import type {ChurchApprovalService} from "../approval-service";
+import {ChurchMembershipService} from "../membership-service";
+import {churchCreateEndpoint} from "./churchCreate.endpoint";
+import {validateToken} from "../../utils/validate-token.middleware";
+import {jwtVerify} from "jose";
+import {validate} from "../../utils/validate.middleware";
+import {
+	ChurchDeleteInput,
+	ChurchFetchInput,
+	ChurchUpdateInput,
+	ChurchUpdateParamsInput,
+	CreateChurchInput, UpdateChurchInput
+} from "../schemas";
+import {churchListEndpoint, ChurchListFilterSchema} from "./churchList.endpoint";
+import {churchSearchEndpoint, ChurchSearchInput} from "./churchSearch.endpoint";
+import {churchFetchEndpoint} from "./churchFetch.endpoint";
+import {churchDeleteEndpoint} from "./churchDelete.endpoint";
+import {z} from "zod";
+import {churchUpdateEndpoint} from "./churchUpdate.endpoint";
+
+
+export const churchesRouter = (
+	churchService: ChurchService,
+	approvalService: ChurchApprovalService,
+	membershipService: ChurchMembershipService
+) => {
+	const router = Router();
+	const {
+		IAM_ENDPOINT,
+		IAM_REALM,
+	} = process.env;
+	const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
+
+	router.delete('churchId', [
+		tokenVerifier(true),
+		validate(ChurchDeleteInput, 'params')
+	], churchDeleteEndpoint(churchService));
+
+	router.get(
+		':churchId',
+		[
+			tokenVerifier(false),
+			validate(ChurchFetchInput, 'params')
+		],
+		churchFetchEndpoint(churchService)
+	);
+
+	router.put(':churchId', [
+		tokenVerifier(true),
+		validate(ChurchUpdateParamsInput, 'params'),
+		validate(ChurchUpdateInput, 'body'),
+	], churchUpdateEndpoint(churchService));
+
+	router.get('/search', [validate(ChurchSearchInput, 'query')], churchSearchEndpoint(churchService));
+
+	router.post('/', [
+		tokenVerifier(true),
+		validate(CreateChurchInput, 'body'),
+	], churchCreateEndpoint(churchService));
+
+	router.get('/', [
+		tokenVerifier(false),
+		validate(ChurchListFilterSchema, 'query'),
+	], churchListEndpoint(churchService));
+
+	return router;
+}
