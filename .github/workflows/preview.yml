@@ -62,7 +62,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=pr-${{ github.event.number }}-{{sha}},enable=true
+            type=raw,value=pr-${{ github.event.number }}-${{ github.event.pull_request.head.sha }},enable=true
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -103,7 +103,7 @@ jobs:
 
             ArgoCD ApplicationSet will automatically create this preview environment from the PR.
 
-            **Preview URL**: https://pr-${{ github.event.number }}.preview.disciple-api.example.com (available once deployed)
+            **Preview URL**: https://pr-${{ github.event.number }}.preview.infra.api.pottersville.church (available once deployed)
             **ArgoCD Application**: \`disciple-api-preview-pr-${{ github.event.number }}\`
 
             ---

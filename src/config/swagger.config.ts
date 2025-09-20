@@ -22,6 +22,10 @@ const swaggerOptions: swaggerJsdoc.Options = {
                 url: `http://localhost:3001/api`,
                 description: 'Local development server',
             },
+            ...(process.env.PR_NUMBER ? [{
+                url: `https://pr-${process.env.PR_NUMBER}.preview.infra.api.pottersville.church/api`,
+                description: `Preview server (PR #${process.env.PR_NUMBER})`,
+            }] : []),
             {
                 url: `https://staging.infra.api.pottersville.church/api`,
                 description: 'Staging server',

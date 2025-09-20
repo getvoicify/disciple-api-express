@@ -76,6 +76,22 @@ spec:
               - op: replace
                 path: /metadata/namespace
                 value: disciple-api-preview-{{number}}
+          - target:
+              kind: Ingress
+              name: disciple-api
+            patch: |
+              - op: replace
+                path: /metadata/namespace
+                value: disciple-api-preview-{{number}}
+              - op: replace
+                path: /spec/tls/0/hosts/0
+                value: pr-{{number}}.preview.infra.api.pottersville.church
+              - op: replace
+                path: /spec/rules/0/host
+                value: pr-{{number}}.preview.infra.api.pottersville.church
+              - op: replace
+                path: /spec/tls/0/secretName
+                value: disciple-api-preview-{{number}}-tls
       destination:
         server: https://kubernetes.default.svc
         namespace: 'disciple-api-preview-{{number}}'
