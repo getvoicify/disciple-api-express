@@ -115,7 +115,7 @@ spec:
         replicas: "2"
       - environment: production
         namespace: disciple-api-production
-        imageTag: "v1.7.1"
+        imageTag: "1.7.1"
         replicas: "3"
   template:
     metadata:

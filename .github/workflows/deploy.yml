@@ -25,23 +25,30 @@ jobs:
 
       - name: Update production tag in ApplicationSet
         run: |
-          echo "Updating production deployment to version ${{ github.event.release.tag_name }}"
-          sed -i '/environment: production/,/replicas:/s/imageTag: ".*"/imageTag: "${{ github.event.release.tag_name }}"/' argocd/applicationset.yaml
+          VERSION="${{ github.event.release.tag_name }}"
+          # Remove 'v' prefix if present to match Docker tag format
+          VERSION=${VERSION#v}
+          echo "Updating production deployment to version $VERSION"
+          sed -i '/environment: production/,/replicas:/s/imageTag: ".*"/imageTag: "'$VERSION'"/' argocd/applicationset.yaml
 
       - name: Commit production deployment update
         run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION=${VERSION#v}
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add argocd/applicationset.yaml
-          git commit -m "deploy: update production to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
+          git commit -m "deploy: update production to $VERSION [skip ci]" || exit 0
           git push origin main
 
       - name: Log production deployment
         run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION=${VERSION#v}
           echo "🎉 Production Deployment Triggered"
-          echo "Version: ${{ github.event.release.tag_name }}"
+          echo "Version: $VERSION (from release ${{ github.event.release.tag_name }})"
           echo "Environment: Production"
-          echo "Image: ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}"
+          echo "Image: ghcr.io/${{ github.repository }}:$VERSION"
           echo "Namespace: disciple-api-production"
           echo ""
           echo "ArgoCD will automatically deploy this version to the production environment."
