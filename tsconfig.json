@@ -26,5 +26,5 @@
       "@types/node",
     ]
   },
-  "exclude": ["node_modules", "dist", "semantic-release-github-prerelease.js"]
+  "exclude": ["node_modules", "dist", "semantic-release-github-prerelease.js", "vitest.config.*", "**/*.test.ts", "**/*.spec.ts"]
 }
