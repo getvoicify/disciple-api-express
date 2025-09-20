@@ -4,6 +4,82 @@ import {ChurchIdInput, UserIdInput, UpdateRoleInput} from "../../schemas";
 import {handleAsync} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
+/**
+ * @openapi
+ * /churches/{churchId}/members/{userId}/role:
+ *   put:
+ *     summary: Update a member's role in the church
+ *     description: Update a member's role in the church (requires Owner role)
+ *     tags: [Churches]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: churchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Church ID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: User ID of the member whose role to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateRoleInput'
+ *           examples:
+ *             promoteToManager:
+ *               summary: Promote to manager
+ *               value:
+ *                 role: "Manager"
+ *             demoteToMember:
+ *               summary: Demote to member
+ *               value:
+ *                 role: "Member"
+ *     responses:
+ *       200:
+ *         description: Member role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     membership:
+ *                       $ref: '#/components/schemas/ChurchMember'
+ *       400:
+ *         description: Invalid request or business rule violation
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - only church owners can update roles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Church or member not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 export const churchMembershipUpdateRoleEndpoint = (service: ChurchMembershipService): EndpointHandler => async (req, res) => {
 	const actor = req.user?.[0];
 	const actorId = actor?.sub;

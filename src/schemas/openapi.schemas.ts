@@ -227,6 +227,379 @@ export const healthResponseSchema = {
     }
 };
 
+export const addressSchema = {
+    type: 'object',
+    properties: {
+        street: {
+            type: 'string',
+            description: 'Street address',
+            example: '123 Main St'
+        },
+        city: {
+            type: 'string',
+            description: 'City name',
+            example: 'Springfield'
+        },
+        state: {
+            type: 'string',
+            description: 'State or province',
+            example: 'IL'
+        },
+        zipCode: {
+            type: 'string',
+            description: 'ZIP or postal code',
+            example: '62701'
+        },
+        country: {
+            type: 'string',
+            description: 'Country name',
+            example: 'USA'
+        }
+    }
+};
+
+export const socialLinksSchema = {
+    type: 'object',
+    properties: {
+        facebook: {
+            type: 'string',
+            format: 'uri',
+            description: 'Facebook page URL',
+            example: 'https://facebook.com/church'
+        },
+        instagram: {
+            type: 'string',
+            format: 'uri',
+            description: 'Instagram page URL',
+            example: 'https://instagram.com/church'
+        },
+        twitterX: {
+            type: 'string',
+            format: 'uri',
+            description: 'Twitter/X page URL',
+            example: 'https://twitter.com/church'
+        },
+        youtube: {
+            type: 'string',
+            format: 'uri',
+            description: 'YouTube channel URL',
+            example: 'https://youtube.com/church'
+        },
+        tiktok: {
+            type: 'string',
+            format: 'uri',
+            description: 'TikTok page URL',
+            example: 'https://tiktok.com/@church'
+        },
+        other: {
+            type: 'array',
+            items: {
+                type: 'string',
+                format: 'uri'
+            },
+            description: 'Other social media URLs'
+        }
+    }
+};
+
+export const churchSchema = {
+    type: 'object',
+    required: ['id', 'slug', 'name', 'approvalStatus', 'createdBy', 'createdAt', 'updatedAt', 'version', 'visibility'],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the church'
+        },
+        slug: {
+            type: 'string',
+            description: 'URL-friendly church identifier',
+            example: 'grace-community-church'
+        },
+        name: {
+            type: 'string',
+            minLength: 2,
+            maxLength: 100,
+            description: 'Church name',
+            example: 'Grace Community Church'
+        },
+        description: {
+            type: 'string',
+            maxLength: 2000,
+            description: 'Church description',
+            nullable: true,
+            example: 'A welcoming church community'
+        },
+        logoUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Church logo URL',
+            nullable: true,
+            example: 'https://example.com/logo.png'
+        },
+        coverImageUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Church cover image URL',
+            nullable: true,
+            example: 'https://example.com/cover.jpg'
+        },
+        byline: {
+            type: 'string',
+            maxLength: 160,
+            description: 'Short church tagline',
+            nullable: true,
+            example: 'Where faith meets community'
+        },
+        missionStatement: {
+            type: 'string',
+            maxLength: 2000,
+            description: 'Church mission statement',
+            nullable: true,
+            example: 'To spread love and serve our community'
+        },
+        address: {
+            allOf: [{ $ref: '#/components/schemas/Address' }],
+            nullable: true
+        },
+        latitude: {
+            type: 'number',
+            minimum: -90,
+            maximum: 90,
+            description: 'Church location latitude',
+            nullable: true,
+            example: 39.7817
+        },
+        longitude: {
+            type: 'number',
+            minimum: -180,
+            maximum: 180,
+            description: 'Church location longitude',
+            nullable: true,
+            example: -89.6501
+        },
+        email: {
+            type: 'string',
+            format: 'email',
+            description: 'Church contact email',
+            nullable: true,
+            example: 'info@church.org'
+        },
+        phoneNumber: {
+            type: 'string',
+            description: 'Church contact phone',
+            nullable: true,
+            example: '+1-555-0123'
+        },
+        websiteUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Church website URL',
+            nullable: true,
+            example: 'https://church.org'
+        },
+        socialLinks: {
+            allOf: [{ $ref: '#/components/schemas/SocialLinks' }],
+            nullable: true
+        },
+        approvalStatus: {
+            type: 'string',
+            enum: ['Pending', 'Approved', 'Rejected'],
+            description: 'Church approval status'
+        },
+        visibility: {
+            type: 'string',
+            enum: ['Public', 'Hidden'],
+            description: 'Church visibility setting'
+        },
+        createdBy: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of user who created the church'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'When the church was created'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'When the church was last updated'
+        },
+        version: {
+            type: 'integer',
+            minimum: 1,
+            description: 'Church record version for optimistic locking'
+        }
+    }
+};
+
+export const createChurchInputSchema = {
+    type: 'object',
+    required: ['name'],
+    properties: {
+        name: {
+            type: 'string',
+            minLength: 2,
+            maxLength: 100,
+            description: 'Church name',
+            example: 'Grace Community Church'
+        },
+        description: {
+            type: 'string',
+            maxLength: 2000,
+            description: 'Church description',
+            example: 'A welcoming church community'
+        },
+        logoUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Church logo URL',
+            example: 'https://example.com/logo.png'
+        },
+        coverImageUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Church cover image URL',
+            example: 'https://example.com/cover.jpg'
+        },
+        byline: {
+            type: 'string',
+            maxLength: 160,
+            description: 'Short church tagline',
+            example: 'Where faith meets community'
+        },
+        missionStatement: {
+            type: 'string',
+            maxLength: 2000,
+            description: 'Church mission statement',
+            example: 'To spread love and serve our community'
+        },
+        address: {
+            $ref: '#/components/schemas/Address'
+        },
+        latitude: {
+            type: 'number',
+            minimum: -90,
+            maximum: 90,
+            description: 'Church location latitude',
+            example: 39.7817
+        },
+        longitude: {
+            type: 'number',
+            minimum: -180,
+            maximum: 180,
+            description: 'Church location longitude',
+            example: -89.6501
+        },
+        email: {
+            type: 'string',
+            format: 'email',
+            description: 'Church contact email',
+            example: 'info@church.org'
+        },
+        phoneNumber: {
+            type: 'string',
+            description: 'Church contact phone',
+            example: '+1-555-0123'
+        },
+        websiteUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Church website URL',
+            example: 'https://church.org'
+        },
+        socialLinks: {
+            $ref: '#/components/schemas/SocialLinks'
+        }
+    }
+};
+
+export const churchMemberSchema = {
+    type: 'object',
+    required: ['id', 'churchId', 'userId', 'role', 'status', 'joinedAt', 'updatedAt'],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the membership'
+        },
+        churchId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Church ID'
+        },
+        userId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'User ID'
+        },
+        role: {
+            type: 'string',
+            enum: ['Owner', 'Manager', 'Member'],
+            description: 'Member role in the church'
+        },
+        status: {
+            type: 'string',
+            enum: ['Active', 'Invited', 'Removed', 'Banned'],
+            description: 'Member status'
+        },
+        joinedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'When the member joined'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'When the membership was last updated'
+        },
+        invitedBy: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of user who sent the invitation',
+            nullable: true
+        },
+        invitedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'When the invitation was sent',
+            nullable: true
+        }
+    }
+};
+
+export const invitationInputSchema = {
+    type: 'object',
+    required: ['userId'],
+    properties: {
+        userId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of user to invite'
+        },
+        role: {
+            type: 'string',
+            enum: ['Manager', 'Member'],
+            default: 'Member',
+            description: 'Role to assign to the invited user'
+        }
+    }
+};
+
+export const updateRoleInputSchema = {
+    type: 'object',
+    required: ['role'],
+    properties: {
+        role: {
+            type: 'string',
+            enum: ['Owner', 'Manager', 'Member'],
+            description: 'New role for the member'
+        }
+    }
+};
+
 // Export all schemas as a combined object for easy import
 export const openApiSchemas = {
     ScriptureReference: scriptureReferenceSchema,
@@ -235,5 +608,12 @@ export const openApiSchemas = {
     UpdateNoteInput: updateNoteInputSchema,
     SuccessResponse: successResponseSchema,
     ErrorResponse: errorResponseSchema,
-    HealthResponse: healthResponseSchema
+    HealthResponse: healthResponseSchema,
+    Address: addressSchema,
+    SocialLinks: socialLinksSchema,
+    Church: churchSchema,
+    CreateChurchInput: createChurchInputSchema,
+    ChurchMember: churchMemberSchema,
+    InvitationInput: invitationInputSchema,
+    UpdateRoleInput: updateRoleInputSchema
 };

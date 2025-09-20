@@ -4,6 +4,58 @@ import {ChurchIdInput, UserIdInput} from "../../schemas";
 import {handleAsync} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
+/**
+ * @openapi
+ * /churches/{churchId}/members/{userId}/ban:
+ *   post:
+ *     summary: Ban a member from the church
+ *     description: Ban a member from the church (requires Owner or Manager role)
+ *     tags: [Churches]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: churchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Church ID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: User ID of the member to ban
+ *     responses:
+ *       204:
+ *         description: Member banned successfully
+ *       400:
+ *         description: Invalid request or business rule violation
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Church or member not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 export const churchMembershipBanEndpoint = (service: ChurchMembershipService): EndpointHandler => async (req, res) => {
 	const actor = req.user?.[0];
 	const actorId = actor?.sub;
