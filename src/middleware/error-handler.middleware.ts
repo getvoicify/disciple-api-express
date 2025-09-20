@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { isAppError, AppError, ValidationError } from '../utils/errors';
+import { isAppError, AppError, ValidationError, NotFoundError } from '../utils/errors';
 import errorCodeFactory from '../utils/error-code.factory';
 
 interface ErrorResponse {
@@ -63,7 +63,7 @@ export const errorHandler = (
     statusCode = 400;
     const errors: Record<string, string[]> = {};
 
-    err.errors.forEach((error) => {
+    (err as any).errors.forEach((error: any) => {
       const path = error.path.join('.');
       if (!errors[path]) {
         errors[path] = [];
@@ -128,9 +128,8 @@ export const notFoundHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  const error = new AppError(
-    `Route ${req.originalUrl} not found`,
-    404
+  const error = new NotFoundError(
+    `Route ${req.originalUrl}`
   );
   next(error);
 };
@@ -154,7 +153,7 @@ export const asyncHandler = <T extends Request = Request>(
 export const formatValidationErrors = (errors: ZodError): Record<string, string[]> => {
   const formatted: Record<string, string[]> = {};
 
-  errors.errors.forEach((error) => {
+  (errors as any).errors.forEach((error: any) => {
     const path = error.path.join('.');
     if (!formatted[path]) {
       formatted[path] = [];

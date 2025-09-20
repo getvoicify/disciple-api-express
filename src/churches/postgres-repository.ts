@@ -86,7 +86,7 @@ export class PostgresChurchRepository implements IChurchRepository {
       const setClause = Object.keys(updateFields)
         .map((key, index) => `${key} = $${index + 1}`)
         .join(', ');
-      const values = Object.values(updateFields);
+      const values: any[] = Object.values(updateFields);
       values.push(id, version);
 
       const result = await tx.unsafe(
@@ -350,7 +350,7 @@ export class PostgresChurchMemberRepository implements IChurchMemberRepository {
     const setClause = Object.keys(updateFields)
       .map((key, index) => `${key} = $${index + 1}`)
       .join(', ');
-    const values = Object.values(updateFields);
+    const values: any[] = Object.values(updateFields);
     values.push(id);
 
     const result = await this.db.unsafe(

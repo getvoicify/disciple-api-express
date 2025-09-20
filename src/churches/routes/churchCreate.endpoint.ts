@@ -77,7 +77,7 @@ import {handleAsync} from "../../utils/handle-async";
  */
 export const churchCreateEndpoint = (service: ChurchService): EndpointHandler => async (req, res) => {
 	const churchToCreate = CreateChurchInput.parse(req.body);
-	const user = req['user']?.[0] as unknown as User;
+	const user = req['user']?.[0] as any;
 
 	if (!user) {
 		res.status(401).json({

@@ -83,7 +83,7 @@ import errorCodeFactory from "../../../utils/error-code.factory";
 export const churchApproveEndpoint = (service: ChurchApprovalService): EndpointHandler => async (req, res) => {
 	const { churchId } = ChurchIdInput.parse(req.params);
 	const input = ApprovalInput.optional().parse(req.body) ?? {};
-	const user = req['user']?.[0] as unknown as User;
+	const user = req['user']?.[0] as any;
 	const approverId = user?.sub;
 
 	const [err, church] = await handleAsync(service.approveChurch(churchId, input, approverId));
