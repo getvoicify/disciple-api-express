@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/getvoicify/disciple-api-express/compare/v1.7.1...v1.7.2) (2025-09-20)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** remove 'v' prefix from production image tag in deploy workflow ([934910b](https://github.com/getvoicify/disciple-api-express/commit/934910b7e9285742645c98d95ab03288507ea68f))
+
 ## [1.7.1](https://github.com/getvoicify/disciple-api-express/compare/v1.7.0...v1.7.1) (2025-09-20)
 
 
