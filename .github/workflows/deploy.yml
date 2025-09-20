@@ -36,27 +36,16 @@ jobs:
           git commit -m "deploy: update production to ${{ github.event.release.tag_name }} [skip ci]" || exit 0
           git push origin main
 
-      - name: Comment on release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = `🎉 **Production Deployment Triggered**
-
-            **Version**: \`${{ github.event.release.tag_name }}\`
-            **Environment**: Production
-            **Image**: \`ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}\`
-            **Namespace**: \`disciple-api-production\`
-
-            ArgoCD will automatically deploy this version to the production environment.
-
-            **Production URL**: https://disciple-api.example.com
-            **ArgoCD Application**: \`disciple-api-production\`
-
-            🚀 Release is now live in production!`;
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ github.event.release.id }},
-              body: body
-            });
+      - name: Log production deployment
+        run: |
+          echo "🎉 Production Deployment Triggered"
+          echo "Version: ${{ github.event.release.tag_name }}"
+          echo "Environment: Production"
+          echo "Image: ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}"
+          echo "Namespace: disciple-api-production"
+          echo ""
+          echo "ArgoCD will automatically deploy this version to the production environment."
+          echo "Production URL: https://disciple-api.example.com"
+          echo "ArgoCD Application: disciple-api-production"
+          echo ""
+          echo "🚀 Release is now live in production!"
