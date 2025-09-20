@@ -48,6 +48,10 @@ const swaggerOptions: swaggerJsdoc.Options = {
                 description: 'Operations related to sermon notes and scripture references'
             },
             {
+                name: 'Churches',
+                description: 'Operations related to church management and membership'
+            },
+            {
                 name: 'Health',
                 description: 'Health check and system status endpoints'
             }

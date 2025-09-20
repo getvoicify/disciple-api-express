@@ -6,6 +6,12 @@ import {notesRouter} from "./notes/routes/routes";
 import {PostgresNoteRepository} from "./notes/pg-repository";
 import {NoteServiceImpl} from "./notes/service";
 import { swaggerSpec } from './config/swagger.config';
+import {PostgresChurchMemberRepository, PostgresChurchRepository} from "./churches/postgres-repository";
+import {ChurchServiceImpl} from "./churches/service";
+import {ChurchMembershipServiceImpl} from "./churches/membership-service";
+import {ChurchApprovalServiceImpl} from "./churches/approval-service";
+import {churchesRouter} from "./churches/routes/routes";
+import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 
 dotenv.config();
 
@@ -21,6 +27,13 @@ const {
 const db = getRawDb({DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT});
 const notesPgRepo = new PostgresNoteRepository(db);
 const noteService = new NoteServiceImpl(notesPgRepo);
+
+const churchRepository = new PostgresChurchRepository(db);
+const churchMemberRepository = new PostgresChurchMemberRepository(db);
+
+const churchService = new ChurchServiceImpl(churchRepository);
+const churchMemberService = new ChurchMembershipServiceImpl(churchRepository, churchMemberRepository);
+const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
 
 const app = express();
 app.use(express.json());
@@ -89,8 +102,11 @@ app.get('/api/health', async (req, res) => {
     });
 });
 
+app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService));
 app.use('/api/notes', notesRouter(noteService));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
