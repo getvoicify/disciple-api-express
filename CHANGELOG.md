@@ -1,3 +1,10 @@
+## [1.7.0](https://github.com/getvoicify/disciple-api-express/compare/v1.6.0...v1.7.0) (2025-09-20)
+
+
+### ✨ Features
+
+* church management ([#6](https://github.com/getvoicify/disciple-api-express/issues/6)) ([495add2](https://github.com/getvoicify/disciple-api-express/commit/495add20be88f85ce0d2503ed2d3d100b984b5e3))
+
 ## [1.6.0](https://github.com/getvoicify/disciple-api-express/compare/v1.5.0...v1.6.0) (2025-09-18)
 
 
