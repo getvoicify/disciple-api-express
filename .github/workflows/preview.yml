@@ -62,7 +62,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=pr-${{ github.event.number }}-{{sha}},enable=true
+            type=raw,value=pr-${{ github.event.number }}-${{ github.event.pull_request.head.sha }},enable=true
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
