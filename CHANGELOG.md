@@ -1,3 +1,15 @@
+## [1.8.0](https://github.com/getvoicify/disciple-api-express/compare/v1.7.2...v1.8.0) (2025-09-20)
+
+
+### ✨ Features
+
+* add unit tests framework ([#7](https://github.com/getvoicify/disciple-api-express/issues/7)) ([6508e41](https://github.com/getvoicify/disciple-api-express/commit/6508e413d4f9968de8fd067e8d4a5194c30e6c85))
+
+
+### 🔧 Chores
+
+* **argocd:** update secret reference for preview environment in `applicationset.yaml` ([f955ffe](https://github.com/getvoicify/disciple-api-express/commit/f955ffe5a779e5f8fcf86142413885a64c315084))
+
 ## [1.7.2](https://github.com/getvoicify/disciple-api-express/compare/v1.7.1...v1.7.2) (2025-09-20)
 
 
