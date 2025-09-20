@@ -34,8 +34,8 @@ jobs:
       - name: Run linting
         run: npm run lint --if-present
 
-#      - name: Run tests
-#        run: npm test --if-present
+      - name: Run tests
+        run: npm test --if-present
 
       - name: Build TypeScript
         run: npm run build
@@ -54,7 +54,6 @@ jobs:
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
       new_release_version: ${{ steps.semantic.outputs.new_release_version }}
-      is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
