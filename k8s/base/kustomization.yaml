@@ -11,6 +11,9 @@ resources:
 - deployment.yaml
 - service.yaml
 - ingress.yaml
+- cnpg-secret.yaml
+- cnpg-cluster.yaml
+- db-migration-job.yaml
 
 commonLabels:
   app.kubernetes.io/name: disciple-api

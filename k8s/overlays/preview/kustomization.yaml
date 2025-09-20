@@ -4,7 +4,14 @@ kind: Kustomization
 namespace: disciple-api-preview
 
 resources:
-- ../../base
+- ../../base/namespace.yaml
+- ../../base/configmap.yaml
+- ../../base/sealedsecret.yaml
+- ../../base/image-pull-sealed.yaml
+- ../../base/deployment.yaml
+- ../../base/service.yaml
+- ../../base/ingress.yaml
+# CNPG resources and migration job are excluded - managed by ApplicationSet patches
 
 commonLabels:
   app.kubernetes.io/environment: preview
