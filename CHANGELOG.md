@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/getvoicify/disciple-api-express/compare/v1.7.0...v1.7.1) (2025-09-20)
+
+
+### ♻️ Code Refactoring
+
+* **ci:** replace release comment with deployment logs in workflow ([d85d9b5](https://github.com/getvoicify/disciple-api-express/commit/d85d9b5332b3d5d988f16cedd2a7defad1a60925))
+
 ## [1.7.0](https://github.com/getvoicify/disciple-api-express/compare/v1.6.0...v1.7.0) (2025-09-20)
 
 
