@@ -1,5 +1,5 @@
-import {mergeMap, catchError, tap, of, interval, from, EMPTY} from 'rxjs';
-import {OutboxSingleton, processOutboxEvents} from '../outbox-singleton';
+import {catchError, EMPTY, from, mergeMap, of, tap} from 'rxjs';
+import {processOutboxEvents} from '../outbox-singleton';
 
 /**
  * Worker that processes outbox events every minute
