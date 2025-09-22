@@ -72,6 +72,42 @@ spec:
         volumeMounts:
         - name: tmp
           mountPath: /tmp
+      - name: worker
+        image: ghcr.io/getvoicify/disciple-api-express:latest
+        command: ["node", "dist/worker.js"]
+        envFrom:
+        - configMapRef:
+            name: disciple-api-config
+        - secretRef:
+            name: disciple-api-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep -v grep | grep 'node dist/worker.js' || exit 1"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
       volumes:
       - name: tmp
         emptyDir: {}

@@ -71,6 +71,40 @@ services:
     networks:
       - disciple_network
 
+  # Worker service
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: disciple_worker
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-disciple}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-disciple_db}
+      REDIS_URL: redis://default:${REDIS_PASSWORD:-changeme}@redis:6379
+      DB_HOST: postgres
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-disciple}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-disciple_db}
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      IAM_ENDPOINT: ${IAM_ENDPOINT}
+      IAM_REALM: ${IAM_REALM}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - disciple_network
+
   # Development service (optional - for development with hot reload)
   app-dev:
     build:
@@ -101,6 +135,43 @@ services:
       - ./src:/app/src
       - ./migrations:/app/migrations
       - ./tsconfig.json:/app/tsconfig.json
+    networks:
+      - disciple_network
+    profiles:
+      - dev
+
+  # Worker development service (for development with hot reload)
+  worker-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: disciple_worker_dev
+    restart: unless-stopped
+    command: ["npm", "run", "dev:worker"]
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-disciple}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-disciple_db}
+      REDIS_URL: redis://default:${REDIS_PASSWORD:-changeme}@redis:6379
+      DB_HOST: postgres
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-disciple}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-disciple_db}
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      IAM_ENDPOINT: ${IAM_ENDPOINT}
+      IAM_REALM: ${IAM_REALM}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./logs:/app/logs
     networks:
       - disciple_network
     profiles:
