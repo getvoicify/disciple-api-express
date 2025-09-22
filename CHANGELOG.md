@@ -1,3 +1,10 @@
+## [1.9.0](https://github.com/getvoicify/disciple-api-express/compare/v1.8.0...v1.9.0) (2025-09-22)
+
+
+### ✨ Features
+
+* **users:** add `getUserMemberships` endpoint and API route ([#9](https://github.com/getvoicify/disciple-api-express/issues/9)) ([efc1cf6](https://github.com/getvoicify/disciple-api-express/commit/efc1cf692f872f698f11a6ae1f15ecfa9defe97b))
+
 ## [1.8.0](https://github.com/getvoicify/disciple-api-express/compare/v1.7.2...v1.8.0) (2025-09-20)
 
 
