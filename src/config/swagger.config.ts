@@ -17,24 +17,34 @@ const swaggerOptions: swaggerJsdoc.Options = {
                 url: 'https://opensource.org/licenses/MIT'
             }
         },
-        servers: [
-            {
-                url: `http://localhost:3001/api`,
-                description: 'Local development server',
-            },
-            ...(process.env.PR_NUMBER ? [{
-                url: `https://pr-${process.env.PR_NUMBER}.preview.infra.api.pottersville.church/api`,
-                description: `Preview server (PR #${process.env.PR_NUMBER})`,
-            }] : []),
-            {
-                url: `https://staging.infra.api.pottersville.church/api`,
-                description: 'Staging server',
-            },
-            {
-                url: 'https://infra.api.pottersville.church/api',
-                description: 'Production server',
+        servers: (() => {
+            // Show only the relevant server for the current environment
+            if (process.env.PR_NUMBER) {
+                // Preview environment
+                return [{
+                    url: `https://pr-${process.env.PR_NUMBER}.preview.infra.api.pottersville.church/api`,
+                    description: `Preview server (PR #${process.env.PR_NUMBER})`,
+                }];
+            } else if (process.env.NODE_ENV === 'production') {
+                // Production environment
+                return [{
+                    url: 'https://infra.api.pottersville.church/api',
+                    description: 'Production server',
+                }];
+            } else if (process.env.NODE_ENV === 'staging') {
+                // Staging environment
+                return [{
+                    url: 'https://staging.infra.api.pottersville.church/api',
+                    description: 'Staging server',
+                }];
+            } else {
+                // Local development (default)
+                return [{
+                    url: `http://localhost:${process.env.PORT || 3001}/api`,
+                    description: 'Local development server',
+                }];
             }
-        ],
+        })(),
         components: {
             securitySchemes: {
                 bearerAuth: {
