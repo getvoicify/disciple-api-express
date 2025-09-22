@@ -1,11 +1,11 @@
-import { createOutbox, Outbox } from '../outbox';
-import { PostgresOutboxStore } from '../outbox/postgres-store';
-import { KeycloakOutboxPublisher } from '../keycloak/outbox.publisher';
-import { KeycloakOutboxEvent } from '../keycloak/generalized-outbox.adapter';
-import { getRawDb } from '../utils/database';
-import { KeycloakResourceManager } from '../keycloak/resource-manager';
-import { KeycloakAdminClient } from '../keycloak/admin-client';
+import {createOutbox, Outbox} from '../outbox';
+import {PostgresOutboxStore} from '../outbox/postgres-store';
+import {KeycloakOutboxPublisher} from '../keycloak/outbox.publisher';
+import {KeycloakOutboxEvent} from '../keycloak/generalized-outbox.adapter';
+import {getRawDb} from '../utils/database';
+import {KeycloakResourceManagerImpl} from '../keycloak/resource-manager';
 import dotenv from 'dotenv';
+import {KeycloakAdminClientImpl} from "../keycloak/admin-client.ts";
 
 dotenv.config();
 
@@ -75,7 +75,7 @@ export class OutboxSingleton {
 			const store = new PostgresOutboxStore<KeycloakOutboxEvent>(db);
 
 			// Initialize Keycloak admin client
-			const keycloakAdmin = new KeycloakAdminClient({
+			const keycloakAdmin = new KeycloakAdminClientImpl({
 				keycloakUrl: KEYCLOAK_URL,
 				realm: KEYCLOAK_REALM,
 				clientId: KEYCLOAK_CLIENT_ID,
@@ -83,7 +83,7 @@ export class OutboxSingleton {
 			});
 
 			// Create Keycloak resource manager
-			const resourceManager = new KeycloakResourceManager(keycloakAdmin);
+			const resourceManager = new KeycloakResourceManagerImpl(keycloakAdmin);
 
 			// Create the Outbox publisher (Keycloak)
 			const publisher = new KeycloakOutboxPublisher(resourceManager);

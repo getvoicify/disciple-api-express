@@ -1,9 +1,9 @@
-import {merge, Observable, Subject, takeUntil, catchError, of, EMPTY, from} from "rxjs";
+import {catchError, EMPTY, from, merge, Observable, Subject, takeUntil} from "rxjs";
 import {mergeMap, tap} from "rxjs/operators";
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import {glob} from 'glob';
-import { OutboxSingleton } from './workers/outbox-singleton';
+import {OutboxSingleton} from './workers/outbox-singleton';
 
 interface TickerEvent {
 	tab: string;
