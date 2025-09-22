@@ -56,6 +56,14 @@ const swaggerOptions: swaggerJsdoc.Options = {
                 description: 'Operations related to church management and membership'
             },
             {
+                name: 'Users',
+                description: 'Operations related to user accounts and user-specific data'
+            },
+            {
+                name: 'Church Membership',
+                description: 'Operations related to church membership management'
+            },
+            {
                 name: 'Health',
                 description: 'Health check and system status endpoints'
             }
