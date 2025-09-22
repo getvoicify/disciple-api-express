@@ -1,4 +1,4 @@
-import { getOutbox } from './outbox-singleton';
+import { getOutbox, OutboxSingleton } from './outbox-singleton';
 import { KeycloakAdapterFactory } from '../keycloak/resource-adapters';
 import { Note } from '../notes/schemas';
 
@@ -68,6 +68,7 @@ export class OutboxUsageExample {
 			id: 'note_abc',
 			title: 'Sunday Service Notes',
 			content: 'Today\'s sermon was about...',
+			date: new Date(),
 			scriptureReferences: [],
 			createdAt: new Date(),
 			updatedAt: new Date()
@@ -150,7 +151,14 @@ export class OutboxUsageExample {
 				id: 'note_xyz',
 				title: 'Bible Study Notes',
 				content: 'Key points from today\'s study...',
-				scriptureReferences: ['John 3:16'],
+				date: new Date(),
+				scriptureReferences: [
+					{
+						book: 'John',
+						chapter: 3,
+						verse: 16
+					}
+				],
 				createdAt: new Date(),
 				updatedAt: new Date()
 			},
