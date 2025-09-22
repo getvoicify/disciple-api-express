@@ -5,7 +5,7 @@ import {KeycloakOutboxEvent} from '../keycloak/generalized-outbox.adapter';
 import {getRawDb} from '../utils/database';
 import {KeycloakResourceManagerImpl} from '../keycloak/resource-manager';
 import dotenv from 'dotenv';
-import {KeycloakAdminClientImpl} from "../keycloak/admin-client.ts";
+import {KeycloakAdminClientImpl} from "../keycloak/admin-client";
 
 dotenv.config();
 

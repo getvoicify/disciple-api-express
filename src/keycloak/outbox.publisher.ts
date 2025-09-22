@@ -1,5 +1,5 @@
 import {OutboxEvent, OutboxPublisher} from "../outbox";
-import {KeycloakResourceManager} from "./resource-manager.ts";
+import {KeycloakResourceManager} from "./resource-manager";
 import {
 	KEYCLOAK_EVENTS,
 	type KeycloakOutboxEvent,
@@ -8,7 +8,7 @@ import {
 	type KeycloakPermissionRevokePayload,
 	type KeycloakResourceCreatePayload,
 	type KeycloakResourceDeletePayload
-} from "./generalized-outbox.adapter.ts";
+} from "./generalized-outbox.adapter";
 
 /**
  * Publisher that processes Keycloak synchronization events from the outbox

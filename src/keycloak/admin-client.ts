@@ -2,7 +2,7 @@ import type {
 	KeycloakAdminClient,
 	KeycloakResource
 } from './resource-manager';
-import {handleAsync} from "../utils/handle-async.ts";
+import {handleAsync} from "../utils/handle-async";
 
 export interface KeycloakAdminConfig {
 	keycloakUrl: string;
