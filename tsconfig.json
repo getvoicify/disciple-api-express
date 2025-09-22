@@ -8,6 +8,8 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     /* Strictness */
     "noImplicitAny": false,
     "noImplicitThis": true,

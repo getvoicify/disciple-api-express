@@ -34,8 +34,10 @@
   "dependencies": {
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "glob": "^11.0.3",
     "jose": "^6.1.0",
     "postgres": "^3.4.7",
+    "rxjs": "^7.8.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-dist": "^5.29.0",
     "swagger-ui-express": "^5.0.1",
