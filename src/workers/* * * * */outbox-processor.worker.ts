@@ -1,12 +1,11 @@
-import { interval, from, EMPTY } from 'rxjs';
-import { mergeMap, catchError, tap } from 'rxjs/operators';
-import { OutboxSingleton, processOutboxEvents } from '../outbox-singleton';
+import {mergeMap, catchError, tap, of, interval, from, EMPTY} from 'rxjs';
+import {OutboxSingleton, processOutboxEvents} from '../outbox-singleton';
 
 /**
  * Worker that processes outbox events every minute
  * This ensures that any pending Keycloak synchronization events are processed
  */
-const outboxProcessorWorker$ = interval(0).pipe(
+const outboxProcessorWorker$ = of({}).pipe(
 	tap(() => console.log('[OutboxProcessor] Starting outbox processing...')),
 	mergeMap(() =>
 		from(processOutboxEvents(10)).pipe(
