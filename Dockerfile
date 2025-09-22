@@ -19,7 +19,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
 RUN touch .build_trigger
-RUN npm run build
+RUN npm run build && ls -la dist/ && echo "Build successful - dist directory contains:" && ls dist/
 
 # Stage 3: Production
 FROM node:20-alpine AS runner
