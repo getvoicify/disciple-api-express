@@ -13,6 +13,9 @@ import {ChurchApprovalServiceImpl} from "./churches/approval-service";
 import {churchesRouter} from "./churches/routes/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
+import {GeneralizedKeycloakOutboxAdapter, SpecializedKeycloakAdapter} from "./keycloak/generalized-outbox.adapter";
+import {setupKeycloakAdapter} from "./keycloak/setup";
+import {KeycloakAdminConfig} from "./keycloak/admin-client";
 
 dotenv.config();
 
@@ -26,7 +29,16 @@ const {
 } = process.env;
 
 const db = getRawDb({DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT});
-const notesPgRepo = new PostgresNoteRepository(db);
+
+const keycloakConfig = {
+    realm: process.env.KEYCLOAK_REALM,
+    keycloakUrl: process.env.KEYCLOAK_URL,
+    clientId: process.env.KEYCLOAK_CLIENT_ID,
+    clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
+} satisfies KeycloakAdminConfig;
+
+const keycloakAdapter = setupKeycloakAdapter(db, keycloakConfig);
+const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
 const noteService = new NoteServiceImpl(notesPgRepo);
 
 const churchRepository = new PostgresChurchRepository(db);
