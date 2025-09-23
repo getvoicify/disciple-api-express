@@ -127,6 +127,7 @@ app.listen(PORT, () => {
 });
 
 const interval = setInterval(async () => {
+	console.log('Processing due events...', new Date().toISOString());
 	await safeExecute(outbox.processDue());
 }, 1000 * 60);
 
