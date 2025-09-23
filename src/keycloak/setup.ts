@@ -29,5 +29,5 @@ export function setupKeycloakAdapter(
 		}
 	});
 
-	return new GeneralizedKeycloakOutboxAdapter(outbox);
+	return {adapter: new GeneralizedKeycloakOutboxAdapter(outbox), outbox};
 }

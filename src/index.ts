@@ -5,7 +5,7 @@ import {getRawDb} from "./utils/database";
 import {notesRouter} from "./notes/routes/routes";
 import {PostgresNoteRepository} from "./notes/pg-repository";
 import {NoteServiceImpl} from "./notes/service";
-import { swaggerSpec } from './config/swagger.config';
+import {swaggerSpec} from './config/swagger.config';
 import {PostgresChurchMemberRepository, PostgresChurchRepository} from "./churches/postgres-repository";
 import {ChurchServiceImpl} from "./churches/service";
 import {ChurchMembershipServiceImpl} from "./churches/membership-service";
@@ -13,9 +13,9 @@ import {ChurchApprovalServiceImpl} from "./churches/approval-service";
 import {churchesRouter} from "./churches/routes/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
-import {GeneralizedKeycloakOutboxAdapter, SpecializedKeycloakAdapter} from "./keycloak/generalized-outbox.adapter";
 import {setupKeycloakAdapter} from "./keycloak/setup";
 import {KeycloakAdminConfig} from "./keycloak/admin-client";
+import {safeExecute} from "./utils/handle-async";
 
 dotenv.config();
 
@@ -37,7 +37,7 @@ const keycloakConfig = {
     clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
 } satisfies KeycloakAdminConfig;
 
-const keycloakAdapter = setupKeycloakAdapter(db, keycloakConfig);
+const {adapter: keycloakAdapter, outbox} = setupKeycloakAdapter(db, keycloakConfig);
 const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
 const noteService = new NoteServiceImpl(notesPgRepo);
 
@@ -125,3 +125,14 @@ app.use(errorHandler);
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+const interval = setInterval(async () => {
+	await safeExecute(outbox.processDue());
+}, 1000 * 60);
+
+const clearIntervalFn = () => {
+	clearInterval(interval);
+}
+
+process.on('SIGINT', clearIntervalFn);
+process.on('SIGTERM', clearIntervalFn);
