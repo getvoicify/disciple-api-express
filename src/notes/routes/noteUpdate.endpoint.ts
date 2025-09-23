@@ -2,7 +2,7 @@ import type {NoteService} from "../service";
 import express from "express";
 import {UpdateNoteInput} from "../schemas";
 import {z} from "zod";
-import {handleAsync} from "../../utils/handle-async";
+import {safeExecute} from "../../utils/handle-async";
 
 export const NoteUpdateParamsInput = z.object({
     noteId: z.uuid(),
@@ -83,7 +83,7 @@ export const noteUpdateEndpoint = (service: NoteService) =>
         const {noteId} = NoteUpdateParamsInput.parse(req.params);
         const updateData = UpdateNoteInput.parse(req.body);
 
-        const [err, note] = await handleAsync(service.updateNote(noteId, updateData));
+        const [err, note] = await safeExecute(service.updateNote(noteId, updateData));
 
         if (err) {
             const code = err.message === 'Note not found' ? 404 : 400;

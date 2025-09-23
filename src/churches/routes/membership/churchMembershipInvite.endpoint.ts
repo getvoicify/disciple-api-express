@@ -1,7 +1,7 @@
 import {ChurchMembershipService} from "../../membership-service";
 import {ChurchIdInput, InvitationInput} from "../../schemas";
 import {EndpointHandler} from "../../../types/endpoint-handler";
-import {handleAsync} from "../../../utils/handle-async";
+import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
@@ -80,7 +80,7 @@ export const churchMembershipInviteEndpoint = (service: ChurchMembershipService)
 	const invitationInput = InvitationInput.parse(req.body);
 	const inviterId = req.user?.[0]?.sub;
 
-	const [err, membership] = await handleAsync(service.inviteUser(churchId, invitationInput, inviterId));
+	const [err, membership] = await safeExecute(service.inviteUser(churchId, invitationInput, inviterId));
 
 	if (err) {
 		const code = errorCodeFactory(err);

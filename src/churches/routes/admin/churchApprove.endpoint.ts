@@ -2,7 +2,7 @@ import {ChurchApprovalService} from "../../approval-service";
 import {EndpointHandler} from "../../../types/endpoint-handler";
 import {ApprovalInput, ChurchIdInput} from "../../schemas";
 import {User} from "../../../utils/validate-token.middleware";
-import {handleAsync} from "../../../utils/handle-async";
+import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
@@ -86,7 +86,7 @@ export const churchApproveEndpoint = (service: ChurchApprovalService): EndpointH
 	const user = req['user']?.[0] as any;
 	const approverId = user?.sub;
 
-	const [err, church] = await handleAsync(service.approveChurch(churchId, input, approverId));
+	const [err, church] = await safeExecute(service.approveChurch(churchId, input, approverId));
 
 	if (err) {
 		const code = errorCodeFactory(err);

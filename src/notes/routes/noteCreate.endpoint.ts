@@ -1,7 +1,7 @@
 import type {NoteService} from "../service";
 import express from "express";
 import {CreateNoteInput} from "../schemas";
-import {handleAsync} from "../../utils/handle-async";
+import {safeExecute} from "../../utils/handle-async";
 
 /**
  * @openapi
@@ -61,7 +61,7 @@ import {handleAsync} from "../../utils/handle-async";
 export const noteCreateEndpoint = (service: NoteService) =>
     async (req: express.Request, res: express.Response) => {
         const noteToCreate = CreateNoteInput.parse(req.body);
-        const [err, note] = await handleAsync(service.createNote(noteToCreate, ''));
+        const [err, note] = await safeExecute(service.createNote(noteToCreate, ''));
 
         if (err) {
             res.status(400).json({

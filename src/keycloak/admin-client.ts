@@ -2,7 +2,7 @@ import type {
 	KeycloakAdminClient,
 	KeycloakResource
 } from './resource-manager';
-import {handleAsync} from "../utils/handle-async";
+import {safeExecute} from "../utils/handle-async";
 
 export interface KeycloakAdminConfig {
 	keycloakUrl: string;
@@ -225,7 +225,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			throw new Error(`Failed to get user permissions: ${response.statusText}`);
 		}
 
-		const [, permissions] = await handleAsync<Permission[]>(response.json() as Promise<Permission[]>);
+		const [, permissions] = await safeExecute<Permission[]>(response.json() as Promise<Permission[]>);
 
 		return permissions
 			.filter(p =>
@@ -265,7 +265,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			throw new Error(`Failed to obtain admin token: ${response.statusText}`);
 		}
 
-		const [, tokenResponse] = await handleAsync<KeycloakTokenResponse>(response.json() as Promise<KeycloakTokenResponse>);
+		const [, tokenResponse] = await safeExecute<KeycloakTokenResponse>(response.json() as Promise<KeycloakTokenResponse>);
 		this.accessToken = tokenResponse.access_token;
 		this.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000) - 30000; // 30s buffer
 	}

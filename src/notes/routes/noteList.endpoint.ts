@@ -2,7 +2,7 @@ import express from 'express';
 import {z} from "zod";
 import type {NoteService} from "../service";
 import {NoteFilters} from "../schemas";
-import {handleAsync} from "../../utils/handle-async";
+import {safeExecute} from "../../utils/handle-async";
 
 export const InputSchema = z.object({
     title: z.string().optional().nullable(),
@@ -127,7 +127,7 @@ export const noteListEndpoint = (service: NoteService) =>
             }
         }
 
-        const [err, notes] = await handleAsync(service.listNotes(filters));
+        const [err, notes] = await safeExecute(service.listNotes(filters));
 
         if (err) {
             console.log(err);

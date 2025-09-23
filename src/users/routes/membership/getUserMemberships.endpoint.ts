@@ -1,6 +1,6 @@
 import {ChurchMembershipService} from "../../../churches/membership-service";
 import {EndpointHandler} from "../../../types/endpoint-handler";
-import {handleAsync} from "../../../utils/handle-async";
+import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
@@ -82,7 +82,7 @@ export const getUserMembershipsEndpoint = (service: ChurchMembershipService): En
 	const user = req.user?.[0];
 	const userId = user?.sub;
 
-	const [ err, memberships ] = await handleAsync(service.getUserMemberships(userId));
+	const [ err, memberships ] = await safeExecute(service.getUserMemberships(userId));
 
 	if (err) {
 		const code = errorCodeFactory(err);

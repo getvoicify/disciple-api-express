@@ -1,7 +1,7 @@
 import {ChurchMembershipService} from "../../membership-service";
 import {EndpointHandler} from "../../../types/endpoint-handler";
 import {ChurchIdInput} from "../../schemas";
-import {handleAsync} from "../../../utils/handle-async";
+import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
@@ -48,7 +48,7 @@ export const churchMembershipDeclineInviteEndpoint = (service: ChurchMembershipS
 	const userId = user?.sub;
 	const { churchId } = ChurchIdInput.parse(req.params);
 
-	const [err] = await handleAsync(service.declineInvitation(churchId, userId));
+	const [err] = await safeExecute(service.declineInvitation(churchId, userId));
 
 	if (err) {
 		const code = errorCodeFactory(err);

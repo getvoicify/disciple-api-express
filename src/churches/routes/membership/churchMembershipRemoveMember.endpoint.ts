@@ -1,7 +1,7 @@
 import {ChurchMembershipService} from "../../membership-service";
 import {EndpointHandler} from "../../../types/endpoint-handler";
 import {ChurchIdInput, UserIdInput} from "../../schemas";
-import {handleAsync} from "../../../utils/handle-async";
+import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
@@ -62,7 +62,7 @@ export const churchMembershipRemoveMemberEndpoint = (service: ChurchMembershipSe
 	const { churchId } = ChurchIdInput.parse(req.params);
 	const { userId: targetUserId } = UserIdInput.parse(req.params);
 
-	const [err] = await handleAsync(service.removeMember(churchId, targetUserId, actorId));
+	const [err] = await safeExecute(service.removeMember(churchId, targetUserId, actorId));
 
 	if (err) {
 		const code = errorCodeFactory(err);
