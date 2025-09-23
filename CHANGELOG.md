@@ -1,3 +1,10 @@
+## [1.14.0](https://github.com/getvoicify/disciple-api-express/compare/v1.13.0...v1.14.0) (2025-09-23)
+
+
+### ✨ Features
+
+* remove worker ([#12](https://github.com/getvoicify/disciple-api-express/issues/12)) ([d01f911](https://github.com/getvoicify/disciple-api-express/commit/d01f91137078782595c79d53f2ef02f5b1e3199b))
+
 ## [1.13.0](https://github.com/getvoicify/disciple-api-express/compare/v1.12.0...v1.13.0) (2025-09-23)
 
 
