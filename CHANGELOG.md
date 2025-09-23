@@ -1,3 +1,10 @@
+## [1.13.0](https://github.com/getvoicify/disciple-api-express/compare/v1.12.0...v1.13.0) (2025-09-23)
+
+
+### ✨ Features
+
+* **k8s:** extract worker container into separate deployment ([#11](https://github.com/getvoicify/disciple-api-express/issues/11)) ([8efa930](https://github.com/getvoicify/disciple-api-express/commit/8efa9308aae189035de9d84b2608c454b53a5181))
+
 ## [1.12.0](https://github.com/getvoicify/disciple-api-express/compare/v1.11.0...v1.12.0) (2025-09-23)
 
 
