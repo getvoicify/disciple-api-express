@@ -10,6 +10,7 @@ import {noteUpdateEndpoint, NoteUpdateParamsInput} from "./noteUpdate.endpoint";
 import {noteDeleteEndpoint, NoteDeleteParamsInput} from "./noteDelete.endpoint";
 import {jwtVerify} from 'jose'
 import {validateToken} from "../../utils/validate-token.middleware";
+import {canAccessMiddleware} from "../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
 
 
 export const notesRouter = (service: NoteService) => {
@@ -38,7 +39,12 @@ export const notesRouter = (service: NoteService) => {
 
     router.get('/', [
         tokenVerifier(),
-        validate(ListFilterSchema, 'query')
+        validate(ListFilterSchema, 'query'),
+	      canAccessMiddleware({
+		      scope: 'read',
+		      resource: 'notes',
+		      queryUri: '/notes',
+	      })
     ], noteListEndpoint(service));
 
     router.post(
