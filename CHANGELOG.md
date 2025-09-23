@@ -1,3 +1,10 @@
+## [1.10.0](https://github.com/getvoicify/disciple-api-express/compare/v1.9.0...v1.10.0) (2025-09-23)
+
+
+### ✨ Features
+
+* outbox pattern ([#10](https://github.com/getvoicify/disciple-api-express/issues/10)) ([60be277](https://github.com/getvoicify/disciple-api-express/commit/60be2776f0800c0d5c711cd8ca48d8a496e6c5fe))
+
 ## [1.9.0](https://github.com/getvoicify/disciple-api-express/compare/v1.8.0...v1.9.0) (2025-09-22)
 
 
