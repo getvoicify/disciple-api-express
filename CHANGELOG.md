@@ -1,3 +1,10 @@
+## [1.12.0](https://github.com/getvoicify/disciple-api-express/compare/v1.11.0...v1.12.0) (2025-09-23)
+
+
+### ✨ Features
+
+* **k8s:** update encrypted secrets in `sealedsecret.yaml` and add `KEYCLOAK_CLIENT_SECRET` ([5f060f9](https://github.com/getvoicify/disciple-api-express/commit/5f060f9ba824762e70d28473a12573c1ff3eb06a))
+
 ## [1.11.0](https://github.com/getvoicify/disciple-api-express/compare/v1.10.0...v1.11.0) (2025-09-23)
 
 
