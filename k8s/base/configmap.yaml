@@ -8,3 +8,4 @@ data:
   PORT: "3000"
   DB_HOST: "95.217.19.4"
   DB_PORT: "5432"
+  KEYCLOAK_CLIENT_ID: "authz"
