@@ -5,13 +5,13 @@ import {NoteFilters} from "../schemas";
 import {safeExecute} from "../../utils/handle-async";
 
 export const InputSchema = z.object({
-    title: z.string().optional().nullable(),
-    content: z.string().optional().nullable(),
-    startDate: z.coerce.date().optional().nullable(),
-    endDate: z.coerce.date().optional().nullable(),
-    book: z.string().optional().nullable(),
-    chapter: z.coerce.number().int().positive().optional().nullable(),
-    verse: z.coerce.number().int().positive().optional().nullable(),
+	title: z.string().optional().nullable(),
+	content: z.string().optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	book: z.string().optional().nullable(),
+	chapter: z.coerce.number().int().positive().optional().nullable(),
+	verse: z.coerce.number().int().positive().optional().nullable(),
 })
 
 /**
@@ -102,45 +102,48 @@ export const InputSchema = z.object({
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const noteListEndpoint = (service: NoteService) =>
-    async (req: express.Request, res: express.Response) => {
-        const {title, content, startDate, endDate, book, chapter, verse} = InputSchema.parse(req.query);
+	async (req: express.Request, res: express.Response) => {
+		const {title, content, startDate, endDate, book, chapter, verse} = InputSchema.parse(req.query);
 
-        // Build filters with authorization constraint
-        const filters: NoteFilters = {
-            title,
-            content,
-            startDate,
-            endDate,
-            scripture: {book, chapter, verse},
-        };
+		const authorizedIds = req['ids'] ?? []
 
-        if (book || chapter !== undefined || verse !== undefined) {
-            filters.scripture = {};
-            if (book) {
-                filters.scripture.book = book;
-            }
-            if (chapter !== undefined) {
-                filters.scripture.chapter = chapter;
-            }
-            if (verse !== undefined) {
-                filters.scripture.verse = verse;
-            }
-        }
+		// Build filters with authorization constraint
+		const filters: NoteFilters = {
+			authorizedIds,
+			title,
+			content,
+			startDate,
+			endDate,
+			scripture: {book, chapter, verse},
+		};
 
-        const [err, notes] = await safeExecute(service.listNotes(filters));
+		if (book || chapter !== undefined || verse !== undefined) {
+			filters.scripture = {};
+			if (book) {
+				filters.scripture.book = book;
+			}
+			if (chapter !== undefined) {
+				filters.scripture.chapter = chapter;
+			}
+			if (verse !== undefined) {
+				filters.scripture.verse = verse;
+			}
+		}
 
-        if (err) {
-            console.log(err);
-            res.status(400).json({
-                error: err.message,
-                success: false,
-            })
-        } else {
-            res.json({
-                notes,
-                success: true,
-                count: notes.length,
-            });
-        }
+		const [err, notes] = await safeExecute(service.listNotes(filters));
 
-    }
+		if (err) {
+			console.log(err);
+			res.status(400).json({
+				error: err.message,
+				success: false,
+			})
+		} else {
+			res.json({
+				notes,
+				success: true,
+				count: notes.length,
+			});
+		}
+
+	}

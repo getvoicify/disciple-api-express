@@ -107,6 +107,19 @@ export class PostgresNoteRepository implements NoteRepository {
             const conditions = [];
             const values: any[] = [];
 
+	        // Authorization filter - always apply if provided
+	        if (filters.authorizedIds) {
+		        if (filters.authorizedIds.length === 0) {
+			        // User has no authorized resources, return empty result
+			        return [];
+		        }
+		        // Filter to only authorized resource IDs using postgres.js array handling
+		        // Use IN clause instead of ANY() to avoid array serialization issues
+		        const placeholders = filters.authorizedIds.map((_, i) => `$${values.length + i + 1}`).join(', ');
+		        conditions.push(`id IN (${placeholders})`);
+		        values.push(...filters.authorizedIds);
+	        }
+
             if (filters.title) {
                 conditions.push(`title ILIKE $${values.length + 1}`);
                 values.push(`%${filters.title}%`);
