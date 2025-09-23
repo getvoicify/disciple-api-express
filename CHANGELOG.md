@@ -1,3 +1,10 @@
+## [1.11.0](https://github.com/getvoicify/disciple-api-express/compare/v1.10.0...v1.11.0) (2025-09-23)
+
+
+### ✨ Features
+
+* **k8s:** add `KEYCLOAK_CLIENT_ID` to ConfigMap in base manifest ([db6c9b3](https://github.com/getvoicify/disciple-api-express/commit/db6c9b3b326cafd04c2abed5a09dd6f242f52fba))
+
 ## [1.10.0](https://github.com/getvoicify/disciple-api-express/compare/v1.9.0...v1.10.0) (2025-09-23)
 
 
