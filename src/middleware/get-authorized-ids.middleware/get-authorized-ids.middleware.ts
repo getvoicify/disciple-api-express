@@ -36,8 +36,8 @@ function extractAccessToken(authHeader?: string): string {
 
 export const canAccessMiddleware = (options: KeycloakAuthOptions): Middleware => async (req: EndpointRequest, res: any, next: any) => {
 	const {
-		keycloakUrl = process.env.KEYCLOAK_URL,
-		realm = process.env.KEYCLOAK_REALM,
+		keycloakUrl = process.env.IAM_ENDPOINT,
+		realm = process.env.IAM_REALM,
 		clientId = process.env.KEYCLOAK_CLIENT_ID,
 		resource,
 		scope,
@@ -45,7 +45,7 @@ export const canAccessMiddleware = (options: KeycloakAuthOptions): Middleware =>
 		responseMode = 'permissions',
 	} = options;
 
-	const tokenEndpoint = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/token`;
+	const tokenEndpoint = `${keycloakUrl}/${realm}/protocol/openid-connect/token`;
 
 	const params = new URLSearchParams({
 		grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
@@ -90,9 +90,8 @@ export const canAccessMiddleware = (options: KeycloakAuthOptions): Middleware =>
 	}
 
 	if (!authResponse.ok) {
-		const code = errorCodeFactory(new Error(`Failed to obtain token: ${authResponse.statusText}`));
-		res.status(code).json({
-			error: `Failed to obtain token: ${authResponse.statusText}`,
+		res.status(authResponse.status).json({
+			error: `Failed to obtain resource: ${authResponse.statusText}`,
 			success: false,
 		});
 		return;
