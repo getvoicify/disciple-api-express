@@ -9,7 +9,6 @@ resources:
 - sealedsecret.yaml
 - image-pull-sealed.yaml
 - deployment.yaml
-- worker-deployment.yaml
 - service.yaml
 - ingress.yaml
 
