@@ -12,6 +12,10 @@ import {ChurchServiceImpl} from "./churches/service";
 import {ChurchMembershipServiceImpl} from "./churches/membership-service";
 import {ChurchApprovalServiceImpl} from "./churches/approval-service";
 import {churchesRouter} from "./churches/routes/routes";
+import {mediaRouter} from "./media/routes/routes";
+import {PostgresMediaRepository} from "./media/pg-repository";
+import {MediaUploadService} from "./media/media-upload-service";
+import {CloudflareR2ServiceImpl} from "./media/cloudflare-r2-service";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
@@ -53,6 +57,10 @@ const churchMemberRepository = new PostgresChurchMemberRepository(db);
 const churchService = new ChurchServiceImpl(churchRepository);
 const churchMemberService = new ChurchMembershipServiceImpl(churchRepository, churchMemberRepository);
 const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
+
+const mediaRepository = new PostgresMediaRepository(db, keycloakAdapter);
+const r2Service = new CloudflareR2ServiceImpl();
+const mediaUploadService = new MediaUploadService(mediaRepository, r2Service);
 
 const app = express();
 app.use(express.json());
@@ -124,6 +132,7 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService));
 app.use('/api/notes', notesRouter(noteService));
 app.use('/api/users', usersRouter(churchMemberService));
+app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);

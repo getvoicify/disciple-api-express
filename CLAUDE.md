@@ -1,0 +1,1 @@
+- Always use the safeExecute utility for promises and unsafe function calls that require a try/catch block.
