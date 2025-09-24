@@ -25,13 +25,17 @@ export class KeycloakResourceManagerImpl implements KeycloakResourceManager {
 				id: resourceData.id,
 				name: resourceData.name,
 				type: resourceData.type,
+				// Set URIs as a top-level field per Keycloak documentation
+				...(resourceData.uris && resourceData.uris.length > 0 && { uris: resourceData.uris }),
 				attributes: {
 					owner_id: [resourceData.ownerId],
 					can_read: permissions.read,
 					can_update: permissions.update,
 					can_delete: permissions.delete,
 					resource_type: [resourceData.type],
-					created_at: [new Date().toISOString()]
+					created_at: [new Date().toISOString()],
+					// Add any additional attributes
+					...(resourceData.additionalAttributes || {})
 				},
 				scopes: this.VALID_SCOPES
 			};

@@ -8,6 +8,7 @@ export interface KeycloakResource {
 	id: string;
 	name: string;
 	type: string;
+	uris?: string[]; // URIs for the resource (Keycloak native field)
 	attributes: Record<string, string[]>;
 	scopes: string[];
 }
@@ -18,6 +19,8 @@ export interface KeycloakResourceData {
 	type: string;
 	ownerId: string;
 	permissions: KeycloakResourcePermissions;
+	uris?: string[]; // Optional URIs for the resource (can be multiple)
+	additionalAttributes?: Record<string, string[]>; // Optional additional attributes
 }
 
 // Abstraction for Keycloak Admin API operations

@@ -20,6 +20,7 @@ interface KeycloakTokenResponse {
 interface KeycloakResourceRequest {
 	name: string;
 	type?: string;
+	uris?: string[]; // URIs field as per Keycloak API
 	attributes?: Record<string, string[]>;
 	scopes?: string[];
 	owner?: { id: string };
@@ -29,6 +30,7 @@ interface KeycloakResourceResponse {
 	id: string;
 	name: string;
 	type?: string;
+	uris?: string[];
 	attributes?: Record<string, string[]>;
 	scopes?: string[];
 }
@@ -54,6 +56,8 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 		const resourceRequest: KeycloakResourceRequest = {
 			name: resource.name,
 			type: resource.type,
+			// Include URIs if provided
+			...(resource.uris && { uris: resource.uris }),
 			attributes: resource.attributes,
 			scopes: resource.scopes,
 			// Set owner if provided in attributes
@@ -86,6 +90,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			id: created.id || resource.id,
 			name: created.name,
 			type: created.type,
+			...(created.uris && { uris: created.uris }),
 			attributes: created.attributes || {},
 			scopes: created.scopes || []
 		};
@@ -97,6 +102,8 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 		const resourceRequest: KeycloakResourceRequest = {
 			name: resource.name,
 			type: resource.type,
+			// Include URIs if provided
+			...(resource.uris && { uris: resource.uris }),
 			attributes: resource.attributes,
 			scopes: resource.scopes
 		};
@@ -121,6 +128,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			id: updated.id || resourceId,
 			name: updated.name,
 			type: updated.type,
+			...(updated.uris && { uris: updated.uris }),
 			attributes: updated.attributes || {},
 			scopes: updated.scopes || []
 		};
@@ -174,6 +182,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 						id: resource.id,
 						name: resource.name,
 						type: resource.type,
+						...(resource.uris && { uris: resource.uris }),
 						attributes: resource.attributes || {},
 						scopes: resource.scopes || []
 					};

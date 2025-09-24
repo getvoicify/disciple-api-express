@@ -163,7 +163,7 @@ const privateListing: (service: ChurchService) => EndpointHandler = (service: Ch
 }
 
 export const churchListEndpoint = (service: ChurchService): EndpointHandler => async (req, res) => {
-	const user = req['user']?.[0];
+	const user = req['user']?.[1].payload;
 	if (user) {
 		await privateListing(service)(req, res);
 	} else {
