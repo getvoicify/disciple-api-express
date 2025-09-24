@@ -10,45 +10,55 @@ import {noteUpdateEndpoint, NoteUpdateParamsInput} from "./noteUpdate.endpoint";
 import {noteDeleteEndpoint, NoteDeleteParamsInput} from "./noteDelete.endpoint";
 import {jwtVerify} from 'jose'
 import {validateToken} from "../../utils/validate-token.middleware";
+import {canAccessMiddleware} from "../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
 
 
 export const notesRouter = (service: NoteService) => {
-    const router = Router();
-    const {
-        IAM_ENDPOINT,
-        IAM_REALM,
-    } = process.env;
-    const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
+	const router = Router();
+	const {
+		IAM_ENDPOINT,
+		IAM_REALM,
+	} = process.env;
+	const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
-    router.get('/:noteId', [
-        tokenVerifier(),
-        validate(NoteFetchParamsInput, 'params'),
-    ], noteFetchEndpoint(service));
+	router.get('/:noteId', [
+		tokenVerifier(),
+		validate(NoteFetchParamsInput, 'params'),
+	], noteFetchEndpoint(service));
 
-    router.put('/:noteId', [
-        tokenVerifier(),
-        validate(NoteUpdateParamsInput, 'params'),
-        validate(UpdateNoteInput, 'body')
-    ], noteUpdateEndpoint(service));
+	router.put('/:noteId', [
+		tokenVerifier(),
+		validate(NoteUpdateParamsInput, 'params'),
+		validate(UpdateNoteInput, 'body')
+	], noteUpdateEndpoint(service));
 
-    router.delete('/:noteId', [
-        tokenVerifier(),
-        validate(NoteDeleteParamsInput, 'params'),
-    ], noteDeleteEndpoint(service));
+	router.delete('/:noteId', [
+		tokenVerifier(),
+		validate(NoteDeleteParamsInput, 'params'),
+	], noteDeleteEndpoint(service));
 
-    router.get('/', [
-        tokenVerifier(),
-        validate(ListFilterSchema, 'query')
-    ], noteListEndpoint(service));
+	router.get('/', [
+		tokenVerifier(),
+		validate(ListFilterSchema, 'query'),
+		canAccessMiddleware({
+			scope: 'read',
+			resource: 'notes',
+			queryUri: '/notes',
+		})
+	], noteListEndpoint(service));
 
-    router.post(
-        '/',
-        [
-            tokenVerifier(),
-            validate(CreateNoteInput)
-        ],
-        noteCreateEndpoint(service),
-    );
+	router.post(
+		'/',
+		[
+			tokenVerifier(),
+			validate(CreateNoteInput),
+			canAccessMiddleware({
+				scope: 'create',
+				resource: 'note',
+			})
+		],
+		noteCreateEndpoint(service),
+	);
 
-    return router;
+	return router;
 }

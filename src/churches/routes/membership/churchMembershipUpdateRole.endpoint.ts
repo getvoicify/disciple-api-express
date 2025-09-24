@@ -1,7 +1,7 @@
 import {ChurchMembershipService} from "../../membership-service";
 import {EndpointHandler} from "../../../types/endpoint-handler";
 import {ChurchIdInput, UserIdInput, UpdateRoleInput} from "../../schemas";
-import {handleAsync} from "../../../utils/handle-async";
+import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
@@ -87,7 +87,7 @@ export const churchMembershipUpdateRoleEndpoint = (service: ChurchMembershipServ
 	const { userId: targetUserId } = UserIdInput.parse(req.params);
 	const { role: newRole } = UpdateRoleInput.parse(req.body);
 
-	const [err, membership] = await handleAsync(service.updateMemberRole(churchId, targetUserId, newRole, actorId));
+	const [err, membership] = await safeExecute(service.updateMemberRole(churchId, targetUserId, newRole, actorId));
 
 	if (err) {
 		const code = errorCodeFactory(err);

@@ -1,6 +1,6 @@
 import {CryptoKey, JWTPayload, JWTVerifyResult, jwtVerify} from "jose";
 import {getPublicKeys} from "./get-public-keys.util";
-import {handleAsync} from "./handle-async";
+import {safeExecute} from "./handle-async";
 
 export type Verifier = typeof jwtVerify;
 
@@ -20,7 +20,7 @@ export async function validateTokenService<T = JWTPayload>(
     verifier: Verifier,
 ) {
 
-    const [err, result] = await handleAsync(verifier(
+    const [err, result] = await safeExecute(verifier(
         token,
         getPublicKeys(`${endpoint}/${realm}`)
     ));

@@ -2,7 +2,7 @@ import {z} from 'zod';
 import type {ChurchService} from "../service";
 import type {EndpointHandler} from "../../types/endpoint-handler";
 import {ChurchFilters} from "../schemas";
-import {handleAsync} from "../../utils/handle-async";
+import {safeExecute} from "../../utils/handle-async";
 
 export const ChurchListFilterSchema = z.object({
 	search: z.string().optional().nullable(),
@@ -106,7 +106,7 @@ const publicListing: (service: ChurchService) => EndpointHandler = (service: Chu
 		publicFilters.pageSize = query.pageSize;
 	}
 
-	const [err, result] = await handleAsync(service.listChurchesPublic(publicFilters));
+	const [err, result] = await safeExecute(service.listChurchesPublic(publicFilters));
 
 	if (err) {
 		res.status(400).json({
@@ -146,7 +146,7 @@ const privateListing: (service: ChurchService) => EndpointHandler = (service: Ch
 		filters.pageSize = query.pageSize;
 	}
 
-	const [err, result] = await handleAsync(service.listChurches(filters));
+	const [err, result] = await safeExecute(service.listChurches(filters));
 
 	if (err) {
 		res.status(400).json({
@@ -163,7 +163,7 @@ const privateListing: (service: ChurchService) => EndpointHandler = (service: Ch
 }
 
 export const churchListEndpoint = (service: ChurchService): EndpointHandler => async (req, res) => {
-	const user = req['user']?.[0];
+	const user = req['user']?.[1].payload;
 	if (user) {
 		await privateListing(service)(req, res);
 	} else {

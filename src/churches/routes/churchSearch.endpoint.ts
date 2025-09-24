@@ -1,7 +1,7 @@
 import {z} from "zod";
 import type {ChurchService} from "../service";
 import {EndpointHandler} from "../../types/endpoint-handler";
-import {handleAsync} from "../../utils/handle-async";
+import {safeExecute} from "../../utils/handle-async";
 
 export const ChurchSearchInput = z.object({
 	q: z.string(),
@@ -65,7 +65,7 @@ export const ChurchSearchInput = z.object({
  */
 export const churchSearchEndpoint = (service: ChurchService): EndpointHandler => async (req, res) => {
 	const { q } = ChurchSearchInput.parse(req.query);
-	const [ err, result ] = await handleAsync(service.searchChurches(q));
+	const [ err, result ] = await safeExecute(service.searchChurches(q));
 
 	if (err) {
 		res.status(400).json({

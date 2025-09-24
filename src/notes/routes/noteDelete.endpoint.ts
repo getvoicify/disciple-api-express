@@ -1,7 +1,7 @@
 import type {NoteService} from "../service";
 import express from "express";
 import {z} from "zod";
-import {handleAsync} from "../../utils/handle-async";
+import {safeExecute} from "../../utils/handle-async";
 
 export const NoteDeleteParamsInput = z.object({
     noteId: z.uuid(),
@@ -50,7 +50,7 @@ export const NoteDeleteParamsInput = z.object({
 export const noteDeleteEndpoint = (service: NoteService) =>
     async (req: express.Request, res: express.Response) => {
         const {noteId} = NoteDeleteParamsInput.parse(req.params);
-        const [err] = await handleAsync(service.deleteNote(noteId));
+        const [err] = await safeExecute(service.deleteNote(noteId));
         if (err) {
             const code = err.message === 'Note not found' ? 404 : 400;
             res.status(code).json({

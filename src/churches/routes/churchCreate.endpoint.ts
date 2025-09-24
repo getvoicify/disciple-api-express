@@ -2,7 +2,7 @@ import type {ChurchService} from "../service";
 import type {EndpointHandler} from "../../types/endpoint-handler";
 import {CreateChurchInput} from "../schemas";
 import type {User} from "../../utils/validate-token.middleware";
-import {handleAsync} from "../../utils/handle-async";
+import {safeExecute} from "../../utils/handle-async";
 
 /**
  * @openapi
@@ -77,7 +77,7 @@ import {handleAsync} from "../../utils/handle-async";
  */
 export const churchCreateEndpoint = (service: ChurchService): EndpointHandler => async (req, res) => {
 	const churchToCreate = CreateChurchInput.parse(req.body);
-	const user = req['user']?.[0] as any;
+	const user = req['user']?.[1].payload as any;
 
 	if (!user) {
 		res.status(401).json({
@@ -88,7 +88,7 @@ export const churchCreateEndpoint = (service: ChurchService): EndpointHandler =>
 	}
 	const ownerId = user.sub;
 
-	const [err, createdChurch] = await handleAsync(service.createChurch(churchToCreate, ownerId));
+	const [err, createdChurch] = await safeExecute(service.createChurch(churchToCreate, ownerId));
 
 	if (err) {
 		res.status(400).json({

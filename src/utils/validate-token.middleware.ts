@@ -1,6 +1,6 @@
 import {extractToken, validateTokenService, Verifier} from "./token.service";
 import {Middleware} from "./middleware";
-import {handleAsync} from "./handle-async";
+import {safeExecute} from "./handle-async";
 import * as jose from "jose";
 
 export type User = jose.JWTPayload[];
@@ -26,7 +26,7 @@ const tokenValidateMiddleware = (
 		return;
 	}
 
-	const [error, payload] = await handleAsync(validateTokenService(
+	const [error, payload] = await safeExecute(validateTokenService(
 		token,
 		endpoint,
 		realm,

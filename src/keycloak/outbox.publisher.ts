@@ -1,5 +1,5 @@
 import {OutboxEvent, OutboxPublisher} from "../outbox";
-import {KeycloakResourceManager} from "./resource-manager";
+import {KeycloakResourceManager} from "./types";
 import {
 	KEYCLOAK_EVENTS,
 	type KeycloakOutboxEvent,
@@ -63,12 +63,22 @@ export class KeycloakOutboxPublisher implements OutboxPublisher<KeycloakOutboxEv
 	}
 
 	private async handleResourceCreate(payload: KeycloakResourceCreatePayload): Promise<void> {
+		// Build URIs based on resource type
+		const uris = this.buildResourceUris(payload.resourceType, payload.resourceId);
+
 		const resourceData = {
 			id: payload.resourceId,
 			name: payload.resourceId.replace(/-/g, '_'),
 			type: payload.resourceType,
 			ownerId: payload.ownerId,
-			permissions: payload.permissions
+			permissions: payload.permissions,
+			uris: uris,
+			// Include any additional metadata as attributes
+			additionalAttributes: payload.metadata ?
+				Object.entries(payload.metadata).reduce((acc, [key, value]) => {
+					acc[key] = Array.isArray(value) ? value : [String(value)];
+					return acc;
+				}, {} as Record<string, string[]>) : undefined
 		};
 
 		try {
@@ -120,6 +130,19 @@ export class KeycloakOutboxPublisher implements OutboxPublisher<KeycloakOutboxEv
 			payload.currentOwnerId,
 			payload.newOwnerId
 		);
+	}
+
+	/**
+	 * Build URIs for a resource based on its type
+	 * For notes, returns both /notes and /notes/{id}
+	 * For other resources, returns /{type} and /{type}/{id}
+	 */
+	private buildResourceUris(resourceType: string, resourceId: string): string[] {
+		const baseUri = `/${resourceType}`;
+		const specificUri = `/${resourceType}/${resourceId}`;
+
+		// Return both the collection URI and the specific resource URI
+		return [baseUri, specificUri];
 	}
 
 	/**

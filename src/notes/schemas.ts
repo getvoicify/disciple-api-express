@@ -33,6 +33,7 @@ export const UpdateNoteInput = z.object({
 });
 
 export const NoteFilters = z.object({
+		authorizedIds: z.array(z.string()).default([]).optional(),
     title: z.string().optional(),
     content: z.string().optional(),
     startDate: z.date().optional(),

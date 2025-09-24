@@ -1,7 +1,7 @@
 import {ChurchApprovalService} from "../../approval-service";
 import {EndpointHandler} from "../../../types/endpoint-handler";
 import {ChurchFilters, PendingChurchListQueryInput} from "../../schemas";
-import {handleAsync} from "../../../utils/handle-async";
+import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
@@ -113,7 +113,7 @@ export const churchPendingListEndpoint = (service: ChurchApprovalService): Endpo
 		filters.pageSize = query.pageSize;
 	}
 
-	const [err, result] = await handleAsync(service.getPendingChurches(filters));
+	const [err, result] = await safeExecute(service.getPendingChurches(filters));
 
 	if (err) {
 		const code = errorCodeFactory(err);

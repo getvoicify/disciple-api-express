@@ -1,8 +1,8 @@
 import type {
 	KeycloakAdminClient,
 	KeycloakResource
-} from './resource-manager';
-import {handleAsync} from "../utils/handle-async";
+} from './types';
+import {safeExecute} from "../utils/handle-async";
 
 export interface KeycloakAdminConfig {
 	keycloakUrl: string;
@@ -20,6 +20,7 @@ interface KeycloakTokenResponse {
 interface KeycloakResourceRequest {
 	name: string;
 	type?: string;
+	uris?: string[]; // URIs field as per Keycloak API
 	attributes?: Record<string, string[]>;
 	scopes?: string[];
 	owner?: { id: string };
@@ -29,6 +30,7 @@ interface KeycloakResourceResponse {
 	id: string;
 	name: string;
 	type?: string;
+	uris?: string[];
 	attributes?: Record<string, string[]>;
 	scopes?: string[];
 }
@@ -54,13 +56,15 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 		const resourceRequest: KeycloakResourceRequest = {
 			name: resource.name,
 			type: resource.type,
+			// Include URIs if provided
+			...(resource.uris && { uris: resource.uris }),
 			attributes: resource.attributes,
 			scopes: resource.scopes,
 			// Set owner if provided in attributes
 			...(ownerId && { owner: { id: ownerId } })
 		};
 
-		const url = `${this.config.keycloakUrl}/admin/realms/${this.config.realm}/clients/${await this.getClientUuid()}/authz/resource-server/resource`;
+		const url = `${this.config.keycloakUrl.replace('realms', '')}/admin/realms/${this.config.realm}/clients/${await this.getClientUuid()}/authz/resource-server/resource`;
 
 		const response = await fetch(url, {
 			method: 'POST',
@@ -72,6 +76,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 		});
 
 		if (!response.ok) {
+			console.log(response.statusText, url, resourceRequest);
 			if (response.status === 409) {
 				const error = new Error('Resource already exists');
 				error.name = 'ResourceConflictError';
@@ -85,6 +90,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			id: created.id || resource.id,
 			name: created.name,
 			type: created.type,
+			...(created.uris && { uris: created.uris }),
 			attributes: created.attributes || {},
 			scopes: created.scopes || []
 		};
@@ -96,6 +102,8 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 		const resourceRequest: KeycloakResourceRequest = {
 			name: resource.name,
 			type: resource.type,
+			// Include URIs if provided
+			...(resource.uris && { uris: resource.uris }),
 			attributes: resource.attributes,
 			scopes: resource.scopes
 		};
@@ -120,6 +128,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			id: updated.id || resourceId,
 			name: updated.name,
 			type: updated.type,
+			...(updated.uris && { uris: updated.uris }),
 			attributes: updated.attributes || {},
 			scopes: updated.scopes || []
 		};
@@ -173,6 +182,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 						id: resource.id,
 						name: resource.name,
 						type: resource.type,
+						...(resource.uris && { uris: resource.uris }),
 						attributes: resource.attributes || {},
 						scopes: resource.scopes || []
 					};
@@ -225,7 +235,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			throw new Error(`Failed to get user permissions: ${response.statusText}`);
 		}
 
-		const [, permissions] = await handleAsync<Permission[]>(response.json() as Promise<Permission[]>);
+		const [, permissions] = await safeExecute<Permission[]>(response.json() as Promise<Permission[]>);
 
 		return permissions
 			.filter(p =>
@@ -265,7 +275,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			throw new Error(`Failed to obtain admin token: ${response.statusText}`);
 		}
 
-		const [, tokenResponse] = await handleAsync<KeycloakTokenResponse>(response.json() as Promise<KeycloakTokenResponse>);
+		const [, tokenResponse] = await safeExecute<KeycloakTokenResponse>(response.json() as Promise<KeycloakTokenResponse>);
 		this.accessToken = tokenResponse.access_token;
 		this.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000) - 30000; // 30s buffer
 	}
