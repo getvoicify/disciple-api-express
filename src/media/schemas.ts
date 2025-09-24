@@ -47,8 +47,11 @@ export const MediaIdInput = z.object({
     id: z.uuid(),
 });
 
+export const PublicMedia = Media.omit({ r2Url: true, r2Key: true });
+
 export type Media = z.infer<typeof Media>;
 export type CreateMediaInput = z.infer<typeof CreateMediaInput>;
 export type UpdateMediaInput = z.infer<typeof UpdateMediaInput>;
 export type MediaFilters = z.infer<typeof MediaFilters>;
 export type MediaIdInput = z.infer<typeof MediaIdInput>;
+export type PublicMedia = z.infer<typeof PublicMedia>;

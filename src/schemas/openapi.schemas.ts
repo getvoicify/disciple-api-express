@@ -600,6 +600,57 @@ export const updateRoleInputSchema = {
     }
 };
 
+export const mediaSchema = {
+    type: 'object',
+    required: ['id', 'filename', 'originalFilename', 'mimeType', 'fileSize', 'uploadedBy', 'createdAt', 'updatedAt'],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the media record'
+        },
+        filename: {
+            type: 'string',
+            minLength: 1,
+            description: 'Sanitized filename used in URLs',
+            example: 'document_20240924_123456.pdf'
+        },
+        originalFilename: {
+            type: 'string',
+            minLength: 1,
+            description: 'Original filename as uploaded by user',
+            example: 'My Document.pdf'
+        },
+        mimeType: {
+            type: 'string',
+            minLength: 1,
+            description: 'MIME type of the uploaded file',
+            example: 'application/pdf'
+        },
+        fileSize: {
+            type: 'integer',
+            minimum: 1,
+            description: 'Size of the file in bytes',
+            example: 1048576
+        },
+        uploadedBy: {
+            type: 'string',
+            format: 'uuid',
+            description: 'UUID of the user who uploaded the file'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the record was created'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the record was last updated'
+        }
+    }
+};
+
 // Export all schemas as a combined object for easy import
 export const openApiSchemas = {
     ScriptureReference: scriptureReferenceSchema,
@@ -615,5 +666,6 @@ export const openApiSchemas = {
     CreateChurchInput: createChurchInputSchema,
     ChurchMember: churchMemberSchema,
     InvitationInput: invitationInputSchema,
-    UpdateRoleInput: updateRoleInputSchema
+    UpdateRoleInput: updateRoleInputSchema,
+    Media: mediaSchema
 };

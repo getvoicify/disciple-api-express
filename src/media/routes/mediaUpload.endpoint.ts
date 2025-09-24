@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { MediaUploadService } from '../media-upload-service';
 import { safeExecute } from '../../utils/handle-async';
+import { PublicMedia } from '../schemas';
 
 // Configure multer with environment-specific storage strategy
 const upload = multer({
@@ -143,9 +144,11 @@ export const mediaUploadEndpoint = (uploadService: MediaUploadService) => [
         }
 
         if (result.success) {
+            // Filter out sensitive fields (r2Url, r2Key) from response
+            const publicMedia = PublicMedia.parse(result.media);
             res.status(201).json({
                 success: true,
-                media: result.media,
+                media: publicMedia,
                 message: 'File uploaded successfully'
             });
         } else {
