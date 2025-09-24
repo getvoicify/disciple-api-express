@@ -124,11 +124,11 @@ export class PostgresNoteRepository implements NoteRepository {
 					// User has no authorized resources, return empty result
 					return [];
 				}
-				// Filter to only authorized resource IDs using postgres.js array handling
-				// Use IN clause instead of ANY() to avoid array serialization issues
-				const placeholders = filters.authorizedIds.map((_, i) => `$${values.length + i + 1}`).join(', ');
-				conditions.push(`id IN (${placeholders})`);
-				values.push(...filters.authorizedIds);
+				// Convert JavaScript array to PostgreSQL array format for unsafe query
+				// PostgreSQL expects array literal like: {uuid1,uuid2,uuid3}
+				const pgArray = `{${filters.authorizedIds.join(',')}}`;
+				conditions.push(`id = ANY($${values.length + 1}::uuid[])`);
+				values.push(pgArray);
 			}
 
 			if (filters.title) {
@@ -152,24 +152,36 @@ export class PostgresNoteRepository implements NoteRepository {
 			}
 
 			if (filters.scripture) {
-				conditions.push(`scripture_references::jsonb @> $${values.length + 1}::jsonb`);
-				const scriptureFilter: any = {};
-				if (filters.scripture.book) {
-					scriptureFilter.book = filters.scripture.book;
+				// Only add scripture filter if at least one field is provided
+				const hasScriptureFilter = filters.scripture.book ||
+					filters.scripture.chapter !== undefined ||
+					filters.scripture.verse !== undefined;
+
+				if (hasScriptureFilter) {
+					const scriptureFilter: any = {};
+					if (filters.scripture.book) {
+						scriptureFilter.book = filters.scripture.book;
+					}
+					if (filters.scripture.chapter !== undefined && filters.scripture.chapter !== null) {
+						scriptureFilter.chapter = filters.scripture.chapter;
+					}
+					if (filters.scripture.verse !== undefined && filters.scripture.verse !== null) {
+						scriptureFilter.verse = filters.scripture.verse;
+					}
+
+					// Only add the condition if the filter has at least one property
+					if (Object.keys(scriptureFilter).length > 0) {
+						conditions.push(`scripture_references::jsonb @> $${values.length + 1}::jsonb`);
+						values.push(JSON.stringify([scriptureFilter]));
+					}
 				}
-				if (filters.scripture.chapter) {
-					scriptureFilter.chapter = filters.scripture.chapter;
-				}
-				if (filters.scripture.verse) {
-					scriptureFilter.verse = filters.scripture.verse;
-				}
-				values.push(JSON.stringify([scriptureFilter]));
 			}
 
 			const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 			const query = `SELECT *
                      FROM notes ${whereClause}
                      ORDER BY date DESC, created_at DESC`;
+
 
 			result = await this.db.unsafe(query, values);
 		}

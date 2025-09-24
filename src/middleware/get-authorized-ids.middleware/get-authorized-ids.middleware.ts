@@ -100,8 +100,7 @@ export const canAccessMiddleware = (options: KeycloakAuthOptions): Middleware =>
 	const [, authData] = await safeExecute(authResponse.json() as Promise<KeycloakPermission[]>);
 
 	if (responseMode === 'permissions') {
-		const ids = authData.map(d => d.rsname);
-		req['ids'] = ids;
+		req['ids'] = authData.map(d => d.rsname.replaceAll('_', '-'));
 	}
 	next();
 }

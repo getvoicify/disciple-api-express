@@ -105,7 +105,7 @@ export const noteListEndpoint = (service: NoteService) =>
 	async (req: express.Request, res: express.Response) => {
 		const {title, content, startDate, endDate, book, chapter, verse} = InputSchema.parse(req.query);
 
-		const authorizedIds = req['ids'] ?? []
+		const authorizedIds = req['ids'] ?? [];
 
 		// Build filters with authorization constraint
 		const filters: NoteFilters = {
@@ -114,9 +114,9 @@ export const noteListEndpoint = (service: NoteService) =>
 			content,
 			startDate,
 			endDate,
-			scripture: {book, chapter, verse},
 		};
 
+		// Only add scripture filter if at least one scripture field is provided
 		if (book || chapter !== undefined || verse !== undefined) {
 			filters.scripture = {};
 			if (book) {
