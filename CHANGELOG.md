@@ -1,3 +1,10 @@
+## [1.15.0](https://github.com/getvoicify/disciple-api-express/compare/v1.14.0...v1.15.0) (2025-09-24)
+
+
+### ✨ Features
+
+* keycloak auth sync ([#13](https://github.com/getvoicify/disciple-api-express/issues/13)) ([9f50927](https://github.com/getvoicify/disciple-api-express/commit/9f509274d98a3922e61659b8c6c39fd020f32c2e))
+
 ## [1.14.0](https://github.com/getvoicify/disciple-api-express/compare/v1.13.0...v1.14.0) (2025-09-23)
 
 
