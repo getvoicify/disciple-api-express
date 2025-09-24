@@ -87,10 +87,11 @@ describe('Media Upload Endpoint', () => {
         .expect(201);
 
       // Verify successful upload response structure
+      const { r2Url, r2Key, ...expectedMedia } = mockCreatedMedia;
       expect(response.body).toEqual({
         success: true,
         media: {
-          ...mockCreatedMedia,
+          ...expectedMedia,
           // Dates are serialized to ISO strings in JSON response
           createdAt: mockCreatedMedia.createdAt.toISOString(),
           updatedAt: mockCreatedMedia.updatedAt.toISOString()
@@ -141,10 +142,11 @@ describe('Media Upload Endpoint', () => {
         .attach('file', mockFile, 'test-image.jpg')
         .expect(201);
 
+      const { r2Url, r2Key, ...expectedMedia } = mockCreatedMedia;
       expect(response.body).toEqual({
         success: true,
         media: {
-          ...mockCreatedMedia,
+          ...expectedMedia,
           // Dates are serialized to ISO strings in JSON response
           createdAt: mockCreatedMedia.createdAt.toISOString(),
           updatedAt: mockCreatedMedia.updatedAt.toISOString()
