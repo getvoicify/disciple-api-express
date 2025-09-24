@@ -81,6 +81,8 @@ export function createOutbox<TPayload = unknown>(
     const due = await store.fetchDue(lim);
     const now = nowFn();
 
+		console.log(`Processing ${due.length} outbox events`);
+
     for (const evt of due) {
       try {
         await publisher.publish(evt);

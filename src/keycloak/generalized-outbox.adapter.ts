@@ -1,4 +1,4 @@
-import { KeycloakResourcePermissions as BaseKeycloakResourcePermissions } from "./resource-manager";
+import { KeycloakResourcePermissions as BaseKeycloakResourcePermissions } from "./types";
 import { Outbox } from "../outbox";
 
 // Extended permissions type that allows custom scopes

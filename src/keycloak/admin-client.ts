@@ -1,7 +1,7 @@
 import type {
 	KeycloakAdminClient,
 	KeycloakResource
-} from './resource-manager';
+} from './types';
 import {safeExecute} from "../utils/handle-async";
 
 export interface KeycloakAdminConfig {
@@ -60,7 +60,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 			...(ownerId && { owner: { id: ownerId } })
 		};
 
-		const url = `${this.config.keycloakUrl}/admin/realms/${this.config.realm}/clients/${await this.getClientUuid()}/authz/resource-server/resource`;
+		const url = `${this.config.keycloakUrl.replace('realms', '')}/admin/realms/${this.config.realm}/clients/${await this.getClientUuid()}/authz/resource-server/resource`;
 
 		const response = await fetch(url, {
 			method: 'POST',
@@ -72,6 +72,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 		});
 
 		if (!response.ok) {
+			console.log(response.statusText, url, resourceRequest);
 			if (response.status === 409) {
 				const error = new Error('Resource already exists');
 				error.name = 'ResourceConflictError';

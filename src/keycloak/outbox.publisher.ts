@@ -1,5 +1,5 @@
 import {OutboxEvent, OutboxPublisher} from "../outbox";
-import {KeycloakResourceManager} from "./resource-manager";
+import {KeycloakResourceManager} from "./types";
 import {
 	KEYCLOAK_EVENTS,
 	type KeycloakOutboxEvent,

@@ -30,9 +30,14 @@ const {
 
 const db = getRawDb({DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT});
 
+const {
+	IAM_ENDPOINT,
+	IAM_REALM,
+} = process.env;
+
 const keycloakConfig = {
-    realm: process.env.KEYCLOAK_REALM,
-    keycloakUrl: process.env.KEYCLOAK_URL,
+    realm: IAM_REALM,
+    keycloakUrl: IAM_ENDPOINT.replace('realms', ''),
     clientId: process.env.KEYCLOAK_CLIENT_ID,
     clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
 } satisfies KeycloakAdminConfig;
