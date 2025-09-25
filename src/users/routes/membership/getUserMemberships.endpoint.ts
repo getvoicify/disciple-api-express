@@ -5,7 +5,7 @@ import errorCodeFactory from "../../../utils/error-code.factory";
 
 /**
  * @openapi
- * /api/users/memberships:
+ * /users/memberships:
  *   get:
  *     summary: Get user's church memberships
  *     description: Retrieve all active church memberships for the authenticated user
