@@ -33,3 +33,4 @@ if (error) {
 - `safeExecute(() => import('fs').then(fs => fs.readFileSync(path)))` - File operations
 - `safeExecute(service.createNote(data, ownerId))` - Service calls
 - `safeExecute(this.s3Client.send(command))` - Cloud operations
+- For unsafe executions, the proper way the safeExecute is `safeExecute(() => unsafeFn())`
