@@ -1,3 +1,10 @@
+## [1.16.0](https://github.com/getvoicify/disciple-api-express/compare/v1.15.0...v1.16.0) (2025-09-25)
+
+
+### ✨ Features
+
+* media integration ([#14](https://github.com/getvoicify/disciple-api-express/issues/14)) ([14e9c68](https://github.com/getvoicify/disciple-api-express/commit/14e9c68f60b00612edf8c1f8dbdc7e03c93ff172))
+
 ## [1.15.0](https://github.com/getvoicify/disciple-api-express/compare/v1.14.0...v1.15.0) (2025-09-24)
 
 
