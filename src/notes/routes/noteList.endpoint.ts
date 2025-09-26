@@ -3,6 +3,7 @@ import {z} from "zod";
 import type {NoteService} from "../service";
 import {NoteFilters} from "../schemas";
 import {safeExecute} from "../../utils/handle-async";
+import {CacheRepository} from "../../cache";
 
 export const InputSchema = z.object({
 	title: z.string().optional().nullable(),
@@ -101,7 +102,7 @@ export const InputSchema = z.object({
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const noteListEndpoint = (service: NoteService) =>
+export const noteListEndpoint = (service: NoteService, cacheRepo: CacheRepository) =>
 	async (req: express.Request, res: express.Response) => {
 		const {title, content, startDate, endDate, book, chapter, verse} = InputSchema.parse(req.query);
 
@@ -137,13 +138,22 @@ export const noteListEndpoint = (service: NoteService) =>
 			res.status(400).json({
 				error: err.message,
 				success: false,
-			})
-		} else {
-			res.json({
-				notes,
-				success: true,
-				count: notes.length,
 			});
+			return;
 		}
 
+		const response = {
+			notes,
+			success: true,
+			count: notes.length,
+		};
+
+		res.json(response);
+
+		const key = req['key'];
+
+		if (key) {
+			console.log('Write Cache: ', key);
+			await safeExecute(cacheRepo.write(key, response));
+		}
 	}
