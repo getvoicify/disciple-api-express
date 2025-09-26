@@ -11,10 +11,14 @@ import {noteDeleteEndpoint, NoteDeleteParamsInput} from "./noteDelete.endpoint";
 import {jwtVerify} from 'jose'
 import {validateToken} from "../../utils/validate-token.middleware";
 import {canAccessMiddleware} from "../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
+import {createCacheRepository} from "../../cache";
+import {cacheResponseMiddleware} from "../../middleware/cache-response.middleware/cache-response.middleware";
+import {keyGenerator} from "../../middleware/key-generator.middleware";
 
 
 export const notesRouter = (service: NoteService) => {
 	const router = Router();
+	const cacheRepo = createCacheRepository();
 	const {
 		IAM_ENDPOINT,
 		IAM_REALM,
@@ -44,7 +48,9 @@ export const notesRouter = (service: NoteService) => {
 			scope: 'read',
 			resource: 'notes',
 			queryUri: '/notes',
-		})
+		}),
+		keyGenerator('note', true),
+		cacheResponseMiddleware(cacheRepo),
 	], noteListEndpoint(service));
 
 	router.post(
