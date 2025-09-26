@@ -5,6 +5,7 @@ import { serialize, deserialize } from './cache-serialization.util';
 
 export class RedisCacheRepository implements CacheRepository {
   private redis: Redis;
+  private static instance: CacheRepository;
 
   constructor(connectionString: string) {
     this.redis = new Redis(connectionString);
@@ -43,5 +44,12 @@ export class RedisCacheRepository implements CacheRepository {
     if (error) {
       throw error;
     }
+  }
+
+  static getInstance(connectionString: string): CacheRepository {
+    if (!RedisCacheRepository.instance) {
+      RedisCacheRepository.instance = new RedisCacheRepository(connectionString);
+    }
+    return RedisCacheRepository.instance;
   }
 }

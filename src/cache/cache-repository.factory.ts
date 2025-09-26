@@ -16,5 +16,5 @@ export function createCacheRepository(config?: CacheRepositoryConfig): CacheRepo
   }
 
   const redisUrl = config?.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
-  return new RedisCacheRepository(redisUrl);
+  return RedisCacheRepository.getInstance(redisUrl);
 }
