@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/getvoicify/disciple-api-express/compare/v1.16.0...v1.16.1) (2025-09-27)
+
+
+### ♻️ Code Refactoring
+
+* **tests:** remove authentication for media proxy endpoint tests ([#15](https://github.com/getvoicify/disciple-api-express/issues/15)) ([934d723](https://github.com/getvoicify/disciple-api-express/commit/934d7231730875d2d1e81731af699f0999c54625))
+
 ## [1.16.0](https://github.com/getvoicify/disciple-api-express/compare/v1.15.0...v1.16.0) (2025-09-25)
 
 
