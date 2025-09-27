@@ -1,5 +1,6 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
+import yaml from 'js-yaml';
 import dotenv from 'dotenv';
 import {concatMap, defer, interval, Subject, takeUntil, tap} from 'rxjs';
 import {getRawDb} from "./utils/database";
@@ -127,6 +128,47 @@ app.get('/api/health', async (req, res) => {
 		buildDate: process.env.BUILD_DATE,
 		commitSha: process.env.COMMIT_SHA
 	});
+});
+
+/**
+ * @openapi
+ * /openapi.json:
+ *   get:
+ *     summary: Export OpenAPI specification as JSON
+ *     description: Returns the complete OpenAPI 3.0 specification in JSON format
+ *     tags: [Documentation]
+ *     responses:
+ *       200:
+ *         description: OpenAPI specification in JSON format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               description: OpenAPI 3.0 specification object
+ */
+app.get('/api/openapi.json', (req, res) => {
+	res.json(swaggerSpec);
+});
+
+/**
+ * @openapi
+ * /openapi.yaml:
+ *   get:
+ *     summary: Export OpenAPI specification as YAML
+ *     description: Returns the complete OpenAPI 3.0 specification in YAML format
+ *     tags: [Documentation]
+ *     responses:
+ *       200:
+ *         description: OpenAPI specification in YAML format
+ *         content:
+ *           text/yaml:
+ *             schema:
+ *               type: string
+ *               description: OpenAPI 3.0 specification in YAML format
+ */
+app.get('/api/openapi.yaml', (req, res) => {
+	res.set('Content-Type', 'text/yaml');
+	res.send(yaml.dump(swaggerSpec));
 });
 
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService));
