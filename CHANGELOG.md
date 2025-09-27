@@ -1,3 +1,10 @@
+## [1.17.0](https://github.com/getvoicify/disciple-api-express/compare/v1.16.1...v1.17.0) (2025-09-27)
+
+
+### ✨ Features
+
+* openapi docs endpoints ([#16](https://github.com/getvoicify/disciple-api-express/issues/16)) ([8c1ae4a](https://github.com/getvoicify/disciple-api-express/commit/8c1ae4ac5581effb2ffcfdb6fd873adafd5b3cea))
+
 ## [1.16.1](https://github.com/getvoicify/disciple-api-express/compare/v1.16.0...v1.16.1) (2025-09-27)
 
 
