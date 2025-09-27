@@ -26,7 +26,6 @@ export const mediaRouter = (
 
   // Media proxy/serve endpoint with authentication and UUID validation
   router.get('/serve/:id', [
-    tokenVerifier(true),
     validate(MediaIdInput, 'params')
   ], mediaProxyEndpoint(mediaRepository));
 

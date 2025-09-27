@@ -9,8 +9,6 @@ import { safeExecute } from '../../utils/handle-async';
  *     summary: Serve/proxy media file
  *     description: Serve a media file by ID with proper authorization and caching
  *     tags: [Media]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -42,16 +40,6 @@ export const mediaProxyEndpoint = (mediaRepository: MediaRepository) =>
     // Extract media ID from URL params (validation handled by middleware)
     const mediaId = req.params.id;
 
-    // Check authentication
-    const userId = req['user']?.[1].payload?.sub;
-    if (!userId) {
-      res.status(401).json({
-        error: 'Unauthorized: Authentication required to access media',
-        success: false
-      });
-      return;
-    }
-
     // Retrieve media metadata from database
     const [mediaError, media] = await safeExecute(mediaRepository.findById(mediaId));
 
@@ -67,15 +55,6 @@ export const mediaProxyEndpoint = (mediaRepository: MediaRepository) =>
     if (!media) {
       res.status(404).json({
         error: 'Media not found',
-        success: false
-      });
-      return;
-    }
-
-    // Check authorization - user can only access their own media
-    if (media.uploadedBy !== userId) {
-      res.status(403).json({
-        error: 'Forbidden: You can only access your own media files',
         success: false
       });
       return;
@@ -109,11 +88,8 @@ export const mediaProxyEndpoint = (mediaRepository: MediaRepository) =>
       headers['Content-Disposition'] = `inline; filename="${media.originalFilename}"`;
     }
 
-    // Log media access for security auditing
-    console.log(`Media access: ${userId} accessed ${mediaId}`);
-
     // Manual redirect to preserve all headers including Content-Type
     res.set(headers);
     res.set('Location', media.r2Url);
-    res.status(302).end();
+    res.status(302).redirect(media.r2Url);
   };
