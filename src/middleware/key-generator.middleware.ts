@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import { Middleware } from "../utils/middleware";
+import { keyEnvPrefixer } from '../utils/key-env-prefixer.util';
 
 interface UserPayload {
 	sub?: string;
@@ -40,9 +41,11 @@ export const keyGenerator = (
 	const request = req as AuthenticatedRequest;
 	const userId = extractUserId(request);
 
-	request.key = isList
+	const key = isList
 		? buildListKey(resource, userId, formatIds(request.ids))
 		: buildSingleKey(resource, userId, request.params[resourceParamsId]);
+
+	request.key = keyEnvPrefixer(key);
 
 	next();
 }

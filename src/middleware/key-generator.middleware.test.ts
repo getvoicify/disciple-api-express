@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import { keyGenerator } from './key-generator.middleware';
 
@@ -6,14 +6,20 @@ describe('keyGenerator middleware', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
   let next: NextFunction;
+  const originalEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     req = {
       params: {},
       user: undefined,
-    };
+    } as any as Request;
     res = {};
     next = vi.fn();
+    process.env.NODE_ENV = 'test';
+  });
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalEnv;
   });
 
   describe('list keys (isList = true)', () => {
@@ -23,7 +29,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('postslist:');
+        expect(req['key']).toBe('test:postslist:');
         expect(next).toHaveBeenCalled();
       });
 
@@ -33,7 +39,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('postslist:123');
+        expect(req['key']).toBe('test:postslist:123');
         expect(next).toHaveBeenCalled();
       });
 
@@ -43,7 +49,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('postslist:123-456-789');
+        expect(req['key']).toBe('test:postslist:123-456-789');
         expect(next).toHaveBeenCalled();
       });
     });
@@ -58,7 +64,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('postslist:user-123:');
+        expect(req['key']).toBe('test:postslist:user-123:');
         expect(next).toHaveBeenCalled();
       });
 
@@ -68,7 +74,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('postslist:user-123:456');
+        expect(req['key']).toBe('test:postslist:user-123:456');
         expect(next).toHaveBeenCalled();
       });
 
@@ -78,7 +84,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('postslist:user-123:456-789-012');
+        expect(req['key']).toBe('test:postslist:user-123:456-789-012');
         expect(next).toHaveBeenCalled();
       });
     });
@@ -92,7 +98,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('post789');
+        expect(req['key']).toBe('test:post789');
         expect(next).toHaveBeenCalled();
       });
 
@@ -102,7 +108,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('postabc123');
+        expect(req['key']).toBe('test:postabc123');
         expect(next).toHaveBeenCalled();
       });
     });
@@ -118,7 +124,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('post:user-456:789');
+        expect(req['key']).toBe('test:post:user-456:789');
         expect(next).toHaveBeenCalled();
       });
 
@@ -128,9 +134,44 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('media:user-456:xyz789');
+        expect(req['key']).toBe('test:media:user-456:xyz789');
         expect(next).toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('environment prefixing', () => {
+    it('should prefix keys with development environment', () => {
+      process.env.NODE_ENV = 'development';
+      req['ids'] = ['123'];
+      const middleware = keyGenerator('posts');
+
+      middleware(req as Request, res as Response, next);
+
+      expect(req['key']).toBe('development:postslist:123');
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should prefix keys with production environment', () => {
+      process.env.NODE_ENV = 'production';
+      req['user'] = [null, { payload: { sub: 'user-456' } }];
+      req.params = { id: '789' };
+      const middleware = keyGenerator('post', false, 'id');
+
+      middleware(req as Request, res as Response, next);
+
+      expect(req['key']).toBe('production:post:user-456:789');
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should prefix keys with staging environment', () => {
+      process.env.NODE_ENV = 'staging';
+      const middleware = keyGenerator('items');
+
+      middleware(req as Request, res as Response, next);
+
+      expect(req['key']).toBe('staging:itemslist:');
+      expect(next).toHaveBeenCalled();
     });
   });
 
@@ -141,7 +182,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('postslist:');
+      expect(req['key']).toBe('test:postslist:');
       expect(next).toHaveBeenCalled();
     });
 
@@ -151,7 +192,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('postslist:');
+      expect(req['key']).toBe('test:postslist:');
       expect(next).toHaveBeenCalled();
     });
 
@@ -161,7 +202,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('postslist:');
+      expect(req['key']).toBe('test:postslist:');
       expect(next).toHaveBeenCalled();
     });
 
@@ -171,7 +212,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('postundefined');
+      expect(req['key']).toBe('test:postundefined');
       expect(next).toHaveBeenCalled();
     });
   });
@@ -185,7 +226,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('itemslist:user-999:a-b-c');
+        expect(req['key']).toBe('test:itemslist:user-999:a-b-c');
       });
     });
 
@@ -217,8 +258,8 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('item:user123:resource456');
-        expect(req['key'].split(':').length).toBe(3);
+        expect(req['key']).toBe('test:item:user123:resource456');
+        expect(req['key'].split(':').length).toBe(4);
       });
     });
   });
