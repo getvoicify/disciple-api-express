@@ -56,6 +56,10 @@ export class InMemoryCacheRepository implements CacheRepository {
     this.clearTimer(key);
   }
 
+  async ping(): Promise<boolean> {
+    return true;
+  }
+
   private clearTimer(key: string): void {
     const timer = this.timers.get(key);
     if (timer) {

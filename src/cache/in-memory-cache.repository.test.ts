@@ -170,6 +170,22 @@ describe('InMemoryCacheRepository', () => {
     });
   });
 
+  describe('ping', () => {
+    it('should always return true for in-memory cache', async () => {
+      const result = await repository.ping();
+      expect(result).toBe(true);
+    });
+
+    it('should be fast for in-memory cache', async () => {
+      const startTime = Date.now();
+      const result = await repository.ping();
+      const endTime = Date.now();
+
+      expect(result).toBe(true);
+      expect(endTime - startTime).toBeLessThan(10);
+    });
+  });
+
   describe('concurrent operations', () => {
     it('should handle concurrent writes', async () => {
       const promises = Array.from({ length: 100 }, (_, i) =>

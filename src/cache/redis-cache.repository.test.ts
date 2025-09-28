@@ -180,6 +180,35 @@ describe('RedisCacheRepository', () => {
     });
   });
 
+  describe('ping', () => {
+    it('should return true when Redis is connected', async () => {
+      mockRedis.ping = vi.fn().mockResolvedValue('PONG');
+
+      const result = await repository.ping();
+
+      expect(mockRedis.ping).toHaveBeenCalled();
+      expect(result).toBe(true);
+    });
+
+    it('should return false when Redis ping fails', async () => {
+      mockRedis.ping = vi.fn().mockRejectedValue(new Error('Connection failed'));
+
+      const result = await repository.ping();
+
+      expect(mockRedis.ping).toHaveBeenCalled();
+      expect(result).toBe(false);
+    });
+
+    it('should return false when Redis returns unexpected response', async () => {
+      mockRedis.ping = vi.fn().mockResolvedValue('UNEXPECTED');
+
+      const result = await repository.ping();
+
+      expect(mockRedis.ping).toHaveBeenCalled();
+      expect(result).toBe(false);
+    });
+  });
+
   describe('error handling with safeExecute', () => {
     it('should handle write errors gracefully', async () => {
       const error = new Error('Redis write error');

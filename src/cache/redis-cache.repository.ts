@@ -43,6 +43,14 @@ export class RedisCacheRepository implements CacheRepository {
     }
   }
 
+  async ping(): Promise<boolean> {
+    const [error, result] = await safeExecute(this.redis.ping());
+    if (error || result !== 'PONG') {
+      return false;
+    }
+    return true;
+  }
+
   async disconnect(): Promise<void> {
     const [error] = await safeExecute(() => this.redis.disconnect());
     if (error) {
