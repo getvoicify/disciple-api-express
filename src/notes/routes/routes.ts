@@ -51,7 +51,7 @@ export const notesRouter = (service: NoteService) => {
 		}),
 		keyGenerator('note', true),
 		cacheResponseMiddleware(cacheRepo),
-	], noteListEndpoint(service));
+	], noteListEndpoint(service, cacheRepo));
 
 	router.post(
 		'/',
