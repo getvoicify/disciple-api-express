@@ -177,11 +177,11 @@ export const errorResponseSchema = {
 
 export const healthResponseSchema = {
     type: 'object',
-    required: ['status', 'timestamp', 'version', 'database', 'uptime', 'environment'],
+    required: ['status', 'timestamp', 'version', 'database', 'redis', 'uptime', 'environment'],
     properties: {
         status: {
             type: 'string',
-            enum: ['healthy', 'unhealthy'],
+            enum: ['healthy', 'degraded', 'unhealthy'],
             description: 'Overall health status of the API',
             example: 'healthy'
         },
@@ -199,6 +199,12 @@ export const healthResponseSchema = {
             type: 'string',
             enum: ['connected', 'disconnected', 'unknown'],
             description: 'Database connection status',
+            example: 'connected'
+        },
+        redis: {
+            type: 'string',
+            enum: ['connected', 'disconnected', 'in-memory', 'unknown'],
+            description: 'Redis cache connection status',
             example: 'connected'
         },
         uptime: {
