@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InMemoryCacheRepository } from './in-memory-cache.repository';
 import { CacheRepository } from './cache.repository';
 
@@ -92,6 +92,81 @@ describe('InMemoryCacheRepository', () => {
 
       expect(result1).toBeNull();
       expect(result2).toBe('value2');
+    });
+  });
+
+  describe('TTL support', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should store value with TTL and expire after timeout', async () => {
+      await repository.write('temp-key', 'temp-value', 1);
+
+      let result = await repository.read('temp-key');
+      expect(result).toBe('temp-value');
+
+      vi.advanceTimersByTime(999);
+      result = await repository.read('temp-key');
+      expect(result).toBe('temp-value');
+
+      vi.advanceTimersByTime(2);
+      result = await repository.read('temp-key');
+      expect(result).toBeNull();
+    });
+
+    it('should store value without TTL permanently', async () => {
+      await repository.write('permanent-key', 'permanent-value');
+
+      vi.advanceTimersByTime(1000000);
+      const result = await repository.read('permanent-key');
+      expect(result).toBe('permanent-value');
+    });
+
+    it('should handle TTL value of 0 as no expiration', async () => {
+      await repository.write('no-expire', 'value', 0);
+
+      vi.advanceTimersByTime(1000000);
+      const result = await repository.read('no-expire');
+      expect(result).toBe('value');
+    });
+
+    it('should handle negative TTL values as no expiration', async () => {
+      await repository.write('no-expire', 'value', -100);
+
+      vi.advanceTimersByTime(1000000);
+      const result = await repository.read('no-expire');
+      expect(result).toBe('value');
+    });
+
+    it('should reset TTL when overwriting with new TTL', async () => {
+      await repository.write('key', 'value1', 1);
+
+      vi.advanceTimersByTime(500);
+      await repository.write('key', 'value2', 2);
+
+      vi.advanceTimersByTime(1500);
+      let result = await repository.read('key');
+      expect(result).toBe('value2');
+
+      vi.advanceTimersByTime(501);
+      result = await repository.read('key');
+      expect(result).toBeNull();
+    });
+
+    it('should clear TTL when overwriting without TTL', async () => {
+      await repository.write('key', 'value1', 1);
+
+      vi.advanceTimersByTime(500);
+      await repository.write('key', 'value2');
+
+      vi.advanceTimersByTime(1000000);
+      const result = await repository.read('key');
+      expect(result).toBe('value2');
     });
   });
 

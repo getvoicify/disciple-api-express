@@ -11,9 +11,13 @@ export class RedisCacheRepository implements CacheRepository {
     this.redis = new Redis(connectionString);
   }
 
-  async write<T = string>(key: string, value: T): Promise<void> {
+  async write<T = string>(key: string, value: T, ttl?: number): Promise<void> {
     const serialized = serialize(value);
-    const [error] = await safeExecute(this.redis.set(key, serialized));
+    const [error] = await safeExecute(
+      ttl && ttl > 0
+        ? this.redis.set(key, serialized, 'EX', ttl)
+        : this.redis.set(key, serialized)
+    );
     if (error) {
       throw error;
     }

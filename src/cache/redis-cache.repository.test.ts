@@ -65,6 +65,37 @@ describe('RedisCacheRepository', () => {
 
       expect(mockRedis.set).toHaveBeenCalledWith('count', '42');
     });
+
+    it('should store value with TTL when provided', async () => {
+      await repository.write('temp-key', 'temp-value', 3600);
+
+      expect(mockRedis.set).toHaveBeenCalledWith('temp-key', '"temp-value"', 'EX', 3600);
+    });
+
+    it('should store value without TTL when not provided', async () => {
+      await repository.write('permanent-key', 'permanent-value');
+
+      expect(mockRedis.set).toHaveBeenCalledWith('permanent-key', '"permanent-value"');
+    });
+
+    it('should store object with TTL', async () => {
+      const obj = { session: 'abc123' };
+      await repository.write('session-data', obj, 1800);
+
+      expect(mockRedis.set).toHaveBeenCalledWith('session-data', JSON.stringify(obj), 'EX', 1800);
+    });
+
+    it('should handle TTL value of 0 as no expiration', async () => {
+      await repository.write('no-expire', 'value', 0);
+
+      expect(mockRedis.set).toHaveBeenCalledWith('no-expire', '"value"');
+    });
+
+    it('should handle negative TTL values as no expiration', async () => {
+      await repository.write('no-expire', 'value', -100);
+
+      expect(mockRedis.set).toHaveBeenCalledWith('no-expire', '"value"');
+    });
   });
 
   describe('read', () => {

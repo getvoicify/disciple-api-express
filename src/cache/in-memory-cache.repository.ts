@@ -1,27 +1,66 @@
 import { CacheRepository } from './cache.repository';
 import { serialize, deserialize } from './cache-serialization.util';
 
+interface CacheEntry {
+  value: string;
+  expiresAt?: number;
+}
+
 export class InMemoryCacheRepository implements CacheRepository {
-  private cache: Map<string, string>;
+  private cache: Map<string, CacheEntry>;
+  private timers: Map<string, NodeJS.Timeout>;
 
   constructor() {
     this.cache = new Map();
+    this.timers = new Map();
   }
 
-  async write<T = string>(key: string, value: T): Promise<void> {
+  async write<T = string>(key: string, value: T, ttl?: number): Promise<void> {
     const serialized = serialize(value);
-    this.cache.set(key, serialized);
+
+    this.clearTimer(key);
+
+    if (ttl && ttl > 0) {
+      const expiresAt = Date.now() + ttl * 1000;
+      this.cache.set(key, { value: serialized, expiresAt });
+
+      const timer = setTimeout(() => {
+        this.cache.delete(key);
+        this.timers.delete(key);
+      }, ttl * 1000);
+
+      this.timers.set(key, timer);
+    } else {
+      this.cache.set(key, { value: serialized });
+    }
   }
 
   async read<T = string>(key: string): Promise<T | null> {
-    if (this.cache.has(key)) {
-      const value = this.cache.get(key)!;
-      return await deserialize<T>(value);
+    const entry = this.cache.get(key);
+
+    if (!entry) {
+      return null;
     }
-    return null;
+
+    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      this.clearTimer(key);
+      return null;
+    }
+
+    return await deserialize<T>(entry.value);
   }
 
   async delete(key: string): Promise<void> {
     this.cache.delete(key);
+    this.clearTimer(key);
+  }
+
+  private clearTimer(key: string): void {
+    const timer = this.timers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      this.timers.delete(key);
+    }
   }
 }
