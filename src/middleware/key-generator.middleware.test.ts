@@ -29,7 +29,7 @@ describe('keyGenerator middleware', () => {
 
         middleware(req as Request, res as Response, next);
 
-        expect(req['key']).toBe('test:postslist:');
+        expect(req['key']).toBe('test:postslist');
         expect(next).toHaveBeenCalled();
       });
 
@@ -170,7 +170,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('staging:itemslist:');
+      expect(req['key']).toBe('staging:itemslist');
       expect(next).toHaveBeenCalled();
     });
   });
@@ -182,7 +182,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('test:postslist:');
+      expect(req['key']).toBe('test:postslist');
       expect(next).toHaveBeenCalled();
     });
 
@@ -192,7 +192,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('test:postslist:');
+      expect(req['key']).toBe('test:postslist');
       expect(next).toHaveBeenCalled();
     });
 
@@ -202,7 +202,7 @@ describe('keyGenerator middleware', () => {
 
       middleware(req as Request, res as Response, next);
 
-      expect(req['key']).toBe('test:postslist:');
+      expect(req['key']).toBe('test:postslist');
       expect(next).toHaveBeenCalled();
     });
 

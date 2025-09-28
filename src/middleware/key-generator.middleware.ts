@@ -22,9 +22,10 @@ const formatIds = (ids: string[] | undefined): string =>
 
 const buildListKey = (resource: string, userId: string | undefined, ids: string): string => {
 	const baseKey = `${resource}list`;
-	return userId
-		? `${baseKey}${SEPARATOR}${userId}${SEPARATOR}${ids}`
-		: `${baseKey}${SEPARATOR}${ids}`;
+	if (userId) {
+		return `${baseKey}${SEPARATOR}${userId}${SEPARATOR}${ids}`;
+	}
+	return ids ? `${baseKey}${SEPARATOR}${ids}` : baseKey;
 };
 
 const buildSingleKey = (resource: string, userId: string | undefined, id: string | undefined): string => {
