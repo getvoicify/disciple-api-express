@@ -113,7 +113,7 @@ Once running, the Swagger documentation is available at:
 
 ### Key Endpoints
 
-- `GET /health` - Health check with version info
+- `GET /api/health` - Health check with database and Redis status
 - `GET /api/notes` - List all notes
 - `POST /api/notes` - Create a new note
 - `GET /api/notes/:id` - Get a specific note
@@ -122,10 +122,41 @@ Once running, the Swagger documentation is available at:
 
 All API endpoints require JWT authentication via Bearer token.
 
+### Health Check Endpoint
+
+The `/api/health` endpoint provides comprehensive health monitoring:
+
+```json
+{
+  "status": "healthy",        // "healthy", "degraded", or "unhealthy"
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "version": "1.17.0",
+  "database": "connected",    // "connected" or "disconnected"
+  "redis": "connected",       // "connected", "disconnected", or "in-memory" (dev)
+  "uptime": 3600.5,
+  "environment": "production",
+  "buildDate": "2024-01-15T08:00:00.000Z",
+  "commitSha": "abc123"
+}
+```
+
+**Status Logic:**
+- `healthy` - Both database and Redis are operational
+- `degraded` - One service is down but the API can still function
+- `unhealthy` - Critical services are down (returns HTTP 503)
+
+**Cache Modes:**
+- Production/Staging: Uses Redis for distributed caching
+- Development: Uses in-memory cache (shows as `"in-memory"`)
+
 ## 🏗️ Architecture
 
 ```
 src/
+├── cache/           # Cache abstraction layer
+│   ├── cache.repository.ts      # Cache interface
+│   ├── redis-cache.repository.ts # Redis implementation
+│   └── in-memory-cache.repository.ts # In-memory implementation
 ├── config/          # Configuration files
 ├── notes/           # Notes feature module
 │   ├── routes/      # Express route handlers
