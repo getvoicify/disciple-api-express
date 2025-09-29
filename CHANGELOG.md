@@ -1,3 +1,15 @@
+## [1.18.0](https://github.com/getvoicify/disciple-api-express/compare/v1.17.0...v1.18.0) (2025-09-29)
+
+
+### ✨ Features
+
+* redis implementation ([#19](https://github.com/getvoicify/disciple-api-express/issues/19)) ([cab0131](https://github.com/getvoicify/disciple-api-express/commit/cab013160f23e9e595964cb3a8454217b7c7c46b))
+
+
+### 🔧 Chores
+
+* **tsconfig:** add test-specific configuration file for Vitest ([#17](https://github.com/getvoicify/disciple-api-express/issues/17)) ([c76406e](https://github.com/getvoicify/disciple-api-express/commit/c76406e5e477436fe445d5038130ae5213a84877))
+
 ## [1.17.0](https://github.com/getvoicify/disciple-api-express/compare/v1.16.1...v1.17.0) (2025-09-27)
 
 
