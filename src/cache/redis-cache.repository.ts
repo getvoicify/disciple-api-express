@@ -1,0 +1,67 @@
+import Redis from 'ioredis';
+import { CacheRepository } from './cache.repository';
+import { safeExecute } from '../utils/handle-async';
+import { serialize, deserialize } from './cache-serialization.util';
+
+export class RedisCacheRepository implements CacheRepository {
+  private redis: Redis;
+  private static instance: CacheRepository;
+
+  constructor(connectionString: string) {
+    this.redis = new Redis(connectionString);
+  }
+
+  async write<T = string>(key: string, value: T, ttl?: number): Promise<void> {
+    const serialized = serialize(value);
+    const [error] = await safeExecute(
+      ttl && ttl > 0
+        ? this.redis.set(key, serialized, 'EX', ttl)
+        : this.redis.set(key, serialized)
+    );
+    if (error) {
+      throw error;
+    }
+  }
+
+  async read<T = string>(key: string): Promise<T | null> {
+    const [error, value] = await safeExecute(this.redis.get(key));
+    if (error) {
+      throw error;
+    }
+
+    if (value === null) {
+      return null;
+    }
+
+    return await deserialize<T>(value);
+  }
+
+  async delete(key: string): Promise<void> {
+    const [error] = await safeExecute(this.redis.del(key));
+    if (error) {
+      throw error;
+    }
+  }
+
+  async ping(): Promise<boolean> {
+    const [error, result] = await safeExecute(this.redis.ping());
+    if (error || result !== 'PONG') {
+      return false;
+    }
+    return true;
+  }
+
+  async disconnect(): Promise<void> {
+    const [error] = await safeExecute(() => this.redis.disconnect());
+    if (error) {
+      throw error;
+    }
+  }
+
+  static getInstance(connectionString: string): CacheRepository {
+    if (!RedisCacheRepository.instance) {
+      RedisCacheRepository.instance = new RedisCacheRepository(connectionString);
+    }
+    return RedisCacheRepository.instance;
+  }
+}

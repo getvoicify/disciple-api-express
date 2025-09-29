@@ -22,6 +22,7 @@ import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
 import {KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
+import {createCacheRepository} from "./cache";
 
 dotenv.config();
 
@@ -63,6 +64,8 @@ const mediaRepository = new PostgresMediaRepository(db, keycloakAdapter);
 const r2Service = new CloudflareR2ServiceImpl();
 const mediaUploadService = new MediaUploadService(mediaRepository, r2Service);
 
+const cacheRepository = createCacheRepository();
+
 const app = express();
 app.use(express.json());
 
@@ -72,23 +75,38 @@ app.use(express.json());
  * /health:
  *   get:
  *     summary: Health check
- *     description: Check if the API and database are running and healthy
+ *     description: Check if the API, database, and Redis cache are running and healthy
  *     tags: [Health]
  *     responses:
  *       200:
- *         description: API and database are healthy
+ *         description: API is healthy or degraded
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/HealthResponse'
- *             example:
- *               status: "healthy"
- *               timestamp: "2024-01-15T10:30:00.000Z"
- *               version: "1.0.0"
- *               database: "connected"
- *               uptime: 3600.5
+ *             examples:
+ *               healthy:
+ *                 summary: All services healthy
+ *                 value:
+ *                   status: "healthy"
+ *                   timestamp: "2024-01-15T10:30:00.000Z"
+ *                   version: "1.0.0"
+ *                   database: "connected"
+ *                   redis: "connected"
+ *                   uptime: 3600.5
+ *                   environment: "production"
+ *               degraded:
+ *                 summary: Some services degraded
+ *                 value:
+ *                   status: "degraded"
+ *                   timestamp: "2024-01-15T10:30:00.000Z"
+ *                   version: "1.0.0"
+ *                   database: "connected"
+ *                   redis: "disconnected"
+ *                   uptime: 3600.5
+ *                   environment: "production"
  *       503:
- *         description: API is unhealthy (database connection failed)
+ *         description: API is unhealthy (critical services failed)
  *         content:
  *           application/json:
  *             schema:
@@ -98,11 +116,14 @@ app.use(express.json());
  *               timestamp: "2024-01-15T10:30:00.000Z"
  *               version: "1.0.0"
  *               database: "disconnected"
+ *               redis: "disconnected"
  *               uptime: 3600.5
+ *               environment: "production"
  */
 app.get('/api/health', async (req, res) => {
 	const timestamp = new Date().toISOString();
 	let dbStatus: string;
+	let redisStatus: string;
 
 	try {
 		// Ping the database with a simple query
@@ -113,16 +134,46 @@ app.get('/api/health', async (req, res) => {
 		dbStatus = 'disconnected';
 	}
 
-	const isHealthy = dbStatus === 'connected';
-	const status = isHealthy ? 'healthy' : 'unhealthy';
+	// Check Redis/Cache health
+	try {
+		const isRedisHealthy = await cacheRepository.ping();
+		const nodeEnv = process.env.NODE_ENV || 'development';
+		if (nodeEnv === 'development') {
+			redisStatus = 'in-memory';
+		} else {
+			redisStatus = isRedisHealthy ? 'connected' : 'disconnected';
+		}
+	} catch (error) {
+		console.error('Redis health check failed:', error);
+		redisStatus = 'disconnected';
+	}
+
+	// Determine overall health status
+	const isDbHealthy = dbStatus === 'connected';
+	const isCacheHealthy = redisStatus === 'connected' || redisStatus === 'in-memory';
+
+	let status: string;
+	let statusCode: number;
+
+	if (isDbHealthy && isCacheHealthy) {
+		status = 'healthy';
+		statusCode = 200;
+	} else if (isDbHealthy || isCacheHealthy) {
+		status = 'degraded';
+		statusCode = 200;
+	} else {
+		status = 'unhealthy';
+		statusCode = 503;
+	}
 
 	const version = process.env.APP_VERSION || process.env.npm_package_version || '0.0.0-development';
 
-	res.status(isHealthy ? 200 : 503).json({
+	res.status(statusCode).json({
 		status,
 		timestamp,
 		version,
 		database: dbStatus,
+		redis: redisStatus,
 		uptime: process.uptime(),
 		environment: process.env.NODE_ENV || 'development',
 		buildDate: process.env.BUILD_DATE,
