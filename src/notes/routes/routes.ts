@@ -14,6 +14,7 @@ import {canAccessMiddleware} from "../../middleware/get-authorized-ids.middlewar
 import {createCacheRepository} from "../../cache";
 import {cacheResponseMiddleware} from "../../middleware/cache-response.middleware/cache-response.middleware";
 import {keyGenerator} from "../../middleware/key-generator.middleware";
+import {extractFiltersMiddleware} from "../../middleware/extract-filters.middleware";
 
 
 export const notesRouter = (service: NoteService) => {
@@ -49,6 +50,7 @@ export const notesRouter = (service: NoteService) => {
 			resource: 'notes',
 			queryUri: '/notes',
 		}),
+		extractFiltersMiddleware(ListFilterSchema, 'query'),
 		keyGenerator('note', true),
 		cacheResponseMiddleware(cacheRepo),
 	], noteListEndpoint(service, cacheRepo));
