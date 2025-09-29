@@ -217,6 +217,97 @@ describe('keyGenerator middleware', () => {
     });
   });
 
+  describe('key/value map parameters', () => {
+    describe('list keys with filters', () => {
+      it('should include single filter in generated key', () => {
+        req['filters'] = { status: 'active' };
+        const middleware = keyGenerator('posts');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:postslist:status=active');
+        expect(next).toHaveBeenCalled();
+      });
+
+      it('should include multiple filters in generated key sorted alphabetically', () => {
+        req['filters'] = { status: 'active', category: 'tech', sort: 'date' };
+        const middleware = keyGenerator('posts');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:postslist:category=tech:sort=date:status=active');
+        expect(next).toHaveBeenCalled();
+      });
+
+      it('should combine user, ids, and filters in the correct order', () => {
+        req['user'] = [null, { payload: { sub: 'user-123' } }];
+        req['ids'] = ['456'];
+        req['filters'] = { status: 'published' };
+        const middleware = keyGenerator('posts');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:postslist:user-123:456:status=published');
+        expect(next).toHaveBeenCalled();
+      });
+
+      it('should handle filters with array values', () => {
+        req['filters'] = { tags: ['javascript', 'typescript'] };
+        const middleware = keyGenerator('posts');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:postslist:tags=javascript,typescript');
+        expect(next).toHaveBeenCalled();
+      });
+
+      it('should handle filters with undefined or null values', () => {
+        req['filters'] = { status: 'active', deleted: undefined, archived: null };
+        const middleware = keyGenerator('posts');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:postslist:status=active');
+        expect(next).toHaveBeenCalled();
+      });
+
+      it('should handle empty filters object', () => {
+        req['filters'] = {};
+        const middleware = keyGenerator('posts');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:postslist');
+        expect(next).toHaveBeenCalled();
+      });
+    });
+
+    describe('single resource keys with filters', () => {
+      it('should include filters in single resource key', () => {
+        req.params = { id: '789' };
+        req['filters'] = { version: 'v2' };
+        const middleware = keyGenerator('post', false, 'id');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:post789:version=v2');
+        expect(next).toHaveBeenCalled();
+      });
+
+      it('should combine user and filters for single resource', () => {
+        req['user'] = [null, { payload: { sub: 'user-456' } }];
+        req.params = { id: '789' };
+        req['filters'] = { format: 'json', include: 'metadata' };
+        const middleware = keyGenerator('post', false, 'id');
+
+        middleware(req as Request, res as Response, next);
+
+        expect(req['key']).toBe('test:post:user-456:789:format=json:include=metadata');
+        expect(next).toHaveBeenCalled();
+      });
+    });
+  });
+
   describe('refactored implementation tests', () => {
     describe('should use builder pattern for key construction', () => {
       it('should build list key step by step', () => {
