@@ -168,8 +168,8 @@ describe('RedisCacheRepository', () => {
   });
 
   describe('connection handling', () => {
-    it('should create Redis client with connection string', () => {
-      expect(Redis).toHaveBeenCalledWith('redis://localhost:6379');
+    it('should create Redis client with connection string and options', () => {
+      expect(Redis).toHaveBeenCalledWith('redis://localhost:6379', { maxRetriesPerRequest: 10 });
     });
 
     it('should disconnect when repository is destroyed', async () => {
