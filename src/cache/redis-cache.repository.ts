@@ -8,7 +8,7 @@ export class RedisCacheRepository implements CacheRepository {
   private static instance: CacheRepository;
 
   constructor(connectionString: string) {
-    this.redis = new Redis(connectionString);
+    this.redis = new Redis(connectionString, { maxRetriesPerRequest: 10 });
   }
 
   async write<T = string>(key: string, value: T, ttl?: number): Promise<void> {
@@ -45,10 +45,8 @@ export class RedisCacheRepository implements CacheRepository {
 
   async ping(): Promise<boolean> {
     const [error, result] = await safeExecute(this.redis.ping());
-    if (error || result !== 'PONG') {
-      return false;
-    }
-    return true;
+    return !(error || result !== 'PONG');
+
   }
 
   async disconnect(): Promise<void> {
