@@ -1,3 +1,10 @@
+## [1.19.0](https://github.com/getvoicify/disciple-api-express/compare/v1.18.0...v1.19.0) (2025-10-01)
+
+
+### ✨ Features
+
+* church posts ([#20](https://github.com/getvoicify/disciple-api-express/issues/20)) ([dd8a137](https://github.com/getvoicify/disciple-api-express/commit/dd8a13787c922f10448c786142600113a197cc5f))
+
 ## [1.18.0](https://github.com/getvoicify/disciple-api-express/compare/v1.17.0...v1.18.0) (2025-09-29)
 
 
