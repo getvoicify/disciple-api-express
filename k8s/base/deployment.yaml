@@ -30,6 +30,8 @@ spec:
             name: disciple-api-config
         - secretRef:
             name: disciple-api-secrets
+        - secretRef:
+            name: disciple-api-redis-secret
         resources:
           requests:
             memory: "128Mi"
