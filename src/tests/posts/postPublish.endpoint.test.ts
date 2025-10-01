@@ -24,9 +24,9 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
         id: '550e8400-e29b-41d4-a716-446655440001'
       },
       body: {},
-      user: {
-        id: '550e8400-e29b-41d4-a716-446655440002'
-      }
+      user: [{
+        sub: '550e8400-e29b-41d4-a716-446655440002'
+      }]
     } as unknown as Request;
 
     res = {
@@ -43,7 +43,7 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
         id: req.params!.id,
         title: 'Test Post',
         content: 'Test content',
-        authorId: req['user']!.id,
+        authorId: req['user']![0].sub!,
         churchId: '550e8400-e29b-41d4-a716-446655440003',
         status: 'published',
         publishedAt: new Date(),
@@ -63,7 +63,7 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
       const handler = postPublishEndpoint(mockService);
       await handler(req as Request, res as Response, next);
 
-      expect(mockService.publishPost).toHaveBeenCalledWith(req.params!.id, req['user']!.id);
+      expect(mockService.publishPost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(mockPost);
       expect(next).not.toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
         id: req.params!.id,
         title: 'Test Post',
         content: 'Test content',
-        authorId: req['user']!.id,
+        authorId: req['user']![0].sub!,
         churchId: '550e8400-e29b-41d4-a716-446655440003',
         status: 'draft',
         publishedAt: null,
@@ -108,7 +108,7 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
       const handler = postPublishEndpoint(mockService);
       await handler(req as Request, res as Response, next);
 
-      expect(mockService.unpublishPost).toHaveBeenCalledWith(req.params!.id, req['user']!.id);
+      expect(mockService.unpublishPost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(mockPost);
       expect(next).not.toHaveBeenCalled();

@@ -23,9 +23,9 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
         id: '550e8400-e29b-41d4-a716-446655440001'
       },
       body: {},
-      user: {
-        id: '550e8400-e29b-41d4-a716-446655440002'
-      }
+      user: [{
+        sub: '550e8400-e29b-41d4-a716-446655440002'
+      }]
     } as unknown as Request;
 
     res = {
@@ -46,7 +46,7 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
       id: req.params!.id,
       title: 'Updated Title',
       content: 'Updated content',
-      authorId: req['user']!.id,
+      authorId: req['user']![0].sub!,
       churchId: '550e8400-e29b-41d4-a716-446655440003',
       status: 'draft',
       publishedAt: null,
@@ -66,7 +66,7 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
     const handler = postUpdateEndpoint(mockService);
     await handler(req as Request, res as Response, next);
 
-    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, updateInput, req['user']!.id);
+    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, updateInput, req['user']![0].sub);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(mockPost);
     expect(next).not.toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
     await handler(req as Request, res as Response, next);
 
     // Should still call service with empty object
-    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, {}, req['user']!.id);
+    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, {}, req['user']![0].sub);
   });
 
   it('should handle post not found error', async () => {

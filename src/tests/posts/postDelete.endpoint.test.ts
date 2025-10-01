@@ -21,9 +21,9 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
       params: {
         id: '550e8400-e29b-41d4-a716-446655440001'
       },
-      user: {
-        id: '550e8400-e29b-41d4-a716-446655440002'
-      }
+      user: [{
+        sub: '550e8400-e29b-41d4-a716-446655440002'
+      }]
     } as unknown as Request;
 
     res = {
@@ -40,7 +40,7 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
     const handler = postDeleteEndpoint(mockService);
     await handler(req as Request, res as Response, next);
 
-    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']!.id);
+    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
     expect(res.status).toHaveBeenCalledWith(204);
     expect(res.json).toHaveBeenCalledWith({ message: 'Post deleted successfully' });
     expect(next).not.toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
     const handler = postDeleteEndpoint(mockService);
     await handler(req as Request, res as Response, next);
 
-    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']!.id);
+    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
     expect(next).toHaveBeenCalledWith(expect.any(PostNotFoundError));
   });
 

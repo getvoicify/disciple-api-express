@@ -20,9 +20,9 @@ describe('POST /posts - Create Post Endpoint', () => {
 
     req = {
       body: {},
-      user: {
-        id: '550e8400-e29b-41d4-a716-446655440001'
-      }
+      user: [{
+        sub: '550e8400-e29b-41d4-a716-446655440001'
+      }]
     } as unknown as Request;
 
     res = {
@@ -44,7 +44,7 @@ describe('POST /posts - Create Post Endpoint', () => {
       id: '550e8400-e29b-41d4-a716-446655440003',
       title: input.title,
       content: input.content,
-      authorId: req['user']!.id,
+      authorId: req['user']![0].sub!,
       churchId: input.churchId,
       status: 'draft',
       publishedAt: null,
@@ -64,7 +64,7 @@ describe('POST /posts - Create Post Endpoint', () => {
     const handler = postCreateEndpoint(mockService);
     await handler(req as Request, res as Response, next);
 
-    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']!.id);
+    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(mockPost);
     expect(next).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe('POST /posts - Create Post Endpoint', () => {
     const handler = postCreateEndpoint(mockService);
     await handler(req as Request, res as Response, next);
 
-    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']!.id);
+    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
     expect(next).toHaveBeenCalledWith(expect.any(InsufficientChurchRoleError));
   });
 
@@ -111,13 +111,13 @@ describe('POST /posts - Create Post Endpoint', () => {
 
     req.body = input;
     mockService.createPost = vi.fn().mockRejectedValue(
-      new NotChurchMemberError(req['user']!.id, input.churchId)
+      new NotChurchMemberError(req['user']![0].sub!, input.churchId)
     );
 
     const handler = postCreateEndpoint(mockService);
     await handler(req as Request, res as Response, next);
 
-    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']!.id);
+    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
     expect(next).toHaveBeenCalledWith(expect.any(NotChurchMemberError));
   });
 

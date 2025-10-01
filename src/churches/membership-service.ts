@@ -21,6 +21,7 @@ export interface ChurchMembershipService {
   // Query operations
   getChurchMembers(churchId: string, userId: string): Promise<ChurchMember[]>;
   getUserMemberships(userId: string): Promise<ChurchMember[]>;
+  getMembershipByUserAndChurch(userId: string, churchId: string): Promise<ChurchMember | null>;
 }
 
 export class ChurchMembershipServiceImpl implements ChurchMembershipService {
@@ -293,6 +294,13 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
     this.validateUUID(userId);
 
     return this.memberRepository.findByUser(userId, { status: 'Active' });
+  }
+
+  async getMembershipByUserAndChurch(userId: string, churchId: string): Promise<ChurchMember | null> {
+    this.validateUUID(userId);
+    this.validateUUID(churchId);
+
+    return this.memberRepository.findByChurchAndUser(churchId, userId);
   }
 
   private validateUUID(id: string): void {

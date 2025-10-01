@@ -1,12 +1,15 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { PostService } from '../service';
 import { safeExecute } from '../../utils/handle-async';
+import type { EndpointRequest } from '../../types/endpoint-handler';
 
 export const postDeleteEndpoint = (service: PostService) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: EndpointRequest, res: Response, next: NextFunction) => {
     // Validate user context
-    if (!req.user?.id) {
+    const user = req.user?.[0];
+    const userId = user?.sub;
+    if (!userId) {
       return next(new Error('User context is required'));
     }
 
@@ -17,7 +20,7 @@ export const postDeleteEndpoint = (service: PostService) => {
     }
 
     // Delete post
-    const [error] = await safeExecute(service.deletePost(id!, req.user.id));
+    const [error] = await safeExecute(service.deletePost(id!, userId as string));
     if (error) {
       return next(error);
     }
