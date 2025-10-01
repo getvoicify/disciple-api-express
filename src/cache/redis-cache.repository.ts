@@ -8,7 +8,14 @@ export class RedisCacheRepository implements CacheRepository {
   private static instance: CacheRepository;
 
   constructor(connectionString: string) {
-    this.redis = new Redis(connectionString, { maxRetriesPerRequest: 10 });
+    // Configuration optimized for serverless Redis (e.g., Upstash)
+    this.redis = new Redis(connectionString, {
+      maxRetriesPerRequest: null, // Disable retries for serverless
+      enableReadyCheck: false,     // Skip ready check for faster connections
+      enableOfflineQueue: false,   // Fail fast if not connected
+      connectTimeout: 10000,       // 10s connection timeout
+      lazyConnect: false,          // Connect immediately
+    });
   }
 
   async write<T = string>(key: string, value: T, ttl?: number): Promise<void> {
