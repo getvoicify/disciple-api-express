@@ -15,6 +15,23 @@ export class RedisCacheRepository implements CacheRepository {
       enableOfflineQueue: false,   // Fail fast if not connected
       connectTimeout: 10000,       // 10s connection timeout
       lazyConnect: false,          // Connect immediately
+      retryStrategy: (times: number) => {
+        // Retry with exponential backoff, max 3 seconds
+        return Math.min(times * 50, 3000);
+      },
+    });
+
+    // Handle connection errors to prevent unhandled error events
+    this.redis.on('error', (error: Error) => {
+      console.error('[Redis] Connection error:', error.message);
+    });
+
+    this.redis.on('close', () => {
+      console.warn('[Redis] Connection closed');
+    });
+
+    this.redis.on('reconnecting', () => {
+      console.log('[Redis] Reconnecting...');
     });
   }
 
