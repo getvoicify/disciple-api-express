@@ -15,6 +15,7 @@ describe('RedisCacheRepository', () => {
       get: vi.fn(),
       del: vi.fn().mockResolvedValue(1),
       disconnect: vi.fn(),
+      on: vi.fn(),
     };
 
     (Redis as any).mockImplementation(() => mockRedis);
@@ -168,8 +169,26 @@ describe('RedisCacheRepository', () => {
   });
 
   describe('connection handling', () => {
-    it('should create Redis client with connection string', () => {
-      expect(Redis).toHaveBeenCalledWith('redis://localhost:6379');
+    it('should create Redis client with connection string and options', () => {
+      const call = (Redis as any).mock.calls[0];
+      const config = call[1];
+
+      expect(call[0]).toBe('redis://localhost:6379');
+      expect(config.maxRetriesPerRequest).toBeNull();
+      expect(config.enableReadyCheck).toBe(false);
+      expect(config.enableOfflineQueue).toBe(false);
+      expect(config.connectTimeout).toBe(10000);
+      expect(config.lazyConnect).toBe(false);
+      expect(typeof config.retryStrategy).toBe('function');
+    });
+
+    it('should have retry strategy with exponential backoff', () => {
+      const call = (Redis as any).mock.calls[0];
+      const retryStrategy = call[1].retryStrategy;
+
+      expect(retryStrategy(1)).toBe(50);
+      expect(retryStrategy(10)).toBe(500);
+      expect(retryStrategy(100)).toBe(3000); // Max cap at 3 seconds
     });
 
     it('should disconnect when repository is destroyed', async () => {
@@ -177,6 +196,18 @@ describe('RedisCacheRepository', () => {
       await repo.disconnect();
 
       expect(mockRedis.disconnect).toHaveBeenCalled();
+    });
+
+    it('should register error event handler', () => {
+      expect(mockRedis.on).toHaveBeenCalledWith('error', expect.any(Function));
+    });
+
+    it('should register close event handler', () => {
+      expect(mockRedis.on).toHaveBeenCalledWith('close', expect.any(Function));
+    });
+
+    it('should register reconnecting event handler', () => {
+      expect(mockRedis.on).toHaveBeenCalledWith('reconnecting', expect.any(Function));
     });
   });
 

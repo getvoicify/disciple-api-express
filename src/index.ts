@@ -17,6 +17,9 @@ import {mediaRouter} from "./media/routes/routes";
 import {PostgresMediaRepository} from "./media/pg-repository";
 import {MediaUploadService} from "./media/media-upload-service";
 import {CloudflareR2ServiceImpl} from "./media/cloudflare-r2-service";
+import {PostgresPostRepository} from "./posts/pg-repository";
+import {PostServiceImpl} from "./posts/service";
+import {postRoutes} from "./posts/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
@@ -63,6 +66,9 @@ const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
 const mediaRepository = new PostgresMediaRepository(db, keycloakAdapter);
 const r2Service = new CloudflareR2ServiceImpl();
 const mediaUploadService = new MediaUploadService(mediaRepository, r2Service);
+
+const postRepository = new PostgresPostRepository(db, keycloakAdapter);
+const postService = new PostServiceImpl(postRepository, churchMemberService);
 
 const cacheRepository = createCacheRepository();
 
@@ -222,10 +228,22 @@ app.get('/api/openapi.yaml', (req, res) => {
 	res.send(yaml.dump(swaggerSpec));
 });
 
+// Auth middleware setup for posts
+import {jwtVerify} from 'jose';
+import {validateToken} from "./utils/validate-token.middleware";
+import {canAccessMiddleware} from "./middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
+
+const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
+
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService));
 app.use('/api/notes', notesRouter(noteService));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
+app.use('/api/posts', postRoutes(
+  postService,
+  tokenVerifier(),
+  canAccessMiddleware({ scope: 'read', resource: 'posts' })
+));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);

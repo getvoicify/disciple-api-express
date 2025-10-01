@@ -1,9 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { RawDb } from '../../utils/database';
-import { PostgresMediaRepository } from '../../media/pg-repository';
-import type { MediaRepository } from '../../media/repository';
-import type { CreateMediaInput, UpdateMediaInput, Media, MediaFilters } from '../../media/schemas';
-import { GeneralizedKeycloakOutboxAdapter } from '../../keycloak/generalized-outbox.adapter';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type {RawDb} from '../../utils/database';
+import {PostgresMediaRepository} from '../../media/pg-repository';
+import type {CreateMediaInput, MediaFilters, UpdateMediaInput} from '../../media/schemas';
+import {GeneralizedKeycloakOutboxAdapter} from '../../keycloak/generalized-outbox.adapter';
 
 // Mock the Keycloak adapter
 const mockKeycloakAdapter = {

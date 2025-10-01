@@ -1,5 +1,38 @@
 - Always use the safeExecute utility for promises and unsafe function calls that require a try/catch block.
 
+## User Object Access Pattern
+
+When accessing the authenticated user in Express endpoints, always use the following pattern:
+
+```typescript
+const user = req.user?.[0];
+const userId = user?.sub;
+```
+
+**Key Details:**
+- The `User` type is defined as `jose.JWTPayload[]` (an array of JWT payloads)
+- The user ID is accessed via the `sub` property from the JWT payload
+- Always use the `EndpointRequest` type from `src/types/endpoint-handler.ts` instead of Express's `Request` type
+- The `EndpointRequest` type extends Express's `Request` with `user?: User`
+
+**Example from codebase:**
+```typescript
+import type { EndpointRequest } from '../../types/endpoint-handler';
+
+export const someEndpoint = (service: SomeService) => {
+  return async (req: EndpointRequest, res: Response, next: NextFunction) => {
+    const user = req.user?.[0];
+    const userId = user?.sub;
+    if (!userId) {
+      return next(new Error('User context is required'));
+    }
+
+    // Use userId here
+    const [error, result] = await safeExecute(service.doSomething(userId as string));
+  };
+};
+```
+
 ## safeExecute Utility Memory
 
 The `safeExecute` function in `src/utils/handle-async.ts` eliminates try/catch blocks by returning a tuple pattern `[Error] | [undefined, T]`.
