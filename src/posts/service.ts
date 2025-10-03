@@ -25,6 +25,7 @@ export interface PostService {
     listPosts(filters?: PostFilters): Promise<Post[]>;
     publishPost(id: string, authorId: string): Promise<Post>;
     unpublishPost(id: string, authorId: string): Promise<Post>;
+    getLatestPostInSeries(seriesId: string): Promise<Post | null>;
 }
 
 export class PostServiceImpl implements PostService {
@@ -168,6 +169,11 @@ export class PostServiceImpl implements PostService {
         }
 
         return post;
+    }
+
+    async getLatestPostInSeries(seriesId: string): Promise<Post | null> {
+        this.validateUUID(seriesId);
+        return this.repository.getLatestPostInSeries(seriesId);
     }
 
     private validateUUID(id: string): void {

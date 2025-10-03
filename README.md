@@ -113,12 +113,34 @@ Once running, the Swagger documentation is available at:
 
 ### Key Endpoints
 
+#### Health & Documentation
 - `GET /api/health` - Health check with database and Redis status
+- `GET /api/openapi.json` - OpenAPI specification (JSON)
+- `GET /api/openapi.yaml` - OpenAPI specification (YAML)
+
+#### Notes
 - `GET /api/notes` - List all notes
 - `POST /api/notes` - Create a new note
 - `GET /api/notes/:id` - Get a specific note
 - `PUT /api/notes/:id` - Update a note
 - `DELETE /api/notes/:id` - Delete a note
+
+#### Posts
+- `GET /api/posts` - List all posts
+- `POST /api/posts` - Create a new post
+- `GET /api/posts/:id` - Get a specific post
+- `PATCH /api/posts/:id` - Update a post
+- `DELETE /api/posts/:id` - Delete a post
+- `PATCH /api/posts/:id/publish` - Publish a post
+- `GET /api/posts/daily-devotionals` - Get daily devotionals (grouped by date)
+
+#### Churches
+- `GET /api/churches` - List churches
+- `POST /api/churches` - Create a church
+- `GET /api/churches/:id` - Get church details
+- `PUT /api/churches/:id` - Update church
+- `POST /api/churches/:id/members` - Join church
+- `GET /api/churches/:id/members` - List church members
 
 All API endpoints require JWT authentication via Bearer token.
 
@@ -154,17 +176,60 @@ The `/api/health` endpoint provides comprehensive health monitoring:
 ```
 src/
 ├── cache/           # Cache abstraction layer
-│   ├── cache.repository.ts      # Cache interface
-│   ├── redis-cache.repository.ts # Redis implementation
+│   ├── cache.repository.ts          # Cache interface
+│   ├── redis-cache.repository.ts   # Redis implementation
 │   └── in-memory-cache.repository.ts # In-memory implementation
+├── churches/        # Church management module
+│   ├── service.ts                   # Business logic
+│   ├── membership-service.ts       # Member management
+│   └── postgres-repository.ts      # Database access
 ├── config/          # Configuration files
 ├── notes/           # Notes feature module
 │   ├── routes/      # Express route handlers
 │   ├── service.ts   # Business logic
 │   └── repository.ts # Database access
+├── posts/           # Posts/devotionals module
+│   ├── routes/      # Express route handlers
+│   │   └── dailyDevotionals.endpoint.ts # Daily devotionals
+│   ├── service.ts   # Business logic
+│   └── pg-repository.ts # Database access
+├── series/          # Devotional series module
+│   ├── service.ts   # Business logic
+│   └── pg-repository.ts # Database access
 ├── schemas/         # Shared schemas
 ├── utils/           # Utility functions
 └── index.ts         # Application entry point
+```
+
+### Key Features
+
+#### Daily Devotionals
+The `/api/posts/daily-devotionals` endpoint returns the latest published post from each series across all churches the user is a member of, grouped by the post's publication date. This allows users to access their daily devotional content in a single request.
+
+**Response Format:**
+```json
+{
+  "2024-01-15": [
+    {
+      "id": "post-id-1",
+      "title": "Morning Devotional",
+      "content": "...",
+      "seriesId": "series-id-1",
+      "seriesName": "Daily Bread",
+      "publishedAt": "2024-01-15T08:00:00Z",
+      ...
+    },
+    {
+      "id": "post-id-2",
+      "title": "Evening Reflection",
+      "content": "...",
+      "seriesId": "series-id-2",
+      "seriesName": "Evening Prayer",
+      "publishedAt": "2024-01-15T20:00:00Z",
+      ...
+    }
+  ]
+}
 ```
 
 ## 🔄 CI/CD Pipeline
