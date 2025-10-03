@@ -8,6 +8,57 @@ const PublishAction = z.object({
   action: z.enum(['publish', 'unpublish'])
 });
 
+/**
+ * @openapi
+ * /posts/{id}/publish:
+ *   patch:
+ *     summary: Publish or unpublish a post
+ *     description: Change the publication status of a post. Publishing makes the post visible to church members, while unpublishing returns it to draft status. Only the post author can change the publication status.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the post
+ *         example: "550e8400-e29b-41d4-a716-446655440000"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - action
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [publish, unpublish]
+ *                 description: The action to perform on the post
+ *           example:
+ *             action: "publish"
+ *     responses:
+ *       200:
+ *         description: Post status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ *       400:
+ *         description: Invalid input - validation error
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       403:
+ *         description: Forbidden - Not the post author
+ *       404:
+ *         description: Post not found
+ *       500:
+ *         description: Internal server error
+ */
 export const postPublishEndpoint = (service: PostService) => {
   return async (req: EndpointRequest, res: Response, next: NextFunction) => {
     // Validate user context

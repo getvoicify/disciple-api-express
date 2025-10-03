@@ -657,6 +657,225 @@ export const mediaSchema = {
     }
 };
 
+export const postSchema = {
+    type: 'object',
+    required: ['id', 'title', 'content', 'authorId', 'churchId', 'status', 'publishedAt', 'image', 'tags', 'categories', 'scriptureReferences', 'seriesId', 'seriesName', 'createdAt', 'updatedAt'],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the post'
+        },
+        title: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Post title',
+            example: 'Morning Devotional: Finding Peace'
+        },
+        content: {
+            type: 'string',
+            minLength: 1,
+            description: 'Post content',
+            example: 'In times of trouble, we can find peace...'
+        },
+        authorId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the user who created the post'
+        },
+        churchId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the church this post belongs to'
+        },
+        status: {
+            type: 'string',
+            enum: ['draft', 'published'],
+            description: 'Publication status of the post'
+        },
+        publishedAt: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'When the post was published'
+        },
+        image: {
+            type: 'string',
+            format: 'uri',
+            nullable: true,
+            description: 'URL of the post image',
+            example: 'https://example.com/image.jpg'
+        },
+        tags: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'Tags associated with the post',
+            example: ['devotional', 'prayer']
+        },
+        categories: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'Categories the post belongs to',
+            example: ['spiritual growth', 'worship']
+        },
+        scriptureReferences: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ScriptureReference'
+            },
+            description: 'Scripture references cited in the post'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'ID of the series this post belongs to'
+        },
+        seriesName: {
+            type: 'string',
+            nullable: true,
+            description: 'Name of the series this post belongs to',
+            example: 'Daily Bread'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'When the post was created'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'When the post was last updated'
+        }
+    }
+};
+
+export const createPostInputSchema = {
+    type: 'object',
+    required: ['title', 'content', 'churchId'],
+    properties: {
+        title: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Post title',
+            example: 'Morning Devotional: Finding Peace'
+        },
+        content: {
+            type: 'string',
+            minLength: 1,
+            description: 'Post content',
+            example: 'In times of trouble, we can find peace...'
+        },
+        churchId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the church this post belongs to'
+        },
+        image: {
+            type: 'string',
+            format: 'uri',
+            description: 'URL of the post image',
+            example: 'https://example.com/image.jpg'
+        },
+        tags: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'Tags to associate with the post',
+            example: ['devotional', 'prayer']
+        },
+        categories: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'Categories the post belongs to',
+            example: ['spiritual growth', 'worship']
+        },
+        scriptureReferences: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ScriptureReference'
+            },
+            description: 'Scripture references to cite in the post'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the series this post belongs to'
+        },
+        seriesName: {
+            type: 'string',
+            description: 'Name of the series this post belongs to',
+            example: 'Daily Bread'
+        }
+    }
+};
+
+export const updatePostInputSchema = {
+    type: 'object',
+    properties: {
+        title: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Post title'
+        },
+        content: {
+            type: 'string',
+            minLength: 1,
+            description: 'Post content'
+        },
+        status: {
+            type: 'string',
+            enum: ['draft', 'published'],
+            description: 'Publication status'
+        },
+        image: {
+            type: 'string',
+            format: 'uri',
+            description: 'URL of the post image'
+        },
+        tags: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'Tags to associate with the post'
+        },
+        categories: {
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: 'Categories the post belongs to'
+        },
+        scriptureReferences: {
+            type: 'array',
+            items: {
+                $ref: '#/components/schemas/ScriptureReference'
+            },
+            description: 'Scripture references'
+        },
+        seriesId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the series'
+        },
+        seriesName: {
+            type: 'string',
+            description: 'Name of the series'
+        }
+    }
+};
+
 // Export all schemas as a combined object for easy import
 export const openApiSchemas = {
     ScriptureReference: scriptureReferenceSchema,
@@ -673,5 +892,8 @@ export const openApiSchemas = {
     ChurchMember: churchMemberSchema,
     InvitationInput: invitationInputSchema,
     UpdateRoleInput: updateRoleInputSchema,
-    Media: mediaSchema
+    Media: mediaSchema,
+    Post: postSchema,
+    CreatePostInput: createPostInputSchema,
+    UpdatePostInput: updatePostInputSchema
 };
