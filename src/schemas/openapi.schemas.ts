@@ -876,6 +876,139 @@ export const updatePostInputSchema = {
     }
 };
 
+export const seriesSchema = {
+    type: 'object',
+    required: ['id', 'title', 'description', 'authorId', 'churchId', 'status', 'createdAt', 'updatedAt'],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the series',
+            example: '550e8400-e29b-41d4-a716-446655440000'
+        },
+        title: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Title of the devotional series',
+            example: 'Morning Devotionals'
+        },
+        description: {
+            type: 'string',
+            minLength: 1,
+            description: 'Description of the devotional series',
+            example: 'Daily morning reflections and prayers to start your day'
+        },
+        image: {
+            type: 'string',
+            nullable: true,
+            format: 'uri',
+            description: 'URL to the series cover image',
+            example: 'https://example.com/devotional-cover.jpg'
+        },
+        authorId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the author who created the series',
+            example: '550e8400-e29b-41d4-a716-446655440001'
+        },
+        churchId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the church this series belongs to',
+            example: '550e8400-e29b-41d4-a716-446655440002'
+        },
+        status: {
+            type: 'string',
+            enum: ['draft', 'published'],
+            description: 'Publication status of the series',
+            example: 'draft'
+        },
+        publishedAt: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'Timestamp when the series was published',
+            example: '2024-01-15T10:30:00Z'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the series was created',
+            example: '2024-01-15T10:00:00Z'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the series was last updated',
+            example: '2024-01-15T10:30:00Z'
+        }
+    }
+};
+
+export const createSeriesInputSchema = {
+    type: 'object',
+    required: ['title', 'description', 'churchId'],
+    properties: {
+        title: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Title of the devotional series',
+            example: 'Morning Devotionals'
+        },
+        description: {
+            type: 'string',
+            minLength: 1,
+            description: 'Description of the devotional series',
+            example: 'Daily morning reflections and prayers to start your day'
+        },
+        churchId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the church this series belongs to',
+            example: '550e8400-e29b-41d4-a716-446655440001'
+        },
+        image: {
+            type: 'string',
+            format: 'uri',
+            description: 'Optional URL to the series cover image',
+            example: 'https://example.com/devotional-cover.jpg'
+        }
+    }
+};
+
+export const updateSeriesInputSchema = {
+    type: 'object',
+    properties: {
+        title: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Updated title of the devotional series',
+            example: 'Evening Devotionals'
+        },
+        description: {
+            type: 'string',
+            minLength: 1,
+            description: 'Updated description of the devotional series',
+            example: 'Peaceful reflections for the evening'
+        },
+        status: {
+            type: 'string',
+            enum: ['draft', 'published'],
+            description: 'Updated publication status',
+            example: 'published'
+        },
+        image: {
+            type: 'string',
+            format: 'uri',
+            description: 'Updated URL to the series cover image',
+            example: 'https://example.com/new-cover.jpg'
+        }
+    }
+};
+
 // Export all schemas as a combined object for easy import
 export const openApiSchemas = {
     ScriptureReference: scriptureReferenceSchema,
@@ -895,5 +1028,8 @@ export const openApiSchemas = {
     Media: mediaSchema,
     Post: postSchema,
     CreatePostInput: createPostInputSchema,
-    UpdatePostInput: updatePostInputSchema
+    UpdatePostInput: updatePostInputSchema,
+    Series: seriesSchema,
+    CreateSeriesInput: createSeriesInputSchema,
+    UpdateSeriesInput: updateSeriesInputSchema
 };
