@@ -254,6 +254,24 @@ export class PostgresPostRepository implements PostRepository {
 		return result.map(row => this.mapRowToPost(row));
 	}
 
+	async getLatestPostInSeries(seriesId: string): Promise<Post | null> {
+		const result = await this.db`
+        SELECT *
+        FROM posts
+        WHERE series_id = ${seriesId}
+          AND status = 'published'
+          AND published_at IS NOT NULL
+        ORDER BY published_at DESC
+        LIMIT 1
+		`;
+
+		if (result.length === 0) {
+			return null;
+		}
+
+		return this.mapRowToPost(result[0]);
+	}
+
 	private mapRowToPost(row: any): Post {
 		return {
 			id: row.id,

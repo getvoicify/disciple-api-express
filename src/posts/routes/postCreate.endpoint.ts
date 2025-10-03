@@ -4,6 +4,37 @@ import {CreatePostInput} from '../schemas';
 import {safeExecute} from '../../utils/handle-async';
 import type {EndpointRequest} from '../../types/endpoint-handler';
 
+/**
+ * @openapi
+ * /posts:
+ *   post:
+ *     summary: Create a new post
+ *     description: Create a new post with optional scripture references, tags, categories, and series association. The post will be created in draft status by default.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreatePostInput'
+ *     responses:
+ *       201:
+ *         description: Post created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ *       400:
+ *         description: Invalid input - validation error
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ */
 export const postCreateEndpoint = (service: PostService) => {
   return async (req: EndpointRequest, res: Response, next: NextFunction) => {
     // Validate user context

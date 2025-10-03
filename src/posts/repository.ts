@@ -8,4 +8,5 @@ export interface PostRepository {
     findAll(filters?: PostFilters): Promise<Post[]>;
     findByChurchId(churchId: string): Promise<Post[]>;
     findByAuthorId(authorId: string): Promise<Post[]>;
+    getLatestPostInSeries(seriesId: string): Promise<Post | null>;
 }

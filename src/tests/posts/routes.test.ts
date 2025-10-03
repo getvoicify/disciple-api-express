@@ -2,6 +2,7 @@ import {describe, it, expect, vi, beforeEach, Mock} from 'vitest';
 import type { Router } from 'express';
 import { postRoutes } from '../../posts/routes';
 import type { PostService } from '../../posts/service';
+import type { SeriesService } from '../../series/service';
 
 // Mock Express router
 const mockRouter = {
@@ -14,6 +15,9 @@ const mockRouter = {
 
 // Mock service
 const mockService = {} as PostService;
+const mockSeriesService = {
+  getDailyDevotionals: vi.fn()
+} as unknown as SeriesService;
 
 // Mock middleware
 const mockAuthMiddleware = vi.fn((req, res, next) => next());
@@ -29,7 +33,7 @@ describe('Post Routes', () => {
   });
 
   it('should register all routes with correct paths and methods', () => {
-    const router = postRoutes(mockService, mockAuthMiddleware, mockRoleMiddleware);
+    const router = postRoutes(mockService, mockAuthMiddleware, mockSeriesService, mockRoleMiddleware);
 
     // Should return the router
     expect(router).toBe(mockRouter);
@@ -77,7 +81,7 @@ describe('Post Routes', () => {
   });
 
   it('should use role middleware for list endpoint', () => {
-    postRoutes(mockService, mockAuthMiddleware, mockRoleMiddleware);
+    postRoutes(mockService, mockAuthMiddleware, mockSeriesService, mockRoleMiddleware);
 
     // The GET /posts endpoint should use the role middleware
     const listCall = (mockRouter.get as Mock).mock.calls.find(
@@ -89,7 +93,7 @@ describe('Post Routes', () => {
   });
 
   it('should protect modification endpoints with auth', () => {
-    postRoutes(mockService, mockAuthMiddleware, mockRoleMiddleware);
+    postRoutes(mockService, mockAuthMiddleware, mockSeriesService, mockRoleMiddleware);
 
     // POST /posts
     const createCall = (mockRouter.post as Mock).mock.calls[0];

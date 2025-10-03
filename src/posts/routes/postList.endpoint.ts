@@ -1,14 +1,101 @@
-import type { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
-import type { PostService } from '../service';
-import { PostFilters, PostStatus } from '../schemas';
-import { safeExecute } from '../../utils/handle-async';
+import type {NextFunction, Request, Response} from 'express';
+import type {PostService} from '../service';
+import {PostFilters} from '../schemas';
+import {safeExecute} from '../../utils/handle-async';
 
 // Extended request type to handle authorized resource IDs from middleware
 interface RequestWithAuth extends Request {
   authorizedResourceIds?: string[];
 }
 
+/**
+ * @openapi
+ * /posts:
+ *   get:
+ *     summary: List all posts
+ *     description: Retrieve a list of posts with optional filtering by church, author, status, series, date range, tags, categories, or scripture references
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: query
+ *         name: churchId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by church ID
+ *       - in: query
+ *         name: authorId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by author ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, published]
+ *         description: Filter by post status
+ *       - in: query
+ *         name: seriesId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by series ID
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter posts published after this date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter posts published before this date
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Comma-separated list of tags to filter by
+ *         example: "devotional,prayer"
+ *       - in: query
+ *         name: categories
+ *         schema:
+ *           type: string
+ *         description: Comma-separated list of categories to filter by
+ *         example: "spiritual growth,worship"
+ *       - in: query
+ *         name: scripture.book
+ *         schema:
+ *           type: string
+ *         description: Filter by scripture book name
+ *         example: "John"
+ *       - in: query
+ *         name: scripture.chapter
+ *         schema:
+ *           type: integer
+ *         description: Filter by scripture chapter number
+ *         example: 3
+ *       - in: query
+ *         name: scripture.verse
+ *         schema:
+ *           type: integer
+ *         description: Filter by scripture verse number
+ *         example: 16
+ *     responses:
+ *       200:
+ *         description: Posts retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Post'
+ *       400:
+ *         description: Invalid filter parameters
+ *       500:
+ *         description: Internal server error
+ */
 export const postListEndpoint = (service: PostService) => {
   return async (req: RequestWithAuth, res: Response, next: NextFunction) => {
     // Build filters from query parameters

@@ -51,6 +51,7 @@ describe('PostgresPostRepository', () => {
       expect(typeof repository.findAll).toBe('function');
       expect(typeof repository.findByChurchId).toBe('function');
       expect(typeof repository.findByAuthorId).toBe('function');
+      expect(typeof repository.getLatestPostInSeries).toBe('function');
     });
 
     it('should be constructed with database and keycloak adapter', () => {
@@ -578,6 +579,152 @@ describe('PostgresPostRepository', () => {
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date)
       });
+    });
+  });
+
+  describe('getLatestPostInSeries', () => {
+    it('should return the latest published post in a series ordered by publishedAt', async () => {
+      const seriesId = 'series-uuid-123';
+      const mockDbResult = [{
+        id: 'post-1',
+        title: 'Latest Post',
+        content: 'Latest content',
+        author_id: 'author-1',
+        church_id: 'church-1',
+        status: 'published',
+        published_at: new Date('2024-01-05T00:00:00Z'),
+        image: null,
+        tags: [],
+        categories: [],
+        scripture_references: [],
+        series_id: seriesId,
+        series_name: 'Test Series',
+        created_at: new Date('2024-01-01T00:00:00Z'),
+        updated_at: new Date('2024-01-05T00:00:00Z')
+      }];
+
+      mockDb.mockResolvedValue(mockDbResult);
+
+      const result = await repository.getLatestPostInSeries(seriesId);
+
+      expect(mockDb).toHaveBeenCalledWith(
+        expect.anything(),
+        seriesId
+      );
+
+      expect(result).toMatchObject({
+        id: 'post-1',
+        title: 'Latest Post',
+        status: 'published',
+        seriesId: seriesId,
+        publishedAt: expect.any(Date)
+      });
+    });
+
+    it('should return null when series has no published posts', async () => {
+      const seriesId = 'series-uuid-123';
+
+      mockDb.mockResolvedValue([]); // No posts found
+
+      const result = await repository.getLatestPostInSeries(seriesId);
+
+      expect(result).toBeNull();
+    });
+
+    it('should only return published posts, not drafts', async () => {
+      const seriesId = 'series-uuid-123';
+      const mockDbResult = [{
+        id: 'post-published',
+        title: 'Published Post',
+        content: 'Content',
+        author_id: 'author-1',
+        church_id: 'church-1',
+        status: 'published',
+        published_at: new Date('2024-01-05T00:00:00Z'),
+        image: null,
+        tags: [],
+        categories: [],
+        scripture_references: [],
+        series_id: seriesId,
+        series_name: 'Test Series',
+        created_at: new Date('2024-01-01T00:00:00Z'),
+        updated_at: new Date('2024-01-05T00:00:00Z')
+      }];
+
+      mockDb.mockResolvedValue(mockDbResult);
+
+      const result = await repository.getLatestPostInSeries(seriesId);
+
+      // Verify SQL query includes status filter
+      const sqlCall = mockDb.mock.calls[0];
+      expect(sqlCall[0].join('')).toContain("status = 'published'");
+
+      expect(result).toMatchObject({
+        status: 'published'
+      });
+    });
+
+    it('should ignore posts without publishedAt timestamp', async () => {
+      const seriesId = 'series-uuid-123';
+      const mockDbResult = [{
+        id: 'post-1',
+        title: 'Post with publishedAt',
+        content: 'Content',
+        author_id: 'author-1',
+        church_id: 'church-1',
+        status: 'published',
+        published_at: new Date('2024-01-05T00:00:00Z'),
+        image: null,
+        tags: [],
+        categories: [],
+        scripture_references: [],
+        series_id: seriesId,
+        series_name: 'Test Series',
+        created_at: new Date('2024-01-01T00:00:00Z'),
+        updated_at: new Date('2024-01-05T00:00:00Z')
+      }];
+
+      mockDb.mockResolvedValue(mockDbResult);
+
+      await repository.getLatestPostInSeries(seriesId);
+
+      // Verify SQL query includes NOT NULL filter for published_at
+      const sqlCall = mockDb.mock.calls[0];
+      expect(sqlCall[0].join('')).toContain('published_at IS NOT NULL');
+    });
+
+    it('should order results by publishedAt DESC and return only first result', async () => {
+      const seriesId = 'series-uuid-123';
+      const mockDbResult = [{
+        id: 'post-latest',
+        title: 'Latest Post',
+        content: 'Content',
+        author_id: 'author-1',
+        church_id: 'church-1',
+        status: 'published',
+        published_at: new Date('2024-01-10T00:00:00Z'),
+        image: null,
+        tags: [],
+        categories: [],
+        scripture_references: [],
+        series_id: seriesId,
+        series_name: 'Test Series',
+        created_at: new Date('2024-01-01T00:00:00Z'),
+        updated_at: new Date('2024-01-10T00:00:00Z')
+      }];
+
+      mockDb.mockResolvedValue(mockDbResult);
+
+      const result = await repository.getLatestPostInSeries(seriesId);
+
+      // Verify SQL query includes ORDER BY and LIMIT
+      const sqlCall = mockDb.mock.calls[0];
+      const sqlQuery = sqlCall[0].join('');
+      expect(sqlQuery).toContain('ORDER BY published_at DESC');
+      expect(sqlQuery).toContain('LIMIT 1');
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('post-latest');
     });
   });
 });

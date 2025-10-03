@@ -20,12 +20,18 @@ import {CloudflareR2ServiceImpl} from "./media/cloudflare-r2-service";
 import {PostgresPostRepository} from "./posts/pg-repository";
 import {PostServiceImpl} from "./posts/service";
 import {postRoutes} from "./posts/routes";
+import {PostgresSeriesRepository} from "./series/pg-repository";
+import {SeriesServiceImpl} from "./series/service";
+import {devotionalRouter} from "./series/routes/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
 import {KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository} from "./cache";
+// Auth middleware setup for posts
+import {jwtVerify} from 'jose';
+import {validateToken} from "./utils/validate-token.middleware";
 
 dotenv.config();
 
@@ -69,6 +75,9 @@ const mediaUploadService = new MediaUploadService(mediaRepository, r2Service);
 
 const postRepository = new PostgresPostRepository(db, keycloakAdapter);
 const postService = new PostServiceImpl(postRepository, churchMemberService);
+
+const seriesRepository = new PostgresSeriesRepository(db);
+const seriesService = new SeriesServiceImpl(seriesRepository, churchMemberService, postRepository);
 
 const cacheRepository = createCacheRepository();
 
@@ -228,11 +237,6 @@ app.get('/api/openapi.yaml', (req, res) => {
 	res.send(yaml.dump(swaggerSpec));
 });
 
-// Auth middleware setup for posts
-import {jwtVerify} from 'jose';
-import {validateToken} from "./utils/validate-token.middleware";
-import {canAccessMiddleware} from "./middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
-
 const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService));
@@ -242,8 +246,9 @@ app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
 app.use('/api/posts', postRoutes(
   postService,
   tokenVerifier(),
-  canAccessMiddleware({ scope: 'read', resource: 'posts' })
+  seriesService,
 ));
+app.use('/api/devotional', devotionalRouter(seriesService));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);
