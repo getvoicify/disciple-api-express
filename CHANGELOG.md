@@ -1,3 +1,10 @@
+## [1.20.0](https://github.com/getvoicify/disciple-api-express/compare/v1.19.0...v1.20.0) (2025-10-03)
+
+
+### ✨ Features
+
+* devotionals implementation ([#21](https://github.com/getvoicify/disciple-api-express/issues/21)) ([d4a740a](https://github.com/getvoicify/disciple-api-express/commit/d4a740a0294f2e95f9cec9acc86f8a7dd0d4f2eb))
+
 ## [1.19.0](https://github.com/getvoicify/disciple-api-express/compare/v1.18.0...v1.19.0) (2025-10-01)
 
 
