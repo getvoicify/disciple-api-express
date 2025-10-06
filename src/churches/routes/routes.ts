@@ -2,6 +2,7 @@ import {Router} from 'express';
 import type {ChurchService} from "../service";
 import type {ChurchApprovalService} from "../approval-service";
 import {ChurchMembershipService} from "../membership-service";
+import type {GalleryService} from "../../gallery/service";
 import {churchCreateEndpoint} from "./churchCreate.endpoint";
 import {validateToken} from "../../utils/validate-token.middleware";
 import {jwtVerify} from "jose";
@@ -19,6 +20,7 @@ import {
 	UserIdInput,
 	UpdateRoleInput
 } from "../schemas";
+import {galleryRouter} from "../../gallery/routes/routes";
 import {churchListEndpoint, ChurchListFilterSchema} from "./churchList.endpoint";
 import {churchSearchEndpoint, ChurchSearchInput} from "./churchSearch.endpoint";
 import {churchFetchEndpoint} from "./churchFetch.endpoint";
@@ -42,7 +44,8 @@ import {churchMembershipUpdateRoleEndpoint} from "./membership/churchMembershipU
 export const churchesRouter = (
 	churchService: ChurchService,
 	approvalService: ChurchApprovalService,
-	membershipService: ChurchMembershipService
+	membershipService: ChurchMembershipService,
+	galleryService?: GalleryService
 ) => {
 	const router = Router();
 	const {
@@ -50,6 +53,11 @@ export const churchesRouter = (
 		IAM_REALM,
 	} = process.env;
 	const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
+
+	// Mount gallery routes under /:churchId/galleries
+	if (galleryService) {
+		router.use('/:churchId/galleries', galleryRouter(galleryService));
+	}
 
 	router.get('/pending', [
 		tokenVerifier(true),

@@ -17,6 +17,11 @@ import {mediaRouter} from "./media/routes/routes";
 import {PostgresMediaRepository} from "./media/pg-repository";
 import {MediaUploadService} from "./media/media-upload-service";
 import {CloudflareR2ServiceImpl} from "./media/cloudflare-r2-service";
+import {PostgresGalleryRepository} from './gallery/pg-repository';
+import {GalleryServiceImpl} from './gallery/service';
+import {ThumbnailServiceImpl} from './gallery/thumbnail-service';
+import {SharpThumbnailGenerator} from './gallery/sharp-thumbnail-generator';
+import {FetchHttpClient} from './utils/http-client';
 import {PostgresPostRepository} from "./posts/pg-repository";
 import {PostServiceImpl} from "./posts/service";
 import {postRoutes} from "./posts/routes";
@@ -72,6 +77,13 @@ const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
 const mediaRepository = new PostgresMediaRepository(db, keycloakAdapter);
 const r2Service = new CloudflareR2ServiceImpl();
 const mediaUploadService = new MediaUploadService(mediaRepository, r2Service);
+
+// Gallery setup
+const galleryRepository = new PostgresGalleryRepository(db);
+const httpClient = new FetchHttpClient();
+const thumbnailGenerator = new SharpThumbnailGenerator();
+const thumbnailService = new ThumbnailServiceImpl(r2Service, mediaRepository, httpClient, thumbnailGenerator);
+const galleryService = new GalleryServiceImpl(galleryRepository, mediaRepository, thumbnailService);
 
 const postRepository = new PostgresPostRepository(db, keycloakAdapter);
 const postService = new PostServiceImpl(postRepository, churchMemberService);
@@ -239,7 +251,7 @@ app.get('/api/openapi.yaml', (req, res) => {
 
 const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
-app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService));
+app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, galleryService));
 app.use('/api/notes', notesRouter(noteService));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
