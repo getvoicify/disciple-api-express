@@ -61,7 +61,13 @@ export class PostgresGalleryRepository implements GalleryRepository {
     const gallery = await this.findById(galleryId);
     if (!gallery) return null;
 
-    const items = await this.db`
+    const items = await this.db<Array<{
+      id: string;
+      galleryId: string;
+      mediaId: string;
+      thumbnailId: string;
+      createdAt: Date;
+    }>>`
       SELECT
         id,
         gallery_id as "galleryId",
