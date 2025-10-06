@@ -1,3 +1,10 @@
+## [1.21.0](https://github.com/getvoicify/disciple-api-express/compare/v1.20.0...v1.21.0) (2025-10-06)
+
+
+### ✨ Features
+
+* **gallery:** add support for church media galleries with tests and … ([#22](https://github.com/getvoicify/disciple-api-express/issues/22)) ([e175154](https://github.com/getvoicify/disciple-api-express/commit/e175154efe5223ee8af448bec8a6fa83645ecb37))
+
 ## [1.20.0](https://github.com/getvoicify/disciple-api-express/compare/v1.19.0...v1.20.0) (2025-10-03)
 
 
