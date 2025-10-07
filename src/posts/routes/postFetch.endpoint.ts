@@ -1,7 +1,12 @@
-import type { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
-import type { PostService } from '../service';
-import { safeExecute } from '../../utils/handle-async';
+import {z} from 'zod';
+import type {PostService} from '../service';
+import express from 'express';
+import {safeExecute} from '../../utils/handle-async';
+import errorCodeFactory from '../../utils/error-code.factory';
+
+export const PostFetchParamsInput = z.object({
+	id: z.uuid(),
+});
 
 /**
  * @openapi
@@ -25,28 +30,49 @@ import { safeExecute } from '../../utils/handle-async';
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Post'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     post:
+ *                       $ref: '#/components/schemas/Post'
  *       400:
- *         description: Invalid UUID format
+ *         description: Invalid post ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Post not found
- *       500:
- *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const postFetchEndpoint = (service: PostService) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    // Validate id parameter
-    const [parseError, id] = await safeExecute(() => z.string().uuid().parse(req.params.id));
-    if (parseError) {
-      return next(parseError);
-    }
+export const postFetchEndpoint = (service: PostService) =>
+	async (req: express.Request, res: express.Response) => {
+		const parseResult = PostFetchParamsInput.safeParse(req.params);
+		if (!parseResult.success) {
+			res.status(400).json({
+				error: parseResult.error.message,
+				success: false,
+			});
+			return;
+		}
+		const {id} = parseResult.data;
 
-    // Fetch post
-    const [error, post] = await safeExecute(service.getPostById(id!));
-    if (error) {
-      return next(error);
-    }
+		const [err, post] = await safeExecute(service.getPostById(id));
 
-    res.status(200).json(post);
-  };
-};
+		if (err) {
+			const code = errorCodeFactory(err);
+			res.status(code).json({
+				error: err.message,
+				success: false,
+			});
+		} else {
+			res.json({
+				post,
+				success: true,
+			});
+		}
+	};

@@ -1,12 +1,24 @@
-import type {NextFunction, Request, Response} from 'express';
+import express from 'express';
+import {z} from 'zod';
 import type {PostService} from '../service';
 import {PostFilters} from '../schemas';
 import {safeExecute} from '../../utils/handle-async';
+import {CacheRepository} from '../../cache';
+import errorCodeFactory from '../../utils/error-code.factory';
 
-// Extended request type to handle authorized resource IDs from middleware
-interface RequestWithAuth extends Request {
-  authorizedResourceIds?: string[];
-}
+export const InputSchema = z.object({
+	churchId: z.string().uuid().optional().nullable(),
+	authorId: z.string().uuid().optional().nullable(),
+	status: z.enum(['draft', 'published']).optional().nullable(),
+	seriesId: z.string().uuid().optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	tags: z.string().optional().nullable(),
+	categories: z.string().optional().nullable(),
+	'scripture.book': z.string().optional().nullable(),
+	'scripture.chapter': z.coerce.number().int().positive().optional().nullable(),
+	'scripture.verse': z.coerce.number().int().positive().optional().nullable(),
+})
 
 /**
  * @openapi
@@ -44,14 +56,16 @@ interface RequestWithAuth extends Request {
  *         name: startDate
  *         schema:
  *           type: string
- *           format: date-time
+ *           format: date
  *         description: Filter posts published after this date
+ *         example: "2024-01-01"
  *       - in: query
  *         name: endDate
  *         schema:
  *           type: string
- *           format: date-time
+ *           format: date
  *         description: Filter posts published before this date
+ *         example: "2024-12-31"
  *       - in: query
  *         name: tags
  *         schema:
@@ -74,108 +88,124 @@ interface RequestWithAuth extends Request {
  *         name: scripture.chapter
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         description: Filter by scripture chapter number
  *         example: 3
  *       - in: query
  *         name: scripture.verse
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         description: Filter by scripture verse number
  *         example: 16
  *     responses:
  *       200:
- *         description: Posts retrieved successfully
+ *         description: List of posts retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Post'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     posts:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Post'
+ *                     count:
+ *                       type: integer
+ *                       description: Number of posts returned
+ *                       example: 5
  *       400:
- *         description: Invalid filter parameters
- *       500:
- *         description: Internal server error
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const postListEndpoint = (service: PostService) => {
-  return async (req: RequestWithAuth, res: Response, next: NextFunction) => {
-    // Build filters from query parameters
-    const filters: any = {};
+export const postListEndpoint = (service: PostService, cacheRepo: CacheRepository) =>
+	async (req: express.Request, res: express.Response) => {
+		const parseResult = InputSchema.safeParse(req.query);
 
-    // Add authorized IDs from middleware if present
-    if (req.authorizedResourceIds && req.authorizedResourceIds.length > 0) {
-      filters.authorizedIds = req.authorizedResourceIds;
-    }
+		if (!parseResult.success) {
+			res.status(400).json({
+				error: parseResult.error.message,
+				success: false,
+			});
+			return;
+		}
 
-    // Church filter
-    if (req.query.churchId) {
-      filters.churchId = req.query.churchId;
-    }
+		const {
+			churchId,
+			authorId,
+			status,
+			seriesId,
+			startDate,
+			endDate,
+			tags,
+			categories,
+			'scripture.book': scriptureBook,
+			'scripture.chapter': scriptureChapter,
+			'scripture.verse': scriptureVerse
+		} = parseResult.data;
 
-    // Author filter
-    if (req.query.authorId) {
-      filters.authorId = req.query.authorId;
-    }
+		const authorizedIds = Array.isArray(req['ids']) ? req['ids'] : [];
 
-    // Status filter
-    if (req.query.status) {
-      filters.status = req.query.status;
-    }
+		// Build filters with authorization constraint
+		const filters: PostFilters = {
+			authorizedIds,
+			churchId,
+			authorId,
+			status,
+			seriesId,
+			startDate,
+			endDate,
+		};
 
-    // Series filter
-    if (req.query.seriesId) {
-      filters.seriesId = req.query.seriesId;
-    }
+		// Parse tags and categories if provided
+		if (tags) {
+			filters.tags = tags.split(',').map(tag => tag.trim()).filter(Boolean);
+		}
+		if (categories) {
+			filters.categories = categories.split(',').map(cat => cat.trim()).filter(Boolean);
+		}
 
-    // Date filters
-    if (req.query.startDate) {
-      filters.startDate = new Date(req.query.startDate as string);
-    }
-    if (req.query.endDate) {
-      filters.endDate = new Date(req.query.endDate as string);
-    }
+		// Only add scripture filter if at least one scripture field is provided
+		if (scriptureBook || scriptureChapter !== undefined || scriptureVerse !== undefined) {
+			filters.scripture = {};
+			if (scriptureBook) {
+				filters.scripture.book = scriptureBook;
+			}
+			if (scriptureChapter !== undefined) {
+				filters.scripture.chapter = scriptureChapter;
+			}
+			if (scriptureVerse !== undefined) {
+				filters.scripture.verse = scriptureVerse;
+			}
+		}
 
-    // Tags filter (comma-separated)
-    if (req.query.tags) {
-      const tags = req.query.tags as string;
-      filters.tags = tags.split(',').map(tag => tag.trim());
-    }
+		const [err, posts] = await safeExecute(service.listPosts(filters));
 
-    // Categories filter (comma-separated)
-    if (req.query.categories) {
-      const categories = req.query.categories as string;
-      filters.categories = categories.split(',').map(cat => cat.trim());
-    }
+		if (err) {
+			const code = errorCodeFactory(err);
+			res.status(code).json({
+				error: err.message,
+				success: false,
+			});
+			return;
+		}
 
-    // Scripture filter
-    if (req.query['scripture.book'] || req.query['scripture.chapter'] || req.query['scripture.verse']) {
-      filters.scripture = {};
-      if (req.query['scripture.book']) {
-        filters.scripture.book = req.query['scripture.book'];
-      }
-      if (req.query['scripture.chapter']) {
-        filters.scripture.chapter = parseInt(req.query['scripture.chapter'] as string);
-      }
-      if (req.query['scripture.verse']) {
-        filters.scripture.verse = parseInt(req.query['scripture.verse'] as string);
-      }
-    }
+		const response = {
+			posts,
+			success: true,
+			count: posts.length,
+		};
 
-    // Validate filters - only if we have filters
-    let validFilters;
-    if (Object.keys(filters).length > 0) {
-      const [parseError, parsed] = await safeExecute(() => PostFilters.parse(filters));
-      if (parseError) {
-        return next(parseError);
-      }
-      validFilters = parsed;
-    }
+		res.json(response);
 
-    // List posts
-    const [error, posts] = await safeExecute(service.listPosts(validFilters));
-    if (error) {
-      return next(error);
-    }
+		const key = req['key'];
 
-    res.status(200).json(posts);
-  };
-};
+		if (key) {
+			await safeExecute(cacheRepo.write(key, response));
+		}
+	}

@@ -278,6 +278,56 @@ npm run docker:dev  # Run development with Docker
 
 Migrations run automatically on container startup. SQL files in `/migrations` are executed in alphabetical order.
 
+### Code Patterns
+
+#### Error Handling
+All endpoints use the `errorCodeFactory` utility to determine appropriate HTTP status codes from errors:
+
+```typescript
+import errorCodeFactory from '../../utils/error-code.factory';
+
+const [err, result] = await safeExecute(service.someOperation());
+if (err) {
+    const code = errorCodeFactory(err);  // Automatically determines 400, 403, 404, 500, etc.
+    res.status(code).json({
+        error: err.message,
+        success: false,
+    });
+}
+```
+
+The factory checks for:
+- Custom `statusCode` property on errors
+- Error message patterns ("not found" → 404, "unauthorized" → 401, "forbidden" → 403)
+- Defaults to 400 for unknown errors
+
+#### Input Validation
+All endpoints use Zod `.safeParse()` for input validation to avoid throwing errors:
+
+```typescript
+const parseResult = InputSchema.safeParse(req.body);
+if (!parseResult.success) {
+    res.status(400).json({
+        error: parseResult.error.message,
+        success: false,
+    });
+    return;
+}
+```
+
+#### Safe Execution
+Use the `safeExecute` utility for all async operations that might fail:
+
+```typescript
+import {safeExecute} from '../../utils/handle-async';
+
+const [err, result] = await safeExecute(someAsyncOperation());
+if (err) {
+    // handle error
+}
+// use result safely
+```
+
 ## 🔒 Security
 
 - JWT authentication on all API endpoints

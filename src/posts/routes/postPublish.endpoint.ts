@@ -1,11 +1,15 @@
-import type { Response, NextFunction } from 'express';
-import { z } from 'zod';
-import type { PostService } from '../service';
-import { safeExecute } from '../../utils/handle-async';
-import type { EndpointRequest } from '../../types/endpoint-handler';
+import {z} from 'zod';
+import type {PostService} from '../service';
+import express from 'express';
+import {safeExecute} from '../../utils/handle-async';
+import errorCodeFactory from '../../utils/error-code.factory';
 
-const PublishAction = z.object({
-  action: z.enum(['publish', 'unpublish'])
+export const PostPublishParamsInput = z.object({
+	id: z.uuid(),
+});
+
+export const PublishActionInput = z.object({
+	action: z.enum(['publish', 'unpublish'])
 });
 
 /**
@@ -47,55 +51,86 @@ const PublishAction = z.object({
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Post'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     post:
+ *                       $ref: '#/components/schemas/Post'
  *       400:
  *         description: Invalid input - validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden - Not the post author
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Post not found
- *       500:
- *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const postPublishEndpoint = (service: PostService) => {
-  return async (req: EndpointRequest, res: Response, next: NextFunction) => {
-    // Validate user context
-    const user = req.user?.[0];
-    const userId = user?.sub;
-    if (!userId) {
-      return next(new Error('User context is required'));
-    }
+export const postPublishEndpoint = (service: PostService) =>
+	async (req: express.Request, res: express.Response) => {
+		const paramsParseResult = PostPublishParamsInput.safeParse(req.params);
+		if (!paramsParseResult.success) {
+			res.status(400).json({
+				error: paramsParseResult.error.message,
+				success: false,
+			});
+			return;
+		}
+		const {id} = paramsParseResult.data;
 
-    // Validate id parameter
-    const [idError, id] = await safeExecute(() => z.string().uuid().parse(req.params.id));
-    if (idError) {
-      return next(idError);
-    }
+		const bodyParseResult = PublishActionInput.safeParse(req.body);
+		if (!bodyParseResult.success) {
+			res.status(400).json({
+				error: bodyParseResult.error.message,
+				success: false,
+			});
+			return;
+		}
+		const {action} = bodyParseResult.data;
 
-    // Validate action
-    const [parseError, body] = await safeExecute(() => PublishAction.parse(req.body));
-    if (parseError) {
-      return next(parseError);
-    }
+		const user = req['user']?.[0];
+		const userId = user?.sub;
+		if (!userId || typeof userId !== 'string') {
+			res.status(401).json({
+				error: 'User authentication required',
+				success: false,
+			});
+			return;
+		}
 
-    // Execute action
-    let result;
-    if (body!.action === 'publish') {
-      const [error, post] = await safeExecute(service.publishPost(id!, userId as string));
-      if (error) {
-        return next(error);
-      }
-      result = post;
-    } else {
-      const [error, post] = await safeExecute(service.unpublishPost(id!, userId as string));
-      if (error) {
-        return next(error);
-      }
-      result = post;
-    }
+		let err, post;
+		if (action === 'publish') {
+			[err, post] = await safeExecute(service.publishPost(id, userId));
+		} else {
+			[err, post] = await safeExecute(service.unpublishPost(id, userId));
+		}
 
-    res.status(200).json(result);
-  };
-};
+		if (err) {
+			const code = errorCodeFactory(err);
+			res.status(code).json({
+				error: err.message,
+				success: false,
+			});
+		} else {
+			res.json({
+				post,
+				success: true,
+			});
+		}
+	}

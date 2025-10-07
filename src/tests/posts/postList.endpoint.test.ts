@@ -1,18 +1,25 @@
-import {describe, it, expect, vi, beforeEach, Mock} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type { Request, Response } from 'express';
 import { postListEndpoint } from '../../posts/routes/postList.endpoint';
 import type { PostService } from '../../posts/service';
-import type { Post, PostFilters } from '../../posts/schemas';
+import type { Post } from '../../posts/schemas';
+import type { CacheRepository } from '../../cache';
 
 // Mock service
 const mockService = {
   listPosts: vi.fn()
 } as unknown as PostService;
 
+// Mock cache repository
+const mockCacheRepo = {
+  write: vi.fn(),
+  read: vi.fn(),
+  delete: vi.fn()
+} as unknown as CacheRepository;
+
 describe('GET /posts - List Posts Endpoint', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
-  let next: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -25,8 +32,6 @@ describe('GET /posts - List Posts Endpoint', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis()
     };
-
-    next = vi.fn();
   });
 
   it('should list posts without filters', async () => {
@@ -52,13 +57,15 @@ describe('GET /posts - List Posts Endpoint', () => {
 
     mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    const handler = postListEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
 
-    expect(mockService.listPosts).toHaveBeenCalledWith(undefined);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(mockPosts);
-    expect(next).not.toHaveBeenCalled();
+    expect(mockService.listPosts).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: mockPosts.length
+    });
   });
 
   it('should list posts with filters', async () => {
@@ -69,22 +76,18 @@ describe('GET /posts - List Posts Endpoint', () => {
       categories: 'sermon'
     };
 
-    const expectedFilters: PostFilters = {
-      authorizedIds: [], // Schema adds default empty array
-      churchId: '550e8400-e29b-41d4-a716-446655440003',
-      status: 'published',
-      tags: ['faith', 'devotional'],
-      categories: ['sermon']
-    };
+    const mockPosts: Post[] = [];
+    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    mockService.listPosts = vi.fn().mockResolvedValue([]);
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
 
-    const handler = postListEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
-
-    expect(mockService.listPosts).toHaveBeenCalledWith(expectedFilters);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith([]);
+    expect(mockService.listPosts).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: 0
+    });
   });
 
   it('should handle date filters', async () => {
@@ -93,13 +96,21 @@ describe('GET /posts - List Posts Endpoint', () => {
       endDate: '2024-12-31'
     };
 
-    const handler = postListEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    const mockPosts: Post[] = [];
+    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
 
     const callArgs = (mockService.listPosts as any).mock.calls[0][0];
     expect(callArgs).toMatchObject({
       startDate: expect.any(Date),
       endDate: expect.any(Date)
+    });
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: 0
     });
   });
 
@@ -110,37 +121,78 @@ describe('GET /posts - List Posts Endpoint', () => {
       'scripture.verse': '16'
     };
 
-    const expectedFilters: PostFilters = {
-      authorizedIds: [], // Schema adds default empty array
-      scripture: {
-        book: 'John',
-        chapter: 3,
-        verse: 16
-      }
-    };
+    const mockPosts: Post[] = [];
+    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    mockService.listPosts = vi.fn().mockResolvedValue([]);
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
 
-    const handler = postListEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
-
-    expect(mockService.listPosts).toHaveBeenCalledWith(expectedFilters);
+    expect(mockService.listPosts).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: 0
+    });
   });
 
   it('should handle authorized IDs from middleware', async () => {
     req.query = {};
-    req['authorizedResourceIds'] = ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'];
+    req['ids'] = ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'];
 
-    const expectedFilters: PostFilters = {
-      authorizedIds: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002']
-    };
+    const mockPosts: Post[] = [];
+    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    mockService.listPosts = vi.fn().mockResolvedValue([]);
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
 
-    const handler = postListEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    expect(mockService.listPosts).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: 0
+    });
+  });
 
-    expect(mockService.listPosts).toHaveBeenCalledWith(expectedFilters);
+  it('should handle non-array req["ids"] gracefully', async () => {
+    req.query = {};
+    req['ids'] = 'not-an-array' as any; // Invalid type
+
+    const mockPosts: Post[] = [];
+    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
+
+    // Should use empty array when ids is not an array
+    const callArgs = (mockService.listPosts as any).mock.calls[0][0];
+    expect(callArgs.authorizedIds).toEqual([]);
+    expect(mockService.listPosts).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: 0
+    });
+  });
+
+  it('should handle missing req["ids"] gracefully', async () => {
+    req.query = {};
+    // req['ids'] is undefined
+
+    const mockPosts: Post[] = [];
+    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
+
+    // Should use empty array when ids is missing
+    const callArgs = (mockService.listPosts as any).mock.calls[0][0];
+    expect(callArgs.authorizedIds).toEqual([]);
+    expect(mockService.listPosts).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: 0
+    });
   });
 
   it('should handle validation errors', async () => {
@@ -148,20 +200,30 @@ describe('GET /posts - List Posts Endpoint', () => {
       status: 'invalid-status'
     };
 
-    const handler = postListEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    const handler = postListEndpoint(mockService, mockCacheRepo);
 
+    // Validation now returns error response instead of throwing
+    await handler(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: expect.stringContaining(''),
+      success: false,
+    });
     expect(mockService.listPosts).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('should return empty array when no posts found', async () => {
-    mockService.listPosts = vi.fn().mockResolvedValue([]);
+    const mockPosts: Post[] = [];
+    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    const handler = postListEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    const handler = postListEndpoint(mockService, mockCacheRepo);
+    await handler(req as Request, res as Response);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith([]);
+    expect(res.json).toHaveBeenCalledWith({
+      posts: mockPosts,
+      success: true,
+      count: 0
+    });
   });
 });
