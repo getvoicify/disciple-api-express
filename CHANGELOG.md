@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/getvoicify/disciple-api-express/compare/v1.21.0...v1.21.1) (2025-10-07)
+
+
+### 🐛 Bug Fixes
+
+* **posts:** overhaul routes with enhanced validation, error handling and middleware ([#23](https://github.com/getvoicify/disciple-api-express/issues/23)) ([2c3d272](https://github.com/getvoicify/disciple-api-express/commit/2c3d2729e6f7d640bd9d7b997ab79af025b18fb6))
+
 ## [1.21.0](https://github.com/getvoicify/disciple-api-express/compare/v1.20.0...v1.21.0) (2025-10-06)
 
 
