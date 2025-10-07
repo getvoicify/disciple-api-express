@@ -1,4 +1,4 @@
-import {describe, it, expect, vi, beforeEach, Mock} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type { Request, Response } from 'express';
 import { postDeleteEndpoint } from '../../posts/routes/postDelete.endpoint';
 import type { PostService } from '../../posts/service';
@@ -12,7 +12,6 @@ const mockService = {
 describe('DELETE /posts/:id - Delete Post Endpoint', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
-  let next: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -30,20 +29,19 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis()
     };
-
-    next = vi.fn();
   });
 
   it('should delete a post successfully', async () => {
     mockService.deletePost = vi.fn().mockResolvedValue(undefined);
 
     const handler = postDeleteEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
-    expect(res.status).toHaveBeenCalledWith(204);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Post deleted successfully' });
-    expect(next).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      message: 'Post deleted successfully'
+    });
   });
 
   it('should handle post not found error', async () => {
@@ -52,10 +50,14 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
     );
 
     const handler = postDeleteEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
-    expect(next).toHaveBeenCalledWith(expect.any(PostNotFoundError));
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      error: `Post with identifier '${req.params!.id}' not found`,
+      success: false
+    });
   });
 
   it('should handle unauthorized error', async () => {
@@ -64,28 +66,42 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
     );
 
     const handler = postDeleteEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
-    expect(next).toHaveBeenCalledWith(expect.any(PostUnauthorizedError));
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      error: expect.stringContaining('delete'),
+      success: false
+    });
   });
 
   it('should handle invalid UUID', async () => {
     req.params = { id: 'invalid-uuid' };
 
     const handler = postDeleteEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
 
+    // Validation returns 400 error on invalid UUID
+    await handler(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: expect.any(String),
+      success: false,
+    });
     expect(mockService.deletePost).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('should handle missing user context', async () => {
     req['user'] = undefined;
 
     const handler = postDeleteEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.deletePost).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'User authentication required',
+      success: false
+    });
   });
 });

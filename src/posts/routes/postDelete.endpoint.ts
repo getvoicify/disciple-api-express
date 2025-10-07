@@ -1,8 +1,12 @@
-import type { Response, NextFunction } from 'express';
-import { z } from 'zod';
-import type { PostService } from '../service';
-import { safeExecute } from '../../utils/handle-async';
-import type { EndpointRequest } from '../../types/endpoint-handler';
+import {z} from 'zod';
+import type {PostService} from '../service';
+import express from 'express';
+import {safeExecute} from '../../utils/handle-async';
+import errorCodeFactory from '../../utils/error-code.factory';
+
+export const PostDeleteParamsInput = z.object({
+	id: z.uuid(),
+});
 
 /**
  * @openapi
@@ -23,40 +27,71 @@ import type { EndpointRequest } from '../../types/endpoint-handler';
  *         description: The unique identifier of the post to delete
  *         example: "550e8400-e29b-41d4-a716-446655440000"
  *     responses:
- *       204:
- *         description: Post deleted successfully (no content)
+ *       200:
+ *         description: Post deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Invalid UUID format
+ *         description: Invalid post ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Unauthorized - Authentication required
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden - Not the post author
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Post not found
- *       500:
- *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const postDeleteEndpoint = (service: PostService) => {
-  return async (req: EndpointRequest, res: Response, next: NextFunction) => {
-    // Validate user context
-    const user = req.user?.[0];
-    const userId = user?.sub;
-    if (!userId) {
-      return next(new Error('User context is required'));
-    }
+export const postDeleteEndpoint = (service: PostService) =>
+	async (req: express.Request, res: express.Response) => {
+		const parseResult = PostDeleteParamsInput.safeParse(req.params);
+		if (!parseResult.success) {
+			res.status(400).json({
+				error: parseResult.error.message,
+				success: false,
+			});
+			return;
+		}
+		const {id} = parseResult.data;
 
-    // Validate id parameter
-    const [parseError, id] = await safeExecute(() => z.string().uuid().parse(req.params.id));
-    if (parseError) {
-      return next(parseError);
-    }
+		const user = req['user']?.[0];
+		const userId = user?.sub;
+		if (!userId) {
+			res.status(401).json({
+				error: 'User authentication required',
+				success: false,
+			});
+			return;
+		}
 
-    // Delete post
-    const [error] = await safeExecute(service.deletePost(id!, userId as string));
-    if (error) {
-      return next(error);
-    }
+		const [err] = await safeExecute(service.deletePost(id, userId as string));
 
-    res.status(204).json({ message: 'Post deleted successfully' });
-  };
-};
+		if (err) {
+			const code = errorCodeFactory(err);
+			res.status(code).json({
+				error: err.message,
+				success: false,
+			});
+		} else {
+			res.json({
+				success: true,
+				message: 'Post deleted successfully',
+			})
+		}
+	}

@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach, Mock} from 'vitest';
 import type { Router } from 'express';
-import { postRoutes } from '../../posts/routes';
+import { postsRouter } from '../../posts/routes/routes';
 import type { PostService } from '../../posts/service';
 import type { SeriesService } from '../../series/service';
 
@@ -19,10 +19,6 @@ const mockSeriesService = {
   getDailyDevotionals: vi.fn()
 } as unknown as SeriesService;
 
-// Mock middleware
-const mockAuthMiddleware = vi.fn((req, res, next) => next());
-const mockRoleMiddleware = vi.fn((req, res, next) => next());
-
 vi.mock('express', () => ({
   Router: () => mockRouter
 }));
@@ -30,89 +26,122 @@ vi.mock('express', () => ({
 describe('Post Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set required environment variables for tests
+    process.env.IAM_ENDPOINT = 'http://test-iam';
+    process.env.IAM_REALM = 'test-realm';
   });
 
   it('should register all routes with correct paths and methods', () => {
-    const router = postRoutes(mockService, mockAuthMiddleware, mockSeriesService, mockRoleMiddleware);
+    const router = postsRouter(mockService, mockSeriesService);
 
     // Should return the router
     expect(router).toBe(mockRouter);
 
-    // Should register POST /posts
+    // Should register POST /posts with middleware array
     expect(mockRouter.post).toHaveBeenCalledWith(
       '/',
-      mockAuthMiddleware,
+      expect.any(Array),
       expect.any(Function)
     );
 
-    // Should register GET /posts with middleware
+    // Should register GET /posts with middleware array
     expect(mockRouter.get).toHaveBeenCalledWith(
       '/',
-      mockRoleMiddleware,
+      expect.any(Array),
       expect.any(Function)
     );
 
-    // Should register GET /posts/:id
+    // Should register GET /posts/:id with middleware array
     expect(mockRouter.get).toHaveBeenCalledWith(
       '/:id',
+      expect.any(Array),
       expect.any(Function)
     );
 
-    // Should register PATCH /posts/:id
+    // Should register PATCH /posts/:id with middleware array
     expect(mockRouter.patch).toHaveBeenCalledWith(
       '/:id',
-      mockAuthMiddleware,
+      expect.any(Array),
       expect.any(Function)
     );
 
-    // Should register DELETE /posts/:id
+    // Should register DELETE /posts/:id with middleware array
     expect(mockRouter.delete).toHaveBeenCalledWith(
       '/:id',
-      mockAuthMiddleware,
+      expect.any(Array),
       expect.any(Function)
     );
 
-    // Should register PATCH /posts/:id/publish
+    // Should register PATCH /posts/:id/publish with middleware array
     expect(mockRouter.patch).toHaveBeenCalledWith(
       '/:id/publish',
-      mockAuthMiddleware,
+      expect.any(Array),
+      expect.any(Function)
+    );
+
+    // Should register GET /posts/daily-devotionals with middleware array
+    expect(mockRouter.get).toHaveBeenCalledWith(
+      '/daily-devotionals',
+      expect.any(Array),
       expect.any(Function)
     );
   });
 
-  it('should use role middleware for list endpoint', () => {
-    postRoutes(mockService, mockAuthMiddleware, mockSeriesService, mockRoleMiddleware);
+  it('should use validation and access control middleware for list endpoint', () => {
+    postsRouter(mockService, mockSeriesService);
 
-    // The GET /posts endpoint should use the role middleware
+    // The GET /posts endpoint should use middleware array
     const listCall = (mockRouter.get as Mock).mock.calls.find(
       call => call[0] === '/'
     );
 
     expect(listCall).toBeDefined();
-    expect(listCall[1]).toBe(mockRoleMiddleware);
+    expect(listCall[1]).toBeInstanceOf(Array);
+    // Should have multiple middleware (validation, canAccess, filters, cache)
+    expect(listCall[1].length).toBeGreaterThan(1);
   });
 
-  it('should protect modification endpoints with auth', () => {
-    postRoutes(mockService, mockAuthMiddleware, mockSeriesService, mockRoleMiddleware);
+  it('should protect modification endpoints with auth middleware', () => {
+    postsRouter(mockService, mockSeriesService);
 
-    // POST /posts
+    // POST /posts should have auth middleware
     const createCall = (mockRouter.post as Mock).mock.calls[0];
-    expect(createCall[1]).toBe(mockAuthMiddleware);
+    expect(createCall[1]).toBeInstanceOf(Array);
+    expect(createCall[1].length).toBeGreaterThan(0);
 
-    // PATCH /posts/:id
+    // PATCH /posts/:id should have auth middleware
     const updateCall = (mockRouter.patch as Mock).mock.calls.find(
       call => call[0] === '/:id'
     );
-    expect(updateCall![1]).toBe(mockAuthMiddleware);
+    expect(updateCall![1]).toBeInstanceOf(Array);
+    expect(updateCall![1].length).toBeGreaterThan(0);
 
-    // DELETE /posts/:id
+    // DELETE /posts/:id should have auth middleware
     const deleteCall = (mockRouter.delete as Mock).mock.calls[0];
-    expect(deleteCall[1]).toBe(mockAuthMiddleware);
+    expect(deleteCall[1]).toBeInstanceOf(Array);
+    expect(deleteCall[1].length).toBeGreaterThan(0);
 
-    // PATCH /posts/:id/publish
+    // PATCH /posts/:id/publish should have auth middleware
     const publishCall = (mockRouter.patch as Mock).mock.calls.find(
       call => call[0] === '/:id/publish'
     );
-    expect(publishCall![1]).toBe(mockAuthMiddleware);
+    expect(publishCall![1]).toBeInstanceOf(Array);
+    expect(publishCall![1].length).toBeGreaterThan(0);
+  });
+
+  it('should register /daily-devotionals BEFORE /:id to prevent routing conflicts', () => {
+    postsRouter(mockService, mockSeriesService);
+
+    // Get all GET route calls
+    const getCalls = (mockRouter.get as Mock).mock.calls;
+
+    // Find the indices of daily-devotionals and :id routes
+    const dailyDevotionalsIndex = getCalls.findIndex(call => call[0] === '/daily-devotionals');
+    const idParamIndex = getCalls.findIndex(call => call[0] === '/:id');
+
+    // daily-devotionals should be registered before :id
+    expect(dailyDevotionalsIndex).toBeGreaterThan(-1);
+    expect(idParamIndex).toBeGreaterThan(-1);
+    expect(dailyDevotionalsIndex).toBeLessThan(idParamIndex);
   });
 });

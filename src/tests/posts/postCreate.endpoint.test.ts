@@ -1,9 +1,9 @@
-import {describe, it, expect, vi, beforeEach, Mock} from 'vitest';
-import type { Request, Response } from 'express';
-import { postCreateEndpoint } from '../../posts/routes/postCreate.endpoint';
-import type { PostService } from '../../posts/service';
-import type { CreatePostInput, Post } from '../../posts/schemas';
-import { InsufficientChurchRoleError, NotChurchMemberError } from '../../posts/errors';
+import {beforeEach, describe, expect, it, Mock, vi} from 'vitest';
+import type {Request, Response} from 'express';
+import {postCreateEndpoint} from '../../posts/routes/postCreate.endpoint';
+import type {PostService} from '../../posts/service';
+import type {CreatePostInput, Post} from '../../posts/schemas';
+import {InsufficientChurchRoleError, NotChurchMemberError} from '../../posts/errors';
 
 // Mock service
 const mockService = {
@@ -62,28 +62,34 @@ describe('POST /posts - Create Post Endpoint', () => {
     mockService.createPost = vi.fn().mockResolvedValue(mockPost);
 
     const handler = postCreateEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(mockPost);
-    expect(next).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      post: mockPost,
+      success: true
+    });
   });
 
-  it('should handle validation error', async () => {
+  it('should handle validation error with 400 response', async () => {
     req.body = {
       // Missing required fields
       content: 'Test content'
     };
 
     const handler = postCreateEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.createPost).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      error: expect.any(String)
+    }));
   });
 
-  it('should handle insufficient role error', async () => {
+  it('should handle insufficient role error with 403 status', async () => {
     const input: CreatePostInput = {
       title: 'Test Post',
       content: 'Test content',
@@ -91,18 +97,21 @@ describe('POST /posts - Create Post Endpoint', () => {
     };
 
     req.body = input;
-    mockService.createPost = vi.fn().mockRejectedValue(
-      new InsufficientChurchRoleError(['Owner', 'Manager'], 'Member')
-    );
+    const error = new InsufficientChurchRoleError(['Owner', 'Manager'], 'Member');
+    mockService.createPost = vi.fn().mockRejectedValue(error);
 
     const handler = postCreateEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
-    expect(next).toHaveBeenCalledWith(expect.any(InsufficientChurchRoleError));
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      error: error.message,
+      success: false
+    });
   });
 
-  it('should handle not church member error', async () => {
+  it('should handle not church member error with 403 status', async () => {
     const input: CreatePostInput = {
       title: 'Test Post',
       content: 'Test content',
@@ -110,24 +119,36 @@ describe('POST /posts - Create Post Endpoint', () => {
     };
 
     req.body = input;
-    mockService.createPost = vi.fn().mockRejectedValue(
-      new NotChurchMemberError(req['user']![0].sub!, input.churchId)
-    );
+    const error = new NotChurchMemberError(req['user']![0].sub!, input.churchId);
+    mockService.createPost = vi.fn().mockRejectedValue(error);
 
     const handler = postCreateEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
-    expect(next).toHaveBeenCalledWith(expect.any(NotChurchMemberError));
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      error: error.message,
+      success: false
+    });
   });
 
   it('should handle missing user context', async () => {
+    req.body = {
+      title: 'Test Post',
+      content: 'Test content',
+      churchId: '550e8400-e29b-41d4-a716-446655440002'
+    };
     req['user'] = undefined;
 
     const handler = postCreateEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.createPost).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'User authentication required',
+      success: false
+    });
   });
 });

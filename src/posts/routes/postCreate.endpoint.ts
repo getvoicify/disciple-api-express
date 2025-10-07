@@ -1,8 +1,8 @@
-import type {NextFunction, Response} from 'express';
 import type {PostService} from '../service';
+import express from 'express';
 import {CreatePostInput} from '../schemas';
 import {safeExecute} from '../../utils/handle-async';
-import type {EndpointRequest} from '../../types/endpoint-handler';
+import errorCodeFactory from '../../utils/error-code.factory';
 
 /**
  * @openapi
@@ -25,37 +25,65 @@ import type {EndpointRequest} from '../../types/endpoint-handler';
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Post'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     post:
+ *                       $ref: '#/components/schemas/Post'
  *       400:
  *         description: Invalid input - validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden - Insufficient permissions
- *       500:
- *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const postCreateEndpoint = (service: PostService) => {
-  return async (req: EndpointRequest, res: Response, next: NextFunction) => {
-    // Validate user context
-    const user = req.user?.[0];
-    const userId = user?.sub;
-    if (!userId) {
-      return next(new Error('User context is required'));
-    }
+export const postCreateEndpoint = (service: PostService) =>
+	async (req: express.Request, res: express.Response) => {
+		const parseResult = CreatePostInput.safeParse(req.body);
+		if (!parseResult.success) {
+			res.status(400).json({
+				error: parseResult.error.message,
+				success: false,
+			});
+			return;
+		}
+		const postToCreate = parseResult.data;
 
-    // Validate request body
-    const [parseError, input] = await safeExecute(() => CreatePostInput.parse(req.body));
-    if (parseError) {
-      return next(parseError);
-    }
+		// Extract owner ID from the authenticated user's token
+		const user = req['user']?.[0];
+		const userId = user?.sub;
+		if (!userId) {
+			res.status(401).json({
+				error: 'User authentication required',
+				success: false,
+			});
+			return;
+		}
+		const [err, post] = await safeExecute(service.createPost(postToCreate, userId as string));
 
-    // Create post
-    const [error, post] = await safeExecute(service.createPost(input!, userId as string));
-    if (error) {
-      return next(error);
-    }
-
-    res.status(201).json(post);
-  };
-};
+		if (err) {
+			const code = errorCodeFactory(err);
+			res.status(code).json({
+				error: err.message,
+				success: false,
+			});
+		} else {
+			res.status(201).json({
+				post,
+				success: true,
+			})
+		}
+	}

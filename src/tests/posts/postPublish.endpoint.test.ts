@@ -1,4 +1,4 @@
-import {describe, it, expect, vi, beforeEach, Mock} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type { Request, Response } from 'express';
 import { postPublishEndpoint } from '../../posts/routes/postPublish.endpoint';
 import type { PostService } from '../../posts/service';
@@ -14,7 +14,6 @@ const mockService = {
 describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
-  let next: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,8 +32,6 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis()
     };
-
-    next = vi.fn();
   });
 
   describe('Publishing', () => {
@@ -61,12 +58,13 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
       mockService.publishPost = vi.fn().mockResolvedValue(mockPost);
 
       const handler = postPublishEndpoint(mockService);
-      await handler(req as Request, res as Response, next);
+      await handler(req as Request, res as Response);
 
       expect(mockService.publishPost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(mockPost);
-      expect(next).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({
+        post: mockPost,
+        success: true
+      });
     });
 
     it('should handle already published error', async () => {
@@ -76,9 +74,13 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
       );
 
       const handler = postPublishEndpoint(mockService);
-      await handler(req as Request, res as Response, next);
+      await handler(req as Request, res as Response);
 
-      expect(next).toHaveBeenCalledWith(expect.any(PostAlreadyPublishedError));
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: expect.stringContaining('already published'),
+        success: false
+      });
     });
   });
 
@@ -106,12 +108,13 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
       mockService.unpublishPost = vi.fn().mockResolvedValue(mockPost);
 
       const handler = postPublishEndpoint(mockService);
-      await handler(req as Request, res as Response, next);
+      await handler(req as Request, res as Response);
 
       expect(mockService.unpublishPost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(mockPost);
-      expect(next).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({
+        post: mockPost,
+        success: true
+      });
     });
   });
 
@@ -119,22 +122,34 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
     req.body = { action: 'invalid' };
 
     const handler = postPublishEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
 
+    // Validation returns 400 error on invalid action
+    await handler(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: expect.any(String),
+      success: false,
+    });
     expect(mockService.publishPost).not.toHaveBeenCalled();
     expect(mockService.unpublishPost).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('should handle missing action', async () => {
     req.body = {};
 
     const handler = postPublishEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
 
+    // Validation returns 400 error on missing action
+    await handler(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: expect.any(String),
+      success: false,
+    });
     expect(mockService.publishPost).not.toHaveBeenCalled();
     expect(mockService.unpublishPost).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('should handle post not found error', async () => {
@@ -144,9 +159,13 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
     );
 
     const handler = postPublishEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
-    expect(next).toHaveBeenCalledWith(expect.any(PostNotFoundError));
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      error: `Post with identifier '${req.params!.id}' not found`,
+      success: false
+    });
   });
 
   it('should handle unauthorized error', async () => {
@@ -156,9 +175,13 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
     );
 
     const handler = postPublishEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
-    expect(next).toHaveBeenCalledWith(expect.any(PostUnauthorizedError));
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({
+      error: expect.stringContaining('publish'),
+      success: false
+    });
   });
 
   it('should handle missing user context', async () => {
@@ -166,9 +189,13 @@ describe('PATCH /posts/:id/publish - Publish/Unpublish Post Endpoint', () => {
     req.body = { action: 'publish' };
 
     const handler = postPublishEndpoint(mockService);
-    await handler(req as Request, res as Response, next);
+    await handler(req as Request, res as Response);
 
     expect(mockService.publishPost).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'User authentication required',
+      success: false
+    });
   });
 });

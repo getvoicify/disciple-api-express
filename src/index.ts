@@ -24,7 +24,7 @@ import {SharpThumbnailGenerator} from './gallery/sharp-thumbnail-generator';
 import {FetchHttpClient} from './utils/http-client';
 import {PostgresPostRepository} from "./posts/pg-repository";
 import {PostServiceImpl} from "./posts/service";
-import {postRoutes} from "./posts/routes";
+import {postsRouter} from "./posts/routes/routes";
 import {PostgresSeriesRepository} from "./series/pg-repository";
 import {SeriesServiceImpl} from "./series/service";
 import {devotionalRouter} from "./series/routes/routes";
@@ -34,9 +34,6 @@ import {setupKeycloakAdapter} from "./keycloak/setup";
 import {KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository} from "./cache";
-// Auth middleware setup for posts
-import {jwtVerify} from 'jose';
-import {validateToken} from "./utils/validate-token.middleware";
 
 dotenv.config();
 
@@ -249,17 +246,11 @@ app.get('/api/openapi.yaml', (req, res) => {
 	res.send(yaml.dump(swaggerSpec));
 });
 
-const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
-
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, galleryService));
 app.use('/api/notes', notesRouter(noteService));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
-app.use('/api/posts', postRoutes(
-  postService,
-  tokenVerifier(),
-  seriesService,
-));
+app.use('/api/posts', postsRouter(postService, seriesService));
 app.use('/api/devotional', devotionalRouter(seriesService));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
