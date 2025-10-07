@@ -2,6 +2,7 @@ import Redis from 'ioredis';
 import { type CacheRepository } from './cache.repository';
 import { safeExecute } from '../utils/handle-async';
 import { serialize, deserialize } from './cache-serialization.util';
+import { logger } from '../logging';
 
 export class RedisCacheRepository implements CacheRepository {
   private redis: Redis;
@@ -23,15 +24,15 @@ export class RedisCacheRepository implements CacheRepository {
 
     // Handle connection errors to prevent unhandled error events
     this.redis.on('error', (error: Error) => {
-      console.error('[Redis] Connection error:', error.message);
+      logger.error({ error }, 'Redis connection error');
     });
 
     this.redis.on('close', () => {
-      console.warn('[Redis] Connection closed');
+      logger.warn('Redis connection closed');
     });
 
     this.redis.on('reconnecting', () => {
-      console.log('[Redis] Reconnecting...');
+      logger.info('Redis reconnecting');
     });
   }
 

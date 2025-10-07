@@ -2,12 +2,20 @@ import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { isAppError, ValidationError, NotFoundError } from '../utils/errors';
 import errorCodeFactory from '../utils/error-code.factory';
+import type { ILogger } from '../logging';
 
 interface ErrorResponse {
   success: false;
   error: string;
   errors?: Record<string, string[]>;
   stack?: string;
+}
+
+/**
+ * Get logger from request or return undefined
+ */
+function getLogger(req: Request): ILogger | undefined {
+  return (req as any).log;
 }
 
 /**
@@ -46,16 +54,33 @@ export const errorHandler = (
       errorResponse.stack = err.stack;
     }
 
-    // Log operational errors in development, all errors in production
-    if (!err.isOperational || process.env.NODE_ENV === 'production') {
-      console.error('Error:', {
+    // Log using request logger if available
+    const logger = getLogger(req);
+    if (logger) {
+      const logContext: Record<string, unknown> = {
         message: err.message,
         statusCode: err.statusCode,
-        stack: err.stack,
-        timestamp: new Date().toISOString(),
         path: req.path,
-        method: req.method
-      });
+        method: req.method,
+      };
+
+      if (err instanceof ValidationError && err.errors) {
+        logContext.errors = err.errors;
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        logContext.stack = err.stack;
+      }
+
+      // Log based on error type and status code
+      if (!err.isOperational) {
+        logContext.isOperational = false;
+        logger.error(logContext, 'Non-operational error occurred');
+      } else if (statusCode >= 500) {
+        logger.error(logContext, 'Request error');
+      } else {
+        logger.warn(logContext, 'Request error');
+      }
     }
   }
   // Handle Zod validation errors
@@ -63,7 +88,7 @@ export const errorHandler = (
     statusCode = 400;
     const errors: Record<string, string[]> = {};
 
-    (err as any).errors.forEach((error: any) => {
+    err.issues.forEach((error: any) => {
       const path = error.path.join('.');
       if (!errors[path]) {
         errors[path] = [];
@@ -80,6 +105,20 @@ export const errorHandler = (
     if (process.env.NODE_ENV === 'development') {
       errorResponse.stack = err.stack;
     }
+
+    // Log validation errors
+    const logger = getLogger(req);
+    if (logger) {
+      logger.warn(
+        {
+          statusCode,
+          path: req.path,
+          method: req.method,
+          errors,
+        },
+        'Validation error'
+      );
+    }
   }
   // Handle standard Error instances
   else if (err instanceof Error) {
@@ -93,22 +132,32 @@ export const errorHandler = (
     }
 
     // Log all standard errors
-    console.error('Unhandled Error:', {
-      message: err.message,
-      stack: err.stack,
-      timestamp: new Date().toISOString(),
-      path: req.path,
-      method: req.method
-    });
+    const logger = getLogger(req);
+    if (logger) {
+      logger.error(
+        {
+          message: err.message,
+          stack: err.stack,
+          path: req.path,
+          method: req.method,
+        },
+        'Unhandled error'
+      );
+    }
   }
   // Handle unknown error types
   else {
-    console.error('Unknown Error Type:', {
-      error: err,
-      timestamp: new Date().toISOString(),
-      path: req.path,
-      method: req.method
-    });
+    const logger = getLogger(req);
+    if (logger) {
+      logger.error(
+        {
+          error: err,
+          path: req.path,
+          method: req.method,
+        },
+        'Unknown error type'
+      );
+    }
 
     if (process.env.NODE_ENV === 'development') {
       errorResponse.error = String(err);
@@ -128,6 +177,17 @@ export const notFoundHandler = (
   res: Response,
   next: NextFunction
 ): void => {
+  const logger = getLogger(req);
+  if (logger) {
+    logger.warn(
+      {
+        url: req.originalUrl,
+        method: req.method,
+      },
+      'Route not found'
+    );
+  }
+
   const error = new NotFoundError(
     `Route ${req.originalUrl}`
   );

@@ -18,7 +18,10 @@ export const cacheResponseMiddleware = (cacheRepo: CacheRepository): Middleware 
 	}
 
 	if (cached) {
-		console.log(`Cache hit: ${key}`);
+		(req as any).log?.debug({ key }, 'Cache hit');
 		res.status(200).json(cached);
+		return;
 	}
+
+	next();
 }

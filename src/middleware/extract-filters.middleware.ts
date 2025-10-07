@@ -31,7 +31,7 @@ export const extractFiltersMiddleware = <T extends z.ZodTypeAny>(
 
 	if (error) {
 		// Log the error and continue without filters (validation middleware will catch this)
-		console.error(`Failed to parse ${requestKey} filters:`, error);
+		(req as any).log?.error({ error, requestKey }, 'Failed to parse request filters');
 	}
 
 	// Convert parsed data to filters, excluding null/undefined/empty values

@@ -1,28 +1,31 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
-import { extractFiltersMiddleware } from './extract-filters.middleware';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {NextFunction, Request, Response} from 'express';
+import {z} from 'zod';
+import {extractFiltersMiddleware} from './extract-filters.middleware';
 
 describe('extractFiltersMiddleware', () => {
 	let req: Partial<Request>;
 	let res: Partial<Response>;
 	let next: NextFunction;
-	let consoleErrorSpy: any;
+	let mockLogger: any;
 
 	beforeEach(() => {
+		mockLogger = {
+			error: vi.fn(),
+			warn: vi.fn(),
+			info: vi.fn(),
+			debug: vi.fn(),
+		};
+
 		req = {
 			query: {},
 			body: {},
 			params: {},
 			headers: {},
+			log: mockLogger,
 		};
 		res = {};
 		next = vi.fn();
-		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-	});
-
-	afterEach(() => {
-		consoleErrorSpy.mockRestore();
 	});
 
 	describe('with query parameters (default)', () => {
@@ -102,7 +105,7 @@ describe('extractFiltersMiddleware', () => {
 		});
 
 		it('should log error and continue when schema validation fails', async () => {
-			req.query = { status: 123 }; // Invalid: number instead of string
+			req.query = { status: 123 } as unknown as Request['query']; // Invalid: number instead of string
 			const StrictSchema = z.object({
 				status: z.string(),
 			});
@@ -110,9 +113,12 @@ describe('extractFiltersMiddleware', () => {
 
 			await middleware(req as Request, res as Response, next);
 
-			expect(consoleErrorSpy).toHaveBeenCalledWith(
-				'Failed to parse query filters:',
-				expect.any(Error)
+			expect(mockLogger.error).toHaveBeenCalledWith(
+				expect.objectContaining({
+					error: expect.any(Error),
+					requestKey: 'query'
+				}),
+				'Failed to parse request filters'
 			);
 			expect(req['filters']).toBeUndefined();
 			expect(next).toHaveBeenCalled();
@@ -227,7 +233,7 @@ describe('extractFiltersMiddleware', () => {
 					status: 'active',
 					priority: 1,
 				},
-			};
+			} as unknown as Request['query'];
 
 			const middleware = extractFiltersMiddleware(NestedSchema);
 

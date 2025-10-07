@@ -44,7 +44,7 @@ export const mediaProxyEndpoint = (mediaRepository: MediaRepository) =>
     const [mediaError, media] = await safeExecute(mediaRepository.findById(mediaId));
 
     if (mediaError) {
-      console.error('Media proxy error:', mediaError);
+      (req as any).log?.error({ error: mediaError, mediaId }, 'Media proxy error');
       res.status(500).json({
         error: 'Internal server error',
         success: false
