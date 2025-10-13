@@ -34,7 +34,7 @@ import {setupKeycloakAdapter} from "./keycloak/setup";
 import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository} from "./cache";
-import {logger} from "./logging";
+import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 
 dotenv.config();
 
@@ -94,6 +94,12 @@ const cacheRepository = createCacheRepository();
 const app = express();
 app.use(express.json());
 
+// Add request logging middleware - logs all incoming requests and responses
+// Excludes health check endpoint to reduce noise
+const requestLogger = createRequestLoggingMiddleware(loggerFactory, {
+	excludePaths: ['/api/health']
+});
+app.use(requestLogger);
 
 /**
  * @openapi

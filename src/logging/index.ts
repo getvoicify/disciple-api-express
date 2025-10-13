@@ -14,6 +14,10 @@ export type { LogLevel, LogContext, LoggerConfig, LogMetadata } from './logger.t
 export { PinoLoggerImpl } from './pino-logger.impl';
 export { PinoLoggerFactory } from './logger.factory';
 
+// Export middleware
+export { createRequestLoggingMiddleware } from './middleware/request-logger.middleware';
+export type { RequestLoggerOptions } from './middleware/request-logger.middleware';
+
 // Create and export a singleton factory instance for convenience
 import {PinoLoggerFactory} from './logger.factory';
 
