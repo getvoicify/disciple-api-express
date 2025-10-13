@@ -1,3 +1,10 @@
+## [1.22.0](https://github.com/getvoicify/disciple-api-express/compare/v1.21.1...v1.22.0) (2025-10-13)
+
+
+### ✨ Features
+
+* **eslint:** add ESLint config and integrate TypeScript rules ([#24](https://github.com/getvoicify/disciple-api-express/issues/24)) ([a952241](https://github.com/getvoicify/disciple-api-express/commit/a952241b3a8b4da3b1b64db79d55c2966425617b))
+
 ## [1.21.1](https://github.com/getvoicify/disciple-api-express/compare/v1.21.0...v1.21.1) (2025-10-07)
 
 
