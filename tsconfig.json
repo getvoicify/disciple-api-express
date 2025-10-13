@@ -28,5 +28,5 @@
       "@types/node",
     ]
   },
-  "exclude": ["node_modules", "dist", "coverage", "semantic-release-github-prerelease.js", "vitest.config.*", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "coverage", "semantic-release-github-prerelease.js", "vitest.config.*", "**/*.test.ts", "**/*.spec.ts", "eslint.config.mjs"]
 }

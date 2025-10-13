@@ -1,7 +1,6 @@
-import {ChurchApprovalService} from "../../approval-service";
-import {EndpointHandler} from "../../../types/endpoint-handler";
+import {type ChurchApprovalService} from "../../approval-service";
+import {type EndpointHandler} from "../../../types/endpoint-handler";
 import {ApprovalInput, ChurchIdInput} from "../../schemas";
-import {User} from "../../../utils/validate-token.middleware";
 import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 

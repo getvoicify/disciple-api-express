@@ -1,4 +1,4 @@
-import express from 'express';
+import type express from 'express';
 import type { MediaRepository } from '../repository';
 import { safeExecute } from '../../utils/handle-async';
 

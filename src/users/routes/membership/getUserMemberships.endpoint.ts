@@ -1,5 +1,5 @@
-import {ChurchMembershipService} from "../../../churches/membership-service";
-import {EndpointHandler} from "../../../types/endpoint-handler";
+import {type ChurchMembershipService} from "../../../churches/membership-service";
+import {type EndpointHandler} from "../../../types/endpoint-handler";
 import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
@@ -79,7 +79,7 @@ import errorCodeFactory from "../../../utils/error-code.factory";
  *               error: "Internal server error"
  */
 export const getUserMembershipsEndpoint = (service: ChurchMembershipService): EndpointHandler => async (req, res) => {
-	const user = req.user?.[0];
+	const user = req.user?.[1]?.payload;
 	const userId = user?.sub;
 
 	const [ err, memberships ] = await safeExecute(service.getUserMemberships(userId));

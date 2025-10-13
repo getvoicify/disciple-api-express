@@ -1,7 +1,6 @@
 import type {ChurchService} from "../service";
 import type {EndpointHandler} from "../../types/endpoint-handler";
 import {CreateChurchInput} from "../schemas";
-import type {User} from "../../utils/validate-token.middleware";
 import {safeExecute} from "../../utils/handle-async";
 
 /**

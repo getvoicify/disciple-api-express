@@ -159,7 +159,7 @@ export class ChurchServiceImpl implements ChurchService {
     const uuidSchema = z.uuid();
     try {
       uuidSchema.parse(id);
-    } catch (error) {
+    } catch {
       throw new InvalidFormatError('UUID', 'Valid UUID v4 format');
     }
   }

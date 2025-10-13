@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import type {NoteService} from "../service";
-import express from "express";
+import type express from "express";
 import {safeExecute} from "../../utils/handle-async";
 
 export const NoteFetchParamsInput = z.object({

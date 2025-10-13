@@ -1,9 +1,9 @@
-import {RawDb} from "../utils/database";
-import {KeycloakAdminClientImpl, KeycloakAdminConfig} from "./admin-client";
+import {type RawDb} from "../utils/database";
+import {KeycloakAdminClientImpl, type KeycloakAdminConfig} from "./admin-client";
 import {KeycloakResourceManagerImpl} from "./resource-manager";
 import {PostgresOutboxStore} from "../outbox/postgres-store";
 import {createOutbox} from "../outbox";
-import {GeneralizedKeycloakOutboxAdapter, KeycloakOutboxEvent} from "./generalized-outbox.adapter";
+import {GeneralizedKeycloakOutboxAdapter, type KeycloakOutboxEvent} from "./generalized-outbox.adapter";
 import * as crypto from "node:crypto";
 import {KeycloakOutboxPublisher} from "./outbox.publisher";
 

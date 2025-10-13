@@ -1,21 +1,8 @@
-import { z } from 'zod';
-import type { IChurchRepository } from './repository';
-import type {
-  Church,
-  ApprovalInput,
-  RejectionInput,
-  ChurchFilters
-} from './schemas';
-import {
-  ApprovalInput as ApprovalInputSchema,
-  RejectionInput as RejectionInputSchema
-} from './schemas';
-import {
-  NotFoundError,
-  BusinessLogicError,
-  InvalidFormatError,
-  InternalServerError
-} from '../utils/errors';
+import {z} from 'zod';
+import type {IChurchRepository} from './repository';
+import type {ApprovalInput, Church, ChurchFilters, RejectionInput} from './schemas';
+import {RejectionInput as RejectionInputSchema} from './schemas';
+import {BusinessLogicError, InternalServerError, InvalidFormatError, NotFoundError} from '../utils/errors';
 
 export interface ApprovalHistory {
   churchId: string;
@@ -45,7 +32,6 @@ export class ChurchApprovalServiceImpl implements ChurchApprovalService {
   async approveChurch(churchId: string, input: ApprovalInput, approverId: string): Promise<Church> {
     this.validateUUID(churchId);
     this.validateUUID(approverId);
-    const validated = ApprovalInputSchema.parse(input);
 
     // Find the church
     const church = await this.churchRepository.findById(churchId);
@@ -154,7 +140,7 @@ export class ChurchApprovalServiceImpl implements ChurchApprovalService {
     const uuidSchema = z.string().uuid();
     try {
       uuidSchema.parse(id);
-    } catch (error) {
+    } catch {
       throw new InvalidFormatError('UUID', 'Valid UUID v4 format');
     }
   }

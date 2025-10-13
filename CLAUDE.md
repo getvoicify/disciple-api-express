@@ -5,12 +5,19 @@
 When accessing the authenticated user in Express endpoints, always use the following pattern:
 
 ```typescript
-const user = req.user?.[0];
-const userId = user?.sub;
+const user = req.user?.[1]?.['payload'];
+const userId = user?.['sub'];
+```
+
+**Alternative compact syntax:**
+```typescript
+const userId = req['user']?.[1].payload?.sub || '';
 ```
 
 **Key Details:**
 - The `User` type is defined as `jose.JWTPayload[]` (an array of JWT payloads)
+- The authenticated user payload is at **index 1** (`user[1]`)
+- The user data is nested within a `payload` property
 - The user ID is accessed via the `sub` property from the JWT payload
 - Always use the `EndpointRequest` type from `src/types/endpoint-handler.ts` instead of Express's `Request` type
 - The `EndpointRequest` type extends Express's `Request` with `user?: User`
@@ -21,8 +28,8 @@ import type { EndpointRequest } from '../../types/endpoint-handler';
 
 export const someEndpoint = (service: SomeService) => {
   return async (req: EndpointRequest, res: Response, next: NextFunction) => {
-    const user = req.user?.[0];
-    const userId = user?.sub;
+    const user = req.user?.[1]?.['payload'];
+    const userId = user?.['sub'];
     if (!userId) {
       return next(new Error('User context is required'));
     }
@@ -66,4 +73,4 @@ if (error) {
 - `safeExecute(() => import('fs').then(fs => fs.readFileSync(path)))` - File operations
 - `safeExecute(service.createNote(data, ownerId))` - Service calls
 - `safeExecute(this.s3Client.send(command))` - Cloud operations
-- For unsafe executions, the proper way the safeExecute is `safeExecute(() => unsafeFn())`
+- For unsafe executions, the proper way to use safeExecute is `safeExecute(() => unsafeFn())`

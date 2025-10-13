@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {ChurchMembershipService} from "../churches/membership-service";
+import {type ChurchMembershipService} from "../churches/membership-service";
 import {validateToken} from "../utils/validate-token.middleware";
 import {jwtVerify} from "jose";
 import {getUserMembershipsEndpoint} from "./routes/membership/getUserMemberships.endpoint";

@@ -1,5 +1,5 @@
-import { KeycloakResourcePermissions as BaseKeycloakResourcePermissions } from "./types";
-import { Outbox } from "../outbox";
+import { type KeycloakResourcePermissions as BaseKeycloakResourcePermissions } from "./types";
+import { type Outbox } from "../outbox";
 
 // Extended permissions type that allows custom scopes
 export interface KeycloakResourcePermissions extends BaseKeycloakResourcePermissions {

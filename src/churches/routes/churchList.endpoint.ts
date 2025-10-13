@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import type {ChurchService} from "../service";
 import type {EndpointHandler} from "../../types/endpoint-handler";
-import {ChurchFilters} from "../schemas";
+import {type ChurchFilters} from "../schemas";
 import {safeExecute} from "../../utils/handle-async";
 
 export const ChurchListFilterSchema = z.object({

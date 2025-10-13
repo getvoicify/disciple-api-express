@@ -1,7 +1,7 @@
-import {EndpointRequest} from "../../types/endpoint-handler";
+import {type EndpointRequest} from "../../types/endpoint-handler";
 
 import {KeycloakAuthError} from "../../utils/errors";
-import {Middleware} from "../../utils/middleware";
+import {type Middleware} from "../../utils/middleware";
 import {safeExecute} from "../../utils/handle-async";
 import errorCodeFactory from "../../utils/error-code.factory";
 

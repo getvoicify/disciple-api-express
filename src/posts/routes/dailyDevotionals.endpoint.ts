@@ -67,7 +67,7 @@ export const dailyDevotionalsEndpoint = (
   return async (req: EndpointRequest, res: Response, next: NextFunction) => {
     const [error, result] = await safeExecute(async () => {
       // Get authenticated user
-      const user = req.user?.[0];
+      const user = req.user?.[1]?.payload;
       const userId = user?.sub;
 
       if (!userId) {

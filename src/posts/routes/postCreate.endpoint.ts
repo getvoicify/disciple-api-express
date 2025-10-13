@@ -1,5 +1,5 @@
 import type {PostService} from '../service';
-import express from 'express';
+import type express from 'express';
 import {CreatePostInput} from '../schemas';
 import {safeExecute} from '../../utils/handle-async';
 import errorCodeFactory from '../../utils/error-code.factory';
@@ -63,7 +63,7 @@ export const postCreateEndpoint = (service: PostService) =>
 		const postToCreate = parseResult.data;
 
 		// Extract owner ID from the authenticated user's token
-		const user = req['user']?.[0];
+		const user = req['user']?.[1]?.payload;
 		const userId = user?.sub;
 		if (!userId) {
 			res.status(401).json({

@@ -20,9 +20,14 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
       params: {
         id: '550e8400-e29b-41d4-a716-446655440001'
       },
-      user: [{
-        sub: '550e8400-e29b-41d4-a716-446655440002'
-      }]
+      user: [
+        undefined,
+        {
+          payload: {
+            sub: '550e8400-e29b-41d4-a716-446655440002'
+          }
+        }
+      ]
     } as unknown as Request;
 
     res = {
@@ -37,7 +42,7 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
     const handler = postDeleteEndpoint(mockService);
     await handler(req as Request, res as Response);
 
-    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
+    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![1].payload.sub);
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       message: 'Post deleted successfully'
@@ -52,7 +57,7 @@ describe('DELETE /posts/:id - Delete Post Endpoint', () => {
     const handler = postDeleteEndpoint(mockService);
     await handler(req as Request, res as Response);
 
-    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![0].sub);
+    expect(mockService.deletePost).toHaveBeenCalledWith(req.params!.id, req['user']![1].payload.sub);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
       error: `Post with identifier '${req.params!.id}' not found`,

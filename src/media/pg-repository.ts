@@ -1,7 +1,7 @@
 import type {RawDb} from "../utils/database";
 import type {MediaRepository} from './repository';
 import type {CreateMediaInput, Media, MediaFilters, UpdateMediaInput} from './schemas';
-import {GeneralizedKeycloakOutboxAdapter} from "../keycloak/generalized-outbox.adapter";
+import {type GeneralizedKeycloakOutboxAdapter} from "../keycloak/generalized-outbox.adapter";
 
 export class PostgresMediaRepository implements MediaRepository {
 	private static ResourceType = 'media' as const;

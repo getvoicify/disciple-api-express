@@ -1,5 +1,5 @@
 import type {NoteService} from "../service";
-import express from "express";
+import type express from "express";
 import {CreateNoteInput} from "../schemas";
 import {safeExecute} from "../../utils/handle-async";
 

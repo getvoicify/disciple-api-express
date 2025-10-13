@@ -1,9 +1,26 @@
-import {extractToken, validateTokenService, Verifier} from "./token.service";
-import {Middleware} from "./middleware";
+import {extractToken, validateTokenService, type Verifier} from "./token.service";
+import {type Middleware} from "./middleware";
 import {safeExecute} from "./handle-async";
 import * as jose from "jose";
 
-export type User = jose.JWTPayload[];
+/**
+ * User type representing the JWT verification result tuple.
+ *
+ * Structure: [undefined, JWTVerifyResult]
+ * - user[0]: Always undefined (from safeExecute tuple pattern)
+ * - user[1]: JWTVerifyResult containing:
+ *   - payload: JWTPayload with claims (including 'sub' for user ID)
+ *   - protectedHeader: JWSHeaderParameters
+ *
+ * @example
+ * // Access user ID:
+ * const userId = req.user?.[1]?.payload?.sub;
+ *
+ * // Or with destructuring:
+ * const user = req.user?.[1]?.payload;
+ * const userId = user?.sub;
+ */
+export type User = [undefined, jose.JWTVerifyResult];
 
 const tokenValidateMiddleware = (
 	verifier: Verifier,

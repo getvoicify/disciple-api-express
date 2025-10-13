@@ -1,4 +1,4 @@
-import { CacheRepository } from './cache.repository';
+import { type CacheRepository } from './cache.repository';
 import { InMemoryCacheRepository } from './in-memory-cache.repository';
 import { RedisCacheRepository } from './redis-cache.repository';
 

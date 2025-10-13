@@ -1,6 +1,6 @@
 import {z} from "zod";
 import type {ChurchService} from "../service";
-import {EndpointHandler} from "../../types/endpoint-handler";
+import {type EndpointHandler} from "../../types/endpoint-handler";
 import {safeExecute} from "../../utils/handle-async";
 
 export const ChurchSearchInput = z.object({

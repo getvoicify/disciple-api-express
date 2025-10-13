@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import type {PostService} from '../service';
-import express from 'express';
+import type express from 'express';
 import {safeExecute} from '../../utils/handle-async';
 import errorCodeFactory from '../../utils/error-code.factory';
 

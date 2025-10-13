@@ -307,7 +307,7 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
     const uuidSchema = z.string().uuid();
     try {
       uuidSchema.parse(id);
-    } catch (error) {
+    } catch {
       throw new Error('Invalid UUID format');
     }
   }

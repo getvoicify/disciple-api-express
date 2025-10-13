@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
+import { type Request, type Response, type NextFunction } from 'express';
+import { type z } from 'zod';
 import { safeExecute } from '../utils/handle-async';
 
 interface RequestWithFilters extends Request {

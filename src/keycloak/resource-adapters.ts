@@ -1,11 +1,10 @@
-import { Note } from "../notes/schemas";
-import { Outbox } from "../outbox";
+import { type Note } from "../notes/schemas";
+import { type Outbox } from "../outbox";
 import {
 	GeneralizedKeycloakOutboxAdapter,
-	SpecializedKeycloakAdapter,
-	Resource,
-	ResourceConfig,
-	KeycloakResourcePermissions
+	type SpecializedKeycloakAdapter,
+	type Resource,
+	type ResourceConfig
 } from "./generalized-outbox.adapter";
 
 // Define Church resource interface

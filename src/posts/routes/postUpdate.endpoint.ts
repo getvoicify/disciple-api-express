@@ -1,5 +1,5 @@
 import type {PostService} from '../service';
-import express from 'express';
+import type express from 'express';
 import {UpdatePostInput} from '../schemas';
 import {z} from 'zod';
 import {safeExecute} from '../../utils/handle-async';
@@ -92,7 +92,7 @@ export const postUpdateEndpoint = (service: PostService) =>
 		}
 		const updateData = bodyParseResult.data;
 
-		const user = req['user']?.[0];
+		const user = req['user']?.[1]?.payload;
 		const userId = user?.sub;
 		if (!userId || typeof userId !== 'string') {
 			res.status(401).json({

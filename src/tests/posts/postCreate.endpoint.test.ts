@@ -20,9 +20,14 @@ describe('POST /posts - Create Post Endpoint', () => {
 
     req = {
       body: {},
-      user: [{
-        sub: '550e8400-e29b-41d4-a716-446655440001'
-      }]
+      user: [
+        undefined,
+        {
+          payload: {
+            sub: '550e8400-e29b-41d4-a716-446655440001'
+          }
+        }
+      ]
     } as unknown as Request;
 
     res = {
@@ -44,7 +49,7 @@ describe('POST /posts - Create Post Endpoint', () => {
       id: '550e8400-e29b-41d4-a716-446655440003',
       title: input.title,
       content: input.content,
-      authorId: req['user']![0].sub!,
+      authorId: req['user']![1].payload.sub!,
       churchId: input.churchId,
       status: 'draft',
       publishedAt: null,
@@ -64,7 +69,7 @@ describe('POST /posts - Create Post Endpoint', () => {
     const handler = postCreateEndpoint(mockService);
     await handler(req as Request, res as Response);
 
-    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
+    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![1].payload.sub);
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
       post: mockPost,
@@ -103,7 +108,7 @@ describe('POST /posts - Create Post Endpoint', () => {
     const handler = postCreateEndpoint(mockService);
     await handler(req as Request, res as Response);
 
-    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
+    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![1].payload.sub);
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       error: error.message,
@@ -119,13 +124,13 @@ describe('POST /posts - Create Post Endpoint', () => {
     };
 
     req.body = input;
-    const error = new NotChurchMemberError(req['user']![0].sub!, input.churchId);
+    const error = new NotChurchMemberError(req['user']![1].payload.sub!, input.churchId);
     mockService.createPost = vi.fn().mockRejectedValue(error);
 
     const handler = postCreateEndpoint(mockService);
     await handler(req as Request, res as Response);
 
-    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![0].sub);
+    expect(mockService.createPost).toHaveBeenCalledWith(input, req['user']![1].payload.sub);
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       error: error.message,

@@ -1,5 +1,5 @@
 import type { SeriesService } from "../service";
-import express from "express";
+import type express from "express";
 import { CreateSeriesInput } from "../schemas";
 import { safeExecute } from "../../utils/handle-async";
 

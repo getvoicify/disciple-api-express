@@ -1,9 +1,9 @@
-import express from 'express';
+import type express from 'express';
 import {z} from "zod";
 import type {NoteService} from "../service";
-import {NoteFilters} from "../schemas";
+import {type NoteFilters} from "../schemas";
 import {safeExecute} from "../../utils/handle-async";
-import {CacheRepository} from "../../cache";
+import {type CacheRepository} from "../../cache";
 
 export const InputSchema = z.object({
 	title: z.string().optional().nullable(),

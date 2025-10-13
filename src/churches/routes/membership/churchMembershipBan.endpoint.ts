@@ -1,5 +1,5 @@
-import {ChurchMembershipService} from "../../membership-service";
-import {EndpointHandler} from "../../../types/endpoint-handler";
+import {type ChurchMembershipService} from "../../membership-service";
+import {type EndpointHandler} from "../../../types/endpoint-handler";
 import {ChurchIdInput, UserIdInput} from "../../schemas";
 import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
@@ -57,7 +57,7 @@ import errorCodeFactory from "../../../utils/error-code.factory";
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const churchMembershipBanEndpoint = (service: ChurchMembershipService): EndpointHandler => async (req, res) => {
-	const actor = req.user?.[0];
+	const actor = req.user?.[1]?.payload;
 	const actorId = actor?.sub;
 	const { churchId } = ChurchIdInput.parse(req.params);
 	const { userId: targetUserId } = UserIdInput.parse(req.params);
