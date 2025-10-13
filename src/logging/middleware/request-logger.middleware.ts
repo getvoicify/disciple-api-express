@@ -15,11 +15,9 @@ export interface RequestLoggerOptions {
 /**
  * Extends Express Request to include logger
  */
-declare global {
-  namespace Express {
-    interface Request {
-      log?: ILogger;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    log?: ILogger;
   }
 }
 

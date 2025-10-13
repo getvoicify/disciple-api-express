@@ -1,9 +1,10 @@
 import pino from 'pino';
-import {randomUUID} from 'crypto';
-import type {Request} from 'express';
-import type {ILogger, ILoggerFactory} from './logger.interface';
-import type {LoggerConfig, LogLevel} from './logger.types';
-import {PinoLoggerImpl} from './pino-logger.impl';
+import { randomUUID } from 'crypto';
+import { hostname } from 'os';
+import type { Request } from 'express';
+import type { ILogger, ILoggerFactory } from './logger.interface';
+import type { LoggerConfig, LogLevel } from './logger.types';
+import { PinoLoggerImpl } from './pino-logger.impl';
 
 /**
  * Factory for creating Pino-based logger instances
@@ -70,7 +71,7 @@ export class PinoLoggerFactory implements ILoggerFactory {
       },
       base: {
         pid: process.pid,
-        hostname: require('os').hostname(),
+        hostname: hostname(),
         environment: config.environment,
       },
     };
