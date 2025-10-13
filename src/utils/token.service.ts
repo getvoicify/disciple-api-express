@@ -1,4 +1,4 @@
-import {CryptoKey, JWTPayload, JWTVerifyResult, jwtVerify} from "jose";
+import {type JWTPayload, type jwtVerify} from "jose";
 import {getPublicKeys} from "./get-public-keys.util";
 import {safeExecute} from "./handle-async";
 

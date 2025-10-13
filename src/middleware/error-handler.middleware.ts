@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { isAppError, AppError, ValidationError, NotFoundError } from '../utils/errors';
+import { isAppError, ValidationError, NotFoundError } from '../utils/errors';
 import errorCodeFactory from '../utils/error-code.factory';
 
 interface ErrorResponse {

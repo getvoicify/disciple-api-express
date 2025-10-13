@@ -31,7 +31,7 @@ import {devotionalRouter} from "./series/routes/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
-import {KeycloakAdminConfig} from "./keycloak/admin-client";
+import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository} from "./cache";
 

@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { CacheRepository } from './cache.repository';
+import { type CacheRepository } from './cache.repository';
 import { safeExecute } from '../utils/handle-async';
 import { serialize, deserialize } from './cache-serialization.util';
 

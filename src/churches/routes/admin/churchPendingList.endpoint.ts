@@ -1,6 +1,6 @@
-import {ChurchApprovalService} from "../../approval-service";
-import {EndpointHandler} from "../../../types/endpoint-handler";
-import {ChurchFilters, PendingChurchListQueryInput} from "../../schemas";
+import {type ChurchApprovalService} from "../../approval-service";
+import {type EndpointHandler} from "../../../types/endpoint-handler";
+import {type ChurchFilters, PendingChurchListQueryInput} from "../../schemas";
 import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 

@@ -22,9 +22,14 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
         id: '550e8400-e29b-41d4-a716-446655440001'
       },
       body: {},
-      user: [{
-        sub: '550e8400-e29b-41d4-a716-446655440002'
-      }]
+      user: [
+        undefined,
+        {
+          payload: {
+            sub: '550e8400-e29b-41d4-a716-446655440002'
+          }
+        }
+      ]
     } as unknown as Request;
 
     res = {
@@ -43,7 +48,7 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
       id: req.params!.id,
       title: 'Updated Title',
       content: 'Updated content',
-      authorId: req['user']![0].sub!,
+      authorId: req['user']![1].payload.sub!,
       churchId: '550e8400-e29b-41d4-a716-446655440003',
       status: 'draft',
       publishedAt: null,
@@ -63,7 +68,7 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
     const handler = postUpdateEndpoint(mockService);
     await handler(req as Request, res as Response);
 
-    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, updateInput, req['user']![0].sub);
+    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, updateInput, req['user']![1].payload.sub);
     expect(res.json).toHaveBeenCalledWith({
       post: mockPost,
       success: true
@@ -77,7 +82,7 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
       id: req.params!.id,
       title: 'Test Post',
       content: 'Test content',
-      authorId: req['user']![0].sub!,
+      authorId: req['user']![1].payload.sub!,
       churchId: '550e8400-e29b-41d4-a716-446655440003',
       status: 'draft',
       publishedAt: null,
@@ -97,7 +102,7 @@ describe('PATCH /posts/:id - Update Post Endpoint', () => {
     await handler(req as Request, res as Response);
 
     // Should still call service with empty object
-    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, {}, req['user']![0].sub);
+    expect(mockService.updatePost).toHaveBeenCalledWith(req.params!.id, {}, req['user']![1].payload.sub);
     expect(res.json).toHaveBeenCalledWith({
       post: mockPost,
       success: true

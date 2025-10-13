@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { randomUUID } from 'crypto';
-import express from 'express';
+import {describe, expect, it, vi} from 'vitest';
+import {randomUUID} from 'crypto';
 
 describe('Gallery Endpoints', () => {
   describe('POST /api/churches/:churchId/galleries', () => {
@@ -26,7 +25,7 @@ describe('Gallery Endpoints', () => {
       const req = {
         params: { churchId },
         body: { mediaIds: [mediaId1, mediaId2] },
-        user: [{ sub: randomUUID() }]
+        user: [undefined, { payload: { sub: randomUUID() } }]
       } as any;
 
       const res = {
@@ -34,7 +33,7 @@ describe('Gallery Endpoints', () => {
         json: vi.fn()
       } as any;
 
-      await galleryCreateEndpoint(mockService)(req, res);
+      await galleryCreateEndpoint(mockService)(req, res, () => {});
 
       expect(mockService.createGallery).toHaveBeenCalledWith({
         churchId,
@@ -70,7 +69,7 @@ describe('Gallery Endpoints', () => {
         json: vi.fn()
       } as any;
 
-      await galleryCreateEndpoint(mockService)(req, res);
+      await galleryCreateEndpoint(mockService)(req, res, () => {});
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith(
@@ -114,7 +113,7 @@ describe('Gallery Endpoints', () => {
       const req = {
         params: { churchId, galleryId },
         body: { mediaIds: [mediaId] },
-        user: [{ sub: randomUUID() }]
+        user: [undefined, { payload: { sub: randomUUID() } }]
       } as any;
 
       const res = {
@@ -122,7 +121,7 @@ describe('Gallery Endpoints', () => {
         json: vi.fn()
       } as any;
 
-      await galleryAddMediaEndpoint(mockService)(req, res);
+      await galleryAddMediaEndpoint(mockService)(req, res, () => {});
 
       expect(mockService.addMediaToGallery).toHaveBeenCalledWith({
         galleryId,
@@ -159,7 +158,7 @@ describe('Gallery Endpoints', () => {
 
       const req = {
         params: { churchId },
-        user: [{ sub: randomUUID() }]
+        user: [undefined, { payload: { sub: randomUUID() } }]
       } as any;
 
       const res = {
@@ -167,7 +166,7 @@ describe('Gallery Endpoints', () => {
         json: vi.fn()
       } as any;
 
-      await galleryFetchEndpoint(mockService)(req, res);
+      await galleryFetchEndpoint(mockService)(req, res, () => {});
 
       expect(mockService.getGalleryByChurchId).toHaveBeenCalledWith(churchId);
       expect(res.status).toHaveBeenCalledWith(200);
@@ -191,7 +190,7 @@ describe('Gallery Endpoints', () => {
 
       const req = {
         params: { churchId: randomUUID() },
-        user: [{ sub: randomUUID() }]
+        user: [undefined, { payload: { sub: randomUUID() } }]
       } as any;
 
       const res = {
@@ -199,7 +198,7 @@ describe('Gallery Endpoints', () => {
         json: vi.fn()
       } as any;
 
-      await galleryFetchEndpoint(mockService)(req, res);
+      await galleryFetchEndpoint(mockService)(req, res, () => {});
 
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
@@ -228,7 +227,7 @@ describe('Gallery Endpoints', () => {
 
       const req = {
         params: { churchId, galleryId, mediaId },
-        user: [{ sub: randomUUID() }]
+        user: [undefined, { payload: { sub: randomUUID() } }]
       } as any;
 
       const res = {
@@ -236,7 +235,7 @@ describe('Gallery Endpoints', () => {
         json: vi.fn()
       } as any;
 
-      await galleryRemoveMediaEndpoint(mockService)(req, res);
+      await galleryRemoveMediaEndpoint(mockService)(req, res, () => {});
 
       expect(mockService.removeMediaFromGallery).toHaveBeenCalledWith(galleryId, mediaId);
       expect(res.status).toHaveBeenCalledWith(200);

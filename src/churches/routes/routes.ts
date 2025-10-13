@@ -1,7 +1,7 @@
 import {Router} from 'express';
 import type {ChurchService} from "../service";
 import type {ChurchApprovalService} from "../approval-service";
-import {ChurchMembershipService} from "../membership-service";
+import {type ChurchMembershipService} from "../membership-service";
 import type {GalleryService} from "../../gallery/service";
 import {churchCreateEndpoint} from "./churchCreate.endpoint";
 import {validateToken} from "../../utils/validate-token.middleware";

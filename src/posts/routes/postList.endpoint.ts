@@ -1,9 +1,9 @@
-import express from 'express';
+import type express from 'express';
 import {z} from 'zod';
 import type {PostService} from '../service';
-import {PostFilters} from '../schemas';
+import {type PostFilters} from '../schemas';
 import {safeExecute} from '../../utils/handle-async';
-import {CacheRepository} from '../../cache';
+import {type CacheRepository} from '../../cache';
 import errorCodeFactory from '../../utils/error-code.factory';
 
 export const InputSchema = z.object({

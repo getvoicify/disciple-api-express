@@ -1,6 +1,6 @@
-import {ChurchMembershipService} from "../../membership-service";
+import {type ChurchMembershipService} from "../../membership-service";
 import {ChurchIdInput, InvitationInput} from "../../schemas";
-import {EndpointHandler} from "../../../types/endpoint-handler";
+import {type EndpointHandler} from "../../../types/endpoint-handler";
 import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
 
@@ -78,7 +78,7 @@ import errorCodeFactory from "../../../utils/error-code.factory";
 export const churchMembershipInviteEndpoint = (service: ChurchMembershipService): EndpointHandler => async (req , res) => {
 	const { churchId } = ChurchIdInput.parse(req.params);
 	const invitationInput = InvitationInput.parse(req.body);
-	const inviterId = req.user?.[0]?.sub;
+	const inviterId = req.user?.[1]?.payload?.sub;
 
 	const [err, membership] = await safeExecute(service.inviteUser(churchId, invitationInput, inviterId));
 

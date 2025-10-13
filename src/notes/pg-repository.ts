@@ -1,7 +1,7 @@
 import type {RawDb} from "../utils/database";
 import type {NoteRepository} from './repository';
 import type {CreateNoteInput, Note, NoteFilters, UpdateNoteInput} from './schemas';
-import {GeneralizedKeycloakOutboxAdapter} from "../keycloak/generalized-outbox.adapter";
+import {type GeneralizedKeycloakOutboxAdapter} from "../keycloak/generalized-outbox.adapter";
 
 export class PostgresNoteRepository implements NoteRepository {
 	private static ResourceType = 'notes' as const;

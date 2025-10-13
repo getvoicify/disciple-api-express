@@ -1,5 +1,5 @@
-import {CacheRepository} from "../../cache";
-import {Middleware} from "../../utils/middleware";
+import {type CacheRepository} from "../../cache";
+import {type Middleware} from "../../utils/middleware";
 import {safeExecute} from "../../utils/handle-async";
 
 export const cacheResponseMiddleware = (cacheRepo: CacheRepository): Middleware => async (req, res, next) => {

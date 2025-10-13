@@ -1,7 +1,7 @@
 import type { RawDb } from "../utils/database";
 import type { PostRepository } from './repository';
 import type { CreatePostInput, Post, PostFilters, UpdatePostInput } from './schemas';
-import { GeneralizedKeycloakOutboxAdapter } from "../keycloak/generalized-outbox.adapter";
+import { type GeneralizedKeycloakOutboxAdapter } from "../keycloak/generalized-outbox.adapter";
 
 export class PostgresPostRepository implements PostRepository {
 	private static ResourceType = 'posts' as const;

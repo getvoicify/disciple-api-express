@@ -67,8 +67,8 @@ export const GalleryRemoveMediaParamsInput = z.object({
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const galleryRemoveMediaEndpoint = (service: GalleryService) =>
-  async (req: EndpointRequest, res: Response, next: NextFunction) => {
-    const user = req.user?.[0];
+  async (req: EndpointRequest, res: Response, _next: NextFunction) => {
+    const user = req.user?.[1]?.payload;
     const userId = user?.sub;
 
     if (!userId) {

@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import type {PostService} from '../service';
-import express from 'express';
+import type express from 'express';
 import {safeExecute} from '../../utils/handle-async';
 import errorCodeFactory from '../../utils/error-code.factory';
 
@@ -104,7 +104,7 @@ export const postPublishEndpoint = (service: PostService) =>
 		}
 		const {action} = bodyParseResult.data;
 
-		const user = req['user']?.[0];
+		const user = req['user']?.[1]?.payload;
 		const userId = user?.sub;
 		if (!userId || typeof userId !== 'string') {
 			res.status(401).json({

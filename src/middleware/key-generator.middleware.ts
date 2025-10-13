@@ -1,5 +1,5 @@
-import { Request } from 'express';
-import { Middleware } from "../utils/middleware";
+import { type Request } from 'express';
+import { type Middleware } from "../utils/middleware";
 import { keyEnvPrefixer } from '../utils/key-env-prefixer.util';
 
 interface UserPayload {

@@ -18,9 +18,14 @@ describe('GET /posts/daily-devotionals - Daily Devotionals Endpoint', () => {
     vi.clearAllMocks();
 
     req = {
-      user: [{
-        sub: '550e8400-e29b-41d4-a716-446655440001'
-      }]
+      user: [
+        undefined,
+        {
+          payload: {
+            sub: '550e8400-e29b-41d4-a716-446655440001'
+          }
+        }
+      ]
     };
 
     res = {
@@ -140,6 +145,182 @@ describe('GET /posts/daily-devotionals - Daily Devotionals Endpoint', () => {
       message: 'User context is required'
     }));
     expect(mockSeriesService.getDailyDevotionals).not.toHaveBeenCalled();
+  });
+
+  it('should require user payload at index 1', async () => {
+    req.user = [undefined]; // Missing user[1]
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'User context is required'
+    }));
+    expect(mockSeriesService.getDailyDevotionals).not.toHaveBeenCalled();
+  });
+
+  it('should require sub in user payload', async () => {
+    req.user = [
+      undefined,
+      {
+        payload: {} // Missing sub
+      }
+    ];
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'User context is required'
+    }));
+    expect(mockSeriesService.getDailyDevotionals).not.toHaveBeenCalled();
+  });
+
+  it('should handle when user[1] exists but payload is missing', async () => {
+    req.user = [
+      undefined,
+      {} // Missing payload property
+    ];
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'User context is required'
+    }));
+    expect(mockSeriesService.getDailyDevotionals).not.toHaveBeenCalled();
+  });
+
+  it('should handle when payload is null', async () => {
+    req.user = [
+      undefined,
+      {
+        payload: null
+      }
+    ];
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'User context is required'
+    }));
+    expect(mockSeriesService.getDailyDevotionals).not.toHaveBeenCalled();
+  });
+
+  it('should correctly extract userId from nested payload structure', async () => {
+    const expectedUserId = '550e8400-e29b-41d4-a716-446655440001';
+    const mockResult = { '2024-01-15': [] };
+
+    mockSeriesService.getDailyDevotionals = vi.fn().mockResolvedValue(mockResult);
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    // Verify the correct userId was extracted and passed to the service
+    expect(mockSeriesService.getDailyDevotionals).toHaveBeenCalledWith(expectedUserId);
+    expect(mockSeriesService.getDailyDevotionals).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle multiple dates in response', async () => {
+    const mockDailyDevotionals = {
+      '2024-01-15': [
+        {
+          id: 'post-1',
+          title: 'Day 1',
+          content: 'Content',
+          authorId: 'author-1',
+          churchId: 'church-1',
+          status: 'published' as const,
+          publishedAt: new Date('2024-01-15T08:00:00Z'),
+          image: null,
+          tags: [],
+          categories: [],
+          scriptureReferences: [],
+          seriesId: 'series-1',
+          seriesName: 'Series 1',
+          createdAt: new Date('2024-01-15'),
+          updatedAt: new Date('2024-01-15')
+        }
+      ],
+      '2024-01-16': [
+        {
+          id: 'post-2',
+          title: 'Day 2',
+          content: 'Content',
+          authorId: 'author-1',
+          churchId: 'church-1',
+          status: 'published' as const,
+          publishedAt: new Date('2024-01-16T08:00:00Z'),
+          image: null,
+          tags: [],
+          categories: [],
+          scriptureReferences: [],
+          seriesId: 'series-1',
+          seriesName: 'Series 1',
+          createdAt: new Date('2024-01-16'),
+          updatedAt: new Date('2024-01-16')
+        }
+      ],
+      '2024-01-17': [
+        {
+          id: 'post-3',
+          title: 'Day 3',
+          content: 'Content',
+          authorId: 'author-1',
+          churchId: 'church-1',
+          status: 'published' as const,
+          publishedAt: new Date('2024-01-17T08:00:00Z'),
+          image: null,
+          tags: [],
+          categories: [],
+          scriptureReferences: [],
+          seriesId: 'series-1',
+          seriesName: 'Series 1',
+          createdAt: new Date('2024-01-17'),
+          updatedAt: new Date('2024-01-17')
+        }
+      ]
+    };
+
+    mockSeriesService.getDailyDevotionals = vi.fn().mockResolvedValue(mockDailyDevotionals);
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    // Verify response contains all dates
+    const responseCall = (res.json as Mock).mock.calls[0][0];
+    expect(Object.keys(responseCall)).toHaveLength(3);
+    expect(Object.keys(responseCall)).toEqual(['2024-01-15', '2024-01-16', '2024-01-17']);
+    expect(responseCall['2024-01-15']).toHaveLength(1);
+    expect(responseCall['2024-01-16']).toHaveLength(1);
+    expect(responseCall['2024-01-17']).toHaveLength(1);
+  });
+
+  it('should use safeExecute for error handling', async () => {
+    const thrownError = new Error('Service exception');
+    mockSeriesService.getDailyDevotionals = vi.fn().mockRejectedValue(thrownError);
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    // Verify error was caught and passed to next middleware (safeExecute pattern)
+    expect(next).toHaveBeenCalledWith(thrownError);
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it('should not call service if user validation fails', async () => {
+    req.user = [undefined, { payload: { sub: null } }];
+
+    const handler = dailyDevotionalsEndpoint(mockSeriesService);
+    await handler(req as EndpointRequest, res as Response, next);
+
+    // Verify service was never called due to validation failure
+    expect(mockSeriesService.getDailyDevotionals).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'User context is required'
+    }));
   });
 
   it('should group posts by publishedAt date (YYYY-MM-DD)', async () => {

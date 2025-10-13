@@ -1,4 +1,4 @@
-import { CacheRepository } from './cache.repository';
+import { type CacheRepository } from './cache.repository';
 import { serialize, deserialize } from './cache-serialization.util';
 
 interface CacheEntry {
