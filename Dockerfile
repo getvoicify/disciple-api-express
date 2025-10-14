@@ -63,7 +63,8 @@ COPY --chown=nodejs:nodejs package*.json ./
 # Copy migration files and scripts
 COPY --chown=nodejs:nodejs migrations ./migrations
 COPY --chown=nodejs:nodejs scripts/run-migrations.sh ./scripts/
-RUN chmod +x ./scripts/run-migrations.sh
+COPY --chown=nodejs:nodejs scripts/run-migrations-only.sh ./scripts/
+RUN chmod +x ./scripts/run-migrations.sh ./scripts/run-migrations-only.sh
 
 # Switch to non-root user
 USER nodejs
