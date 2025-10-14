@@ -1,3 +1,10 @@
+## [1.23.0](https://github.com/getvoicify/disciple-api-express/compare/v1.22.0...v1.23.0) (2025-10-14)
+
+
+### ✨ Features
+
+* **logging:** implement structured logging with Pino and comprehensi… ([#25](https://github.com/getvoicify/disciple-api-express/issues/25)) ([f41b18e](https://github.com/getvoicify/disciple-api-express/commit/f41b18ef163acc1fc573243fcefc25a30cab5d03))
+
 ## [1.22.0](https://github.com/getvoicify/disciple-api-express/compare/v1.21.1...v1.22.0) (2025-10-13)
 
 
