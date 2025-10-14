@@ -1,3 +1,10 @@
+## [1.24.0](https://github.com/getvoicify/disciple-api-express/compare/v1.23.0...v1.24.0) (2025-10-14)
+
+
+### ✨ Features
+
+* **k8s:** add pod anti-affinity rules for `disciple-api` deployment ([735d225](https://github.com/getvoicify/disciple-api-express/commit/735d2252496249fea2456279b66bbe91d2d4f9ad))
+
 ## [1.23.0](https://github.com/getvoicify/disciple-api-express/compare/v1.22.0...v1.23.0) (2025-10-14)
 
 
