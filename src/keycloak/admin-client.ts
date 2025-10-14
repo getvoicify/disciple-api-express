@@ -1,8 +1,6 @@
-import type {
-	KeycloakAdminClient,
-	KeycloakResource
-} from './types';
+import type {KeycloakAdminClient, KeycloakResource} from './types';
 import {safeExecute} from "../utils/handle-async";
+import {logger} from "../logging";
 
 export interface KeycloakAdminConfig {
 	keycloakUrl: string;
@@ -76,7 +74,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 		});
 
 		if (!response.ok) {
-			console.log(response.statusText, url, resourceRequest);
+			logger.error({ status: response.statusText, url, request: resourceRequest }, 'Keycloak create resource failed');
 			if (response.status === 409) {
 				const error = new Error('Resource already exists');
 				error.name = 'ResourceConflictError';
@@ -190,7 +188,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 				return null; // Resource not found or not accessible
 			} catch (error) {
 				// Skip resources that can't be found or accessed
-				console.warn(`Failed to fetch resource ${resourceId}:`, error);
+				logger.warn({ resourceId, error }, 'Failed to fetch Keycloak resource');
 				return null;
 			}
 		});

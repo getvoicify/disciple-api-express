@@ -9,6 +9,7 @@ import {
 	type KeycloakResourceCreatePayload,
 	type KeycloakResourceDeletePayload
 } from "./generalized-outbox.adapter";
+import {logger} from "../logging";
 
 /**
  * Publisher that processes Keycloak synchronization events from the outbox
@@ -53,7 +54,7 @@ export class KeycloakOutboxPublisher implements OutboxPublisher<KeycloakOutboxEv
 			// Handle graceful errors that shouldn't cause retries
 			if (error instanceof Error && this.isGracefulError(error)) {
 				// Log the error but don't throw (prevents retry)
-				console.warn(`Graceful error processing Keycloak event ${event.id}:`, error.message);
+				logger.warn({ eventId: event.id, error: error.message }, 'Graceful error processing Keycloak event');
 				return;
 			}
 
@@ -87,7 +88,7 @@ export class KeycloakOutboxPublisher implements OutboxPublisher<KeycloakOutboxEv
 			// Handle duplicate resource creation gracefully
 			if (error instanceof Error &&
 				(error.name === 'ResourceConflictError' || error.message?.includes('already exists'))) {
-				console.warn(`Resource ${payload.resourceId} already exists in Keycloak, skipping creation`);
+				logger.warn({ resourceId: payload.resourceId }, 'Keycloak resource already exists, skipping creation');
 				return;
 			}
 			throw error;
@@ -101,7 +102,7 @@ export class KeycloakOutboxPublisher implements OutboxPublisher<KeycloakOutboxEv
 			// Handle resource not found gracefully
 			if (error instanceof Error &&
 				(error.name === 'ResourceNotFoundError' || error.message?.includes('not found'))) {
-				console.warn(`Resource ${payload.resourceId} not found in Keycloak, skipping deletion`);
+				logger.warn({ resourceId: payload.resourceId }, 'Keycloak resource not found, skipping deletion');
 				return;
 			}
 			throw error;

@@ -19,9 +19,30 @@ spec:
     spec:
       imagePullSecrets:
       - name: image-pull-secret
+      initContainers:
+      - name: migrations
+        image: ghcr.io/getvoicify/disciple-api-express:latest
+        command: ["/app/scripts/run-migrations-only.sh"]
+        envFrom:
+        - configMapRef:
+            name: disciple-api-config
+        - secretRef:
+            name: disciple-api-secrets
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
       containers:
       - name: api
         image: ghcr.io/getvoicify/disciple-api-express:latest
+        command: ["node", "dist/index.js"]
         ports:
         - containerPort: 3000
           name: http

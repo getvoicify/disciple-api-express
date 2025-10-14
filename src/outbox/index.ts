@@ -1,12 +1,14 @@
 import type {
   CreateOutboxOptions,
+  Operation,
   Outbox,
+  OutboxEvent,
   OutboxPublisher,
   OutboxStore,
-  OutboxEvent,
   RetryPolicy,
-  Operation,
 } from './types';
+import {logger} from '../logging';
+
 export type { CreateOutboxOptions, Outbox, OutboxPublisher, OutboxStore, OutboxEvent, RetryPolicy, Operation } from './types';
 export { NotImplementedError } from './types';
 
@@ -81,7 +83,7 @@ export function createOutbox<TPayload = unknown>(
     const due = await store.fetchDue(lim);
     const now = nowFn();
 
-		console.log(`Processing ${due.length} outbox events`);
+		logger.debug({ count: due.length }, 'Processing outbox events');
 
     for (const evt of due) {
       try {

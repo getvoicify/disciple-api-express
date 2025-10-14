@@ -34,6 +34,7 @@ import {setupKeycloakAdapter} from "./keycloak/setup";
 import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository} from "./cache";
+import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 
 dotenv.config();
 
@@ -93,6 +94,12 @@ const cacheRepository = createCacheRepository();
 const app = express();
 app.use(express.json());
 
+// Add request logging middleware - logs all incoming requests and responses
+// Excludes health check endpoint to reduce noise
+const requestLogger = createRequestLoggingMiddleware(loggerFactory, {
+	excludePaths: ['/api/health']
+});
+app.use(requestLogger);
 
 /**
  * @openapi
@@ -154,7 +161,7 @@ app.get('/api/health', async (req, res) => {
 		await db`SELECT 1 as ping`;
 		dbStatus = 'connected';
 	} catch (error) {
-		console.error('Database health check failed:', error);
+		logger.error({ error }, 'Database health check failed');
 		dbStatus = 'disconnected';
 	}
 
@@ -168,7 +175,7 @@ app.get('/api/health', async (req, res) => {
 			redisStatus = isRedisHealthy ? 'connected' : 'disconnected';
 		}
 	} catch (error) {
-		console.error('Redis health check failed:', error);
+		logger.error({ error }, 'Redis health check failed');
 		redisStatus = 'disconnected';
 	}
 
@@ -257,7 +264,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-	console.log(`Server is running on port ${PORT}`);
+	logger.info({ port: PORT }, 'Server started');
 });
 
 const sigEndSub = new Subject<void>();
@@ -267,7 +274,7 @@ interval(1000 * 15).pipe(
 		() => defer(() => safeExecute(outbox.processDue())).pipe(
 			tap(([err]) => {
 				if (err) {
-					console.error('Error processing due events:', err);
+					logger.error({ error: err }, 'Error processing due events');
 				}
 			})
 		)

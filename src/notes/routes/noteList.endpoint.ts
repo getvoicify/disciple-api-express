@@ -134,7 +134,7 @@ export const noteListEndpoint = (service: NoteService, cacheRepo: CacheRepositor
 		const [err, notes] = await safeExecute(service.listNotes(filters));
 
 		if (err) {
-			console.log(err);
+			(req as any).log?.error({ error: err, filters }, 'Failed to list notes');
 			res.status(400).json({
 				error: err.message,
 				success: false,
@@ -153,7 +153,7 @@ export const noteListEndpoint = (service: NoteService, cacheRepo: CacheRepositor
 		const key = req['key'];
 
 		if (key) {
-			console.log('Write Cache: ', key);
+			(req as any).log?.debug({ key }, 'Writing cache');
 			await safeExecute(cacheRepo.write(key, response));
 		}
 	}

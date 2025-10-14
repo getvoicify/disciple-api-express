@@ -1,10 +1,11 @@
 import type {
-	KeycloakResourcePermissions,
+	KeycloakAdminClient,
 	KeycloakResource,
 	KeycloakResourceData,
-	KeycloakAdminClient,
-	KeycloakResourceManager
+	KeycloakResourceManager,
+	KeycloakResourcePermissions
 } from './types';
+import {logger} from "../logging";
 
 // Implementation of KeycloakResourceManager
 export class KeycloakResourceManagerImpl implements KeycloakResourceManager {
@@ -42,7 +43,17 @@ export class KeycloakResourceManagerImpl implements KeycloakResourceManager {
 
 			return await this.adminClient.createResource(resource);
 		} catch (error) {
-			console.error('Error creating resource:', error);
+			logger.error({
+				error,
+				resourceId: resourceData.id,
+				resourceType: resourceData.type,
+				resourceName: resourceData.name,
+				permissionCounts: {
+					read: resourceData.permissions?.read?.length || 0,
+					update: resourceData.permissions?.update?.length || 0,
+					delete: resourceData.permissions?.delete?.length || 0
+				}
+			}, 'Error creating Keycloak resource');
 			const message = error instanceof Error ? error.message : 'Unknown error';
 			throw new Error(`Failed to create Keycloak resource: ${message}`);
 		}

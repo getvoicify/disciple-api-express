@@ -2,6 +2,14 @@ import type express from 'express';
 import multer from 'multer';
 import { type MediaUploadService } from '../media-upload-service';
 import { safeExecute } from '../../utils/handle-async';
+import type { ILogger } from '../../logging';
+
+// Extend Express Request to include logger
+declare module 'express-serve-static-core' {
+  interface Request {
+    log?: ILogger;
+  }
+}
 
 // Configure multer with environment-specific storage strategy
 const upload = multer({
@@ -103,7 +111,8 @@ export const mediaUploadEndpoint = (uploadService: MediaUploadService) => [
             );
 
             if (readError) {
-                console.error('Failed to read uploaded file:', readError);
+                const logger = req.log || console;
+                logger.error({ error: readError, filePath: req.file.path }, 'Failed to read uploaded file');
                 res.status(500).json({
                     error: 'Failed to process uploaded file',
                     success: false,
@@ -126,7 +135,8 @@ export const mediaUploadEndpoint = (uploadService: MediaUploadService) => [
                 import('fs').then(fs => fs.unlinkSync(req.file.path))
             );
             if (cleanupError) {
-                console.warn('Failed to cleanup temp file:', req.file.path, cleanupError);
+                const logger = req.log || console;
+                logger.warn({ error: cleanupError, filePath: req.file.path }, 'Failed to cleanup temp file');
             }
         }
 
@@ -134,7 +144,8 @@ export const mediaUploadEndpoint = (uploadService: MediaUploadService) => [
         const [uploadError, result] = await safeExecute(uploadService.uploadFile(fileUpload, uploadedBy));
 
         if (uploadError) {
-            console.error('Media upload error:', uploadError);
+            const logger = req.log || console;
+            logger.error({ error: uploadError, filename: req.file.originalname }, 'Media upload error');
             res.status(500).json({
                 error: 'Internal server error',
                 success: false,
