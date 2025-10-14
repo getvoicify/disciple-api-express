@@ -17,6 +17,16 @@ spec:
         app.kubernetes.io/name: disciple-api
         app.kubernetes.io/component: api
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - disciple-api
+            topologyKey: kubernetes.io/hostname
       imagePullSecrets:
       - name: image-pull-secret
       initContainers:
