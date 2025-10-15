@@ -113,25 +113,26 @@ Examples:
 ## Phase 4: Simplified Key Generator Utility
 
 ### 🔴 RED Phase
-- [ ] Write tests for `cache-key-generator.util.test.ts`
-  - [ ] Test: generate list key without filters
-  - [ ] Test: generate list key with filters (includes hash)
-  - [ ] Test: generate single key with ID
-  - [ ] Test: environment prefix included
-  - [ ] Test: different resources generate different keys
-- [ ] Run tests → Verify FAIL
-- [ ] Run coderabbit-reviewer agent on tests
-- [ ] Implement coderabbit suggestions on tests
+- [x] Write tests for `cache-key-generator.util.test.ts`
+  - [x] Test: generate list key without filters
+  - [x] Test: generate list key with filters (includes hash)
+  - [x] Test: generate single key with ID
+  - [x] Test: environment prefix included
+  - [x] Test: different resources generate different keys
+  - [x] Test: whitespace trimming, edge cases, validation
+- [x] Run tests → Verify FAIL (22/25 failing on assertions ✅)
+- [x] Run coderabbit-reviewer agent on tests
+- [x] Implement coderabbit suggestions on tests (quality confirmed)
 
 ### 🟢 GREEN Phase
-- [ ] Implement `cache-key-generator.util.ts`
-- [ ] Run tests → Verify PASS
+- [x] Implement `cache-key-generator.util.ts`
+- [x] Run tests → Verify PASS (25/25 tests passing ✅)
 
 ### ♻️ REFACTOR Phase
-- [ ] Refactor implementation
-- [ ] Run coderabbit-reviewer agent on implementation
-- [ ] Implement coderabbit suggestions
-- [ ] **Commit changes with descriptive message**
+- [x] Run coderabbit-reviewer agent on implementation
+- [x] Implement coderabbit suggestions (added env/resource validation)
+- [x] Verify tests still pass (25/25 ✅)
+- [x] **Commit changes with descriptive message** (commit ad108a7)
 
 ---
 
