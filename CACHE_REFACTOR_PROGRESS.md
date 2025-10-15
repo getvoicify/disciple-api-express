@@ -139,27 +139,31 @@ Examples:
 ## Phase 5: Cache Invalidation Service
 
 ### 🔴 RED Phase
-- [ ] Write tests for `cache-invalidation.service.test.ts`
-  - [ ] Test: `invalidateResource(resource, id)` invalidates single resource
-  - [ ] Test: `invalidateList(resource)` invalidates all list caches
-  - [ ] Test: `invalidateAll(resource)` invalidates everything for resource
-  - [ ] Test: service handles cache repository errors gracefully
-- [ ] Run tests → Verify FAIL
-- [ ] Run coderabbit-reviewer agent on tests
-- [ ] Implement coderabbit suggestions on tests
+- [x] Write tests for `cache-invalidation.service.test.ts`
+  - [x] Test: `invalidateResource(resource, id)` invalidates single resource
+  - [x] Test: `invalidateList(resource)` invalidates all list caches
+  - [x] Test: `invalidateAll(resource)` invalidates everything for resource
+  - [x] Test: service handles cache repository errors gracefully
+- [x] Run tests → Verify FAIL (23/29 failing on assertions ✅)
+- [x] Run coderabbit-reviewer agent on tests
+- [x] Implement coderabbit suggestions on tests (logger assertions fixed)
 
 ### 🟢 GREEN Phase
-- [ ] Implement `cache-invalidation.service.ts`
-  - [ ] `invalidateResource(resource, id?)`
-  - [ ] `invalidateList(resource)`
-  - [ ] `invalidateAll(resource)`
-- [ ] Run tests → Verify PASS
+- [x] Implement `cache-invalidation.service.ts`
+  - [x] `invalidateResource(resource, id)`
+  - [x] `invalidateList(resource)`
+  - [x] `invalidateAll(resource)`
+- [x] Run tests → Verify PASS (29/29 tests passing ✅)
 
 ### ♻️ REFACTOR Phase
-- [ ] Refactor implementation
-- [ ] Run coderabbit-reviewer agent on implementation
-- [ ] Implement coderabbit suggestions
-- [ ] **Commit changes with descriptive message**
+- [x] Refactor implementation
+- [x] Run coderabbit-reviewer agent on implementation
+- [x] Implement coderabbit suggestions:
+  - [x] Added env validation in constructor
+  - [x] Added resource validation in all three methods
+  - [x] Kept Promise<void> return type (silent failures with logging)
+- [x] Verify tests still pass (29/29 ✅)
+- [x] **Commit changes with descriptive message** (commit 6968990)
 
 ---
 
@@ -226,19 +230,19 @@ Examples:
 ## Summary of Files
 
 ### Files to Create
-- [ ] `src/cache/cache-key-hash.util.ts`
-- [ ] `src/cache/cache-key-hash.util.test.ts`
-- [ ] `src/cache/cache-key-generator.util.ts`
-- [ ] `src/cache/cache-key-generator.util.test.ts`
-- [ ] `src/cache/cache-invalidation.service.ts`
-- [ ] `src/cache/cache-invalidation.service.test.ts`
+- [x] `src/cache/cache-key-hash.util.ts` (Phase 1 ✅)
+- [x] `src/cache/cache-key-hash.util.test.ts` (Phase 1 ✅)
+- [x] `src/cache/cache-key-generator.util.ts` (Phase 4 ✅)
+- [x] `src/cache/cache-key-generator.util.test.ts` (Phase 4 ✅)
+- [x] `src/cache/cache-invalidation.service.ts` (Phase 5 ✅)
+- [x] `src/cache/cache-invalidation.service.test.ts` (Phase 5 ✅)
 
 ### Files to Modify
-- [ ] `src/cache/cache.repository.ts` (add new methods to interface)
-- [ ] `src/cache/redis-cache.repository.ts` (implement pattern deletion)
-- [ ] `src/cache/redis-cache.repository.test.ts` (add tests for pattern deletion)
-- [ ] `src/cache/in-memory-cache.repository.ts` (implement pattern deletion)
-- [ ] `src/cache/in-memory-cache.repository.test.ts` (add tests for pattern deletion)
+- [x] `src/cache/cache.repository.ts` (add new methods to interface) (Phase 2 ✅)
+- [x] `src/cache/redis-cache.repository.ts` (implement pattern deletion) (Phase 2 ✅)
+- [x] `src/cache/redis-cache.repository.test.ts` (add tests for pattern deletion) (Phase 2 ✅)
+- [x] `src/cache/in-memory-cache.repository.ts` (implement pattern deletion) (Phase 3 ✅)
+- [x] `src/cache/in-memory-cache.repository.test.ts` (add tests for pattern deletion) (Phase 3 ✅)
 - [ ] `src/middleware/key-generator.middleware.ts` (use simplified keys)
 - [ ] `src/middleware/key-generator.middleware.test.ts` (update test expectations)
 - [ ] `src/notes/service.ts` (add cache invalidation)
