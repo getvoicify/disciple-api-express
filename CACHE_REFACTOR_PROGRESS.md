@@ -1,0 +1,246 @@
+# Cache Refactor Progress Tracker
+
+## Goal
+Simplify cache key structure to enable easy cache invalidation using pattern matching.
+
+## New Key Structure
+```
+{env}:{resource}:{type}[:{id}][:{filterHash}]
+
+Examples:
+- prod:note:list                    (all notes)
+- prod:note:list:a3f2c1             (filtered, hash of filters)
+- prod:note:single:uuid-123         (single note)
+- prod:post:list
+- prod:post:single:uuid-456
+```
+
+---
+
+## Phase 1: Cache Key Hash Utility
+
+### 🔴 RED Phase
+- [x] Write tests for `cache-key-hash.util.test.ts`
+  - [x] Test: consistent hash for same object
+  - [x] Test: different hash for different objects
+  - [x] Test: empty object handling
+  - [x] Test: nested object handling
+  - [x] Test: array handling in objects
+  - [x] Test: null/undefined handling
+  - [x] Test: array order sensitivity
+  - [x] Test: type sensitivity (number vs string)
+  - [x] Test: deeply nested objects
+  - [x] Test: special characters
+  - [x] Test: large objects
+  - [x] Test: boolean and numeric edge cases
+  - [x] Test: collision resistance
+- [x] Run tests → Verify FAIL with assertion errors (13/16 failing ✅)
+- [x] Run coderabbit-reviewer agent on test file
+- [x] Implement coderabbit suggestions on tests
+
+### 🟢 GREEN Phase
+- [x] Implement `cache-key-hash.util.ts` (minimal code to pass tests)
+- [x] Run tests → Verify PASS (16/16 tests passing ✅)
+
+### ♻️ REFACTOR Phase
+- [x] Refactor implementation if needed (keep tests green)
+- [x] Run coderabbit-reviewer agent on implementation
+- [x] Implement coderabbit suggestions (type safety already addressed)
+- [ ] **Commit changes with descriptive message**
+
+---
+
+## Phase 2: Extended Cache Repository Interface (Redis)
+
+### 🔴 RED Phase
+- [ ] Update `redis-cache.repository.test.ts` with new tests
+  - [ ] Test: `deletePattern()` with wildcard patterns
+  - [ ] Test: `deleteByPrefix()` deletes all matching keys
+  - [ ] Test: pattern deletion with no matches
+  - [ ] Test: pattern deletion with multiple matches
+- [ ] Run tests → Verify FAIL with assertion errors
+- [ ] Run coderabbit-reviewer agent on test changes
+- [ ] Implement coderabbit suggestions on tests
+
+### 🟢 GREEN Phase
+- [ ] Update `cache.repository.ts` interface with new methods
+- [ ] Implement `deletePattern()` in `redis-cache.repository.ts`
+- [ ] Implement `deleteByPrefix()` in `redis-cache.repository.ts`
+- [ ] Run tests → Verify PASS
+
+### ♻️ REFACTOR Phase
+- [ ] Refactor implementation if needed
+- [ ] Run coderabbit-reviewer agent on implementation
+- [ ] Implement coderabbit suggestions
+- [ ] **Commit changes with descriptive message**
+
+---
+
+## Phase 3: In-Memory Cache Pattern Deletion
+
+### 🔴 RED Phase
+- [ ] Update `in-memory-cache.repository.test.ts` with pattern deletion tests
+  - [ ] Test: `deletePattern()` with wildcard patterns
+  - [ ] Test: `deleteByPrefix()` deletes all matching keys
+  - [ ] Test: pattern deletion with no matches
+  - [ ] Test: pattern deletion with multiple matches
+- [ ] Run tests → Verify FAIL
+- [ ] Run coderabbit-reviewer agent on test changes
+- [ ] Implement coderabbit suggestions on tests
+
+### 🟢 GREEN Phase
+- [ ] Implement `deletePattern()` in `in-memory-cache.repository.ts`
+- [ ] Implement `deleteByPrefix()` in `in-memory-cache.repository.ts`
+- [ ] Run tests → Verify PASS
+
+### ♻️ REFACTOR Phase
+- [ ] Refactor implementation if needed
+- [ ] Run coderabbit-reviewer agent on implementation
+- [ ] Implement coderabbit suggestions
+- [ ] **Commit changes with descriptive message**
+
+---
+
+## Phase 4: Simplified Key Generator Utility
+
+### 🔴 RED Phase
+- [ ] Write tests for `cache-key-generator.util.test.ts`
+  - [ ] Test: generate list key without filters
+  - [ ] Test: generate list key with filters (includes hash)
+  - [ ] Test: generate single key with ID
+  - [ ] Test: environment prefix included
+  - [ ] Test: different resources generate different keys
+- [ ] Run tests → Verify FAIL
+- [ ] Run coderabbit-reviewer agent on tests
+- [ ] Implement coderabbit suggestions on tests
+
+### 🟢 GREEN Phase
+- [ ] Implement `cache-key-generator.util.ts`
+- [ ] Run tests → Verify PASS
+
+### ♻️ REFACTOR Phase
+- [ ] Refactor implementation
+- [ ] Run coderabbit-reviewer agent on implementation
+- [ ] Implement coderabbit suggestions
+- [ ] **Commit changes with descriptive message**
+
+---
+
+## Phase 5: Cache Invalidation Service
+
+### 🔴 RED Phase
+- [ ] Write tests for `cache-invalidation.service.test.ts`
+  - [ ] Test: `invalidateResource(resource, id)` invalidates single resource
+  - [ ] Test: `invalidateList(resource)` invalidates all list caches
+  - [ ] Test: `invalidateAll(resource)` invalidates everything for resource
+  - [ ] Test: service handles cache repository errors gracefully
+- [ ] Run tests → Verify FAIL
+- [ ] Run coderabbit-reviewer agent on tests
+- [ ] Implement coderabbit suggestions on tests
+
+### 🟢 GREEN Phase
+- [ ] Implement `cache-invalidation.service.ts`
+  - [ ] `invalidateResource(resource, id?)`
+  - [ ] `invalidateList(resource)`
+  - [ ] `invalidateAll(resource)`
+- [ ] Run tests → Verify PASS
+
+### ♻️ REFACTOR Phase
+- [ ] Refactor implementation
+- [ ] Run coderabbit-reviewer agent on implementation
+- [ ] Implement coderabbit suggestions
+- [ ] **Commit changes with descriptive message**
+
+---
+
+## Phase 6: Update Key Generator Middleware
+
+### 🔴 RED Phase
+- [ ] Update `key-generator.middleware.test.ts` for simplified keys
+  - [ ] Update tests to expect new key format (no userId/authorizedIds)
+  - [ ] Add tests for filter hashing
+- [ ] Run tests → Verify FAIL
+- [ ] Run coderabbit-reviewer agent on test changes
+- [ ] Implement coderabbit suggestions on tests
+
+### 🟢 GREEN Phase
+- [ ] Update `key-generator.middleware.ts` to use new key generator
+- [ ] Remove userId and authorizedIds from key generation
+- [ ] Run tests → Verify PASS
+
+### ♻️ REFACTOR Phase
+- [ ] Refactor implementation
+- [ ] Run coderabbit-reviewer agent on implementation
+- [ ] Implement coderabbit suggestions
+- [ ] **Commit changes with descriptive message**
+
+---
+
+## Phase 7: Service Layer Integration
+
+### 🔴 RED Phase
+- [ ] Add cache invalidation tests to existing service tests
+  - [ ] Note service: invalidate on create/update/delete
+  - [ ] Post service: invalidate on create/update/delete
+- [ ] Run tests → Verify FAIL
+- [ ] Run coderabbit-reviewer agent on test changes
+- [ ] Implement coderabbit suggestions on tests
+
+### 🟢 GREEN Phase
+- [ ] Inject `CacheInvalidationService` into `NoteService`
+- [ ] Add cache invalidation to note create/update/delete
+- [ ] Inject `CacheInvalidationService` into `PostService`
+- [ ] Add cache invalidation to post create/update/delete
+- [ ] Update service factories/dependency injection
+- [ ] Run tests → Verify PASS
+
+### ♻️ REFACTOR Phase
+- [ ] Refactor service implementations
+- [ ] Run coderabbit-reviewer agent on implementations
+- [ ] Implement coderabbit suggestions
+- [ ] **Commit changes with descriptive message**
+
+---
+
+## Phase 8: Final Quality Check
+
+- [ ] Run full test suite → All tests PASS
+- [ ] Run `npm run lint:fix` → Fix all lint issues
+- [ ] Run coderabbit-reviewer agent on ALL changed files
+- [ ] Implement final coderabbit suggestions
+- [ ] Re-run full test suite → All tests still PASS
+- [ ] Update `src/cache/index.ts` to export new utilities
+
+---
+
+## Summary of Files
+
+### Files to Create
+- [ ] `src/cache/cache-key-hash.util.ts`
+- [ ] `src/cache/cache-key-hash.util.test.ts`
+- [ ] `src/cache/cache-key-generator.util.ts`
+- [ ] `src/cache/cache-key-generator.util.test.ts`
+- [ ] `src/cache/cache-invalidation.service.ts`
+- [ ] `src/cache/cache-invalidation.service.test.ts`
+
+### Files to Modify
+- [ ] `src/cache/cache.repository.ts` (add new methods to interface)
+- [ ] `src/cache/redis-cache.repository.ts` (implement pattern deletion)
+- [ ] `src/cache/redis-cache.repository.test.ts` (add tests for pattern deletion)
+- [ ] `src/cache/in-memory-cache.repository.ts` (implement pattern deletion)
+- [ ] `src/cache/in-memory-cache.repository.test.ts` (add tests for pattern deletion)
+- [ ] `src/middleware/key-generator.middleware.ts` (use simplified keys)
+- [ ] `src/middleware/key-generator.middleware.test.ts` (update test expectations)
+- [ ] `src/notes/service.ts` (add cache invalidation)
+- [ ] `src/posts/service.ts` (add cache invalidation)
+- [ ] `src/cache/index.ts` (export new utilities)
+
+---
+
+## Key Principles
+
+✅ **RED**: Write failing tests first, verify they fail for the RIGHT reasons (assertions, not syntax)
+✅ **GREEN**: Write minimal code to pass tests
+✅ **REFACTOR**: Improve code while keeping tests green
+✅ **REVIEW**: Run coderabbit-reviewer after each phase
+✅ **NEVER SKIP**: Always run tests to verify RED before GREEN
