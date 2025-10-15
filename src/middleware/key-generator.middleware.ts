@@ -69,7 +69,7 @@ export const keyGenerator = (
 		}
 
 		next();
-	} catch (error) {
+	} catch {
 		// If key generation fails, continue without caching
 		next();
 	}

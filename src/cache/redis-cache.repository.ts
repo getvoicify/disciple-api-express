@@ -78,7 +78,7 @@ export class RedisCacheRepository implements CacheRepository {
     const batchSize = 1000; // Delete in batches to prevent memory issues
     let totalDeleted = 0;
     let cursor = '0';
-    let batch: string[] = [];
+    const batch: string[] = [];
 
     logger.debug({ pattern }, 'Starting pattern deletion');
 

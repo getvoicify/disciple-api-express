@@ -4,8 +4,8 @@ import { logger } from '../logging';
 
 export class CacheInvalidationService {
 	constructor(
-		private cacheRepository: CacheRepository,
-		private env: string
+		private readonly cacheRepository: CacheRepository,
+		private readonly env: string
 	) {
 		// Validate env parameter
 		const trimmedEnv = env?.trim();
