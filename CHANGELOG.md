@@ -1,3 +1,148 @@
+## [2.0.0](https://github.com/getvoicify/disciple-api-express/compare/v1.24.0...v2.0.0) (2025-10-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* Cache key format has changed from complex user-based keys
+to simplified resource-based keys.
+
+Old format:
+- List: {env}:postslist:user-123:456:status=active
+- Single: {env}:post:user-456:789
+
+New format:
+- List without filters: {env}:post:list
+- List with filters: {env}:post:list:{filterHash}
+- Single: {env}:post:single:789
+
+Benefits:
+- Eliminates userId and authorizedIds from cache keys
+- Uses hash for filters instead of concatenating them
+- Enables pattern-based cache invalidation
+- Simpler and more maintainable
+- Consistent with new cache utilities
+
+Implementation:
+- Uses generateCacheKey utility from cache-key-generator.util
+- Uses hashFilters for filter hashing
+- Removes complex buildListKey/buildSingleKey functions
+- Graceful handling of empty/undefined IDs
+- Comprehensive test coverage (32 tests)
+
+Tests updated to verify:
+- New key format for lists and single resources
+- Filter hashing behavior
+- User context no longer affects cache keys
+- IDs array no longer affects cache keys
+- Environment prefixing
+- Resource name handling
+- Edge cases and integration scenarios
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* docs: update progress tracker for Phase 6 completion
+
+* feat(cache): integrate cache invalidation into PostService
+
+Implements Phase 7 of cache refactoring plan - service layer integration.
+
+Changes:
+- Updated PostServiceImpl to accept CacheInvalidationService dependency
+- Added cache invalidation calls after all mutation operations:
+  - createPost: invalidates list caches
+  - updatePost: invalidates resource + list caches
+  - deletePost: invalidates resource + list caches
+  - publishPost: invalidates resource + list caches
+  - unpublishPost: invalidates resource + list caches
+- Updated dependency injection in index.ts to create and pass
+  CacheInvalidationService instance
+- Added comprehensive test coverage for all cache invalidation calls
+
+Technical details:
+- Cache invalidation occurs AFTER database operations succeed
+- Errors propagate to error handler middleware for proper logging
+- All 727 tests passing including 20 post service tests
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* feat(cache): integrate cache invalidation into NoteService
+
+Following TDD methodology (RED-GREEN-REFACTOR):
+
+RED Phase:
+- Created comprehensive test suite for NoteService with cache invalidation expectations
+- Tests verified failing correctly (3 failures on cache invalidation assertions)
+
+GREEN Phase:
+- Updated NoteServiceImpl constructor to accept CacheInvalidationService
+- Added cache invalidation to createNote (invalidateList)
+- Added cache invalidation to updateNote (invalidateResource + invalidateList)
+- Added cache invalidation to deleteNote (invalidateResource + invalidateList)
+- Updated dependency injection in src/index.ts
+- All 736 tests passing
+
+REFACTOR Phase:
+- Reviewed with coderabbit-reviewer
+- Added explanatory comment for filter transformation test
+- Cache error handling already implemented in CacheInvalidationService
+
+Changes:
+- src/notes/service.ts: Added CacheInvalidationService dependency and cache invalidation calls
+- src/tests/notes/note-service.test.ts: Created test suite with 9 tests
+- src/index.ts: Updated NoteService instantiation to inject CacheInvalidationService
+
+Phase 7: Service Layer Integration (NoteService portion) complete.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* chore: apply lint fixes and update progress documentation
+
+Changes:
+- src/cache/cache-invalidation.service.ts: added readonly modifiers, fixed newline
+- src/cache/redis-cache.repository.ts: changed batch from let to const
+- src/cache/index.ts: organized exports with comments (already done in Phase 8)
+- src/middleware/key-generator.middleware.ts: removed unused error variable
+- CACHE_REFACTOR_PROGRESS.md: documented completed Phase 7 work
+
+All 736 tests passing ✅
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix(config): exclude scripts directory from TypeScript and ESLint
+
+Issue: CI/CD builds were failing with TS6059 error because scripts/stress-test.ts
+was not under rootDir but was being picked up by TypeScript compilation.
+
+Changes:
+- tsconfig.json: Added "scripts" to exclude array
+- eslint.config.mjs: Added "scripts/**" to ignores array
+
+This fixes the build error while keeping the stress test script functional.
+TypeScript and ESLint now properly ignore the scripts directory.
+
+Verified:
+- ✅ TypeScript compilation passes (npx tsc --noEmit)
+- ✅ Build succeeds (npm run build)
+- ✅ ESLint passes with 0 errors (74 pre-existing warnings)
+- ✅ All 736 tests passing
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+### ✨ Features
+
+* improve cache management ([#26](https://github.com/getvoicify/disciple-api-express/issues/26)) ([74e587d](https://github.com/getvoicify/disciple-api-express/commit/74e587d156a67a795878f1c0a27dea98d4c3e987))
+* **scripts:** add stress test script for daily devotionals API ([97ddb8a](https://github.com/getvoicify/disciple-api-express/commit/97ddb8ae3908862d36b7b104ec2825270dadeb42))
+
 ## [1.24.0](https://github.com/getvoicify/disciple-api-express/compare/v1.23.0...v1.24.0) (2025-10-14)
 
 
