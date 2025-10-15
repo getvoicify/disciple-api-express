@@ -262,4 +262,165 @@ describe('RedisCacheRepository', () => {
       await expect(repository.delete('key')).rejects.toThrow('Redis delete error');
     });
   });
+
+  describe('deletePattern', () => {
+    beforeEach(() => {
+      mockRedis.scan = vi.fn();
+      mockRedis.del = vi.fn();
+    });
+
+    it('should delete all keys matching wildcard pattern', async () => {
+      // Mock SCAN to return keys in batches (cursor-based)
+      mockRedis.scan
+        .mockResolvedValueOnce(['10', ['prod:note:list:hash1', 'prod:note:list:hash2']])
+        .mockResolvedValueOnce(['0', ['prod:note:list:hash3']]); // cursor 0 = end
+      mockRedis.del.mockResolvedValue(3);
+
+      await repository.deletePattern('prod:note:*');
+
+      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', 'prod:note:*', 'COUNT', 100);
+      expect(mockRedis.scan).toHaveBeenCalledWith('10', 'MATCH', 'prod:note:*', 'COUNT', 100);
+      expect(mockRedis.del).toHaveBeenCalledWith('prod:note:list:hash1', 'prod:note:list:hash2', 'prod:note:list:hash3');
+    });
+
+    it('should handle pattern with no matching keys', async () => {
+      mockRedis.scan.mockResolvedValue(['0', []]);
+      mockRedis.del.mockResolvedValue(0);
+
+      await repository.deletePattern('nonexistent:*');
+
+      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', 'nonexistent:*', 'COUNT', 100);
+      expect(mockRedis.del).not.toHaveBeenCalled(); // Don't call del if no keys found
+    });
+
+    it('should delete multiple keys matching pattern', async () => {
+      mockRedis.scan.mockResolvedValue(['0', [
+        'test:key:1',
+        'test:key:2',
+        'test:key:3',
+        'test:key:4',
+        'test:key:5'
+      ]]);
+      mockRedis.del.mockResolvedValue(5);
+
+      await repository.deletePattern('test:key:*');
+
+      expect(mockRedis.del).toHaveBeenCalledWith('test:key:1', 'test:key:2', 'test:key:3', 'test:key:4', 'test:key:5');
+    });
+
+    it('should handle pattern with single key match', async () => {
+      mockRedis.scan.mockResolvedValue(['0', ['prod:note:single:uuid-123']]);
+      mockRedis.del.mockResolvedValue(1);
+
+      await repository.deletePattern('prod:note:single:uuid-123');
+
+      expect(mockRedis.del).toHaveBeenCalledWith('prod:note:single:uuid-123');
+    });
+
+    it('should handle multiple SCAN iterations', async () => {
+      // Simulate large result set requiring multiple SCAN calls
+      mockRedis.scan
+        .mockResolvedValueOnce(['100', Array.from({length: 100}, (_, i) => `key:${i}`)])
+        .mockResolvedValueOnce(['200', Array.from({length: 100}, (_, i) => `key:${i+100}`)])
+        .mockResolvedValueOnce(['0', Array.from({length: 50}, (_, i) => `key:${i+200}`)]);
+      mockRedis.del.mockResolvedValue(250);
+
+      await repository.deletePattern('key:*');
+
+      expect(mockRedis.scan).toHaveBeenCalledTimes(3);
+      expect(mockRedis.del).toHaveBeenCalledTimes(1);
+      const delArgs = mockRedis.del.mock.calls[0];
+      expect(delArgs).toHaveLength(250);
+    });
+
+    it('should handle scan errors gracefully', async () => {
+      const error = new Error('Redis scan error');
+      mockRedis.scan.mockRejectedValue(error);
+
+      await expect(repository.deletePattern('error:*')).rejects.toThrow('Redis scan error');
+    });
+
+    it('should handle del errors gracefully', async () => {
+      mockRedis.scan.mockResolvedValue(['0', ['key1', 'key2']]);
+      const error = new Error('Redis del error');
+      mockRedis.del.mockRejectedValue(error);
+
+      await expect(repository.deletePattern('key*')).rejects.toThrow('Redis del error');
+    });
+  });
+
+  describe('deleteByPrefix', () => {
+    beforeEach(() => {
+      mockRedis.scan = vi.fn();
+      mockRedis.del = vi.fn();
+    });
+
+    it('should delete all keys with given prefix', async () => {
+      mockRedis.scan.mockResolvedValue(['0', [
+        'prod:note:list',
+        'prod:note:list:hash1',
+        'prod:note:single:uuid-123'
+      ]]);
+      mockRedis.del.mockResolvedValue(3);
+
+      await repository.deleteByPrefix('prod:note:');
+
+      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', 'prod:note:*', 'COUNT', 100);
+      expect(mockRedis.del).toHaveBeenCalledWith('prod:note:list', 'prod:note:list:hash1', 'prod:note:single:uuid-123');
+    });
+
+    it('should handle prefix with no matching keys', async () => {
+      mockRedis.scan.mockResolvedValue(['0', []]);
+
+      await repository.deleteByPrefix('nonexistent:');
+
+      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', 'nonexistent:*', 'COUNT', 100);
+      expect(mockRedis.del).not.toHaveBeenCalled();
+    });
+
+    it('should append wildcard to prefix automatically', async () => {
+      mockRedis.scan.mockResolvedValue(['0', ['test:key1']]);
+      mockRedis.del.mockResolvedValue(1);
+
+      await repository.deleteByPrefix('test:');
+
+      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', 'test:*', 'COUNT', 100);
+    });
+
+    it('should handle empty prefix', async () => {
+      mockRedis.scan.mockResolvedValue(['0', []]);
+
+      await repository.deleteByPrefix('');
+
+      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', '*', 'COUNT', 100);
+    });
+
+    it('should delete keys in batches for large result sets', async () => {
+      mockRedis.scan
+        .mockResolvedValueOnce(['50', Array.from({length: 50}, (_, i) => `prefix:${i}`)])
+        .mockResolvedValueOnce(['0', Array.from({length: 30}, (_, i) => `prefix:${i+50}`)]);
+      mockRedis.del.mockResolvedValue(80);
+
+      await repository.deleteByPrefix('prefix:');
+
+      expect(mockRedis.del).toHaveBeenCalledTimes(1);
+      const delArgs = mockRedis.del.mock.calls[0];
+      expect(delArgs).toHaveLength(80);
+    });
+
+    it('should handle scan errors in prefix deletion', async () => {
+      const error = new Error('Scan failed');
+      mockRedis.scan.mockRejectedValue(error);
+
+      await expect(repository.deleteByPrefix('test:')).rejects.toThrow('Scan failed');
+    });
+
+    it('should handle del errors in prefix deletion', async () => {
+      mockRedis.scan.mockResolvedValue(['0', ['key1', 'key2']]);
+      const error = new Error('Delete failed');
+      mockRedis.del.mockRejectedValue(error);
+
+      await expect(repository.deleteByPrefix('key')).rejects.toThrow('Delete failed');
+    });
+  });
 });
