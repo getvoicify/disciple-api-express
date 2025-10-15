@@ -7,6 +7,7 @@ import { z } from "zod";
 import type { PostRepository } from './repository';
 import type { CreatePostInput, UpdatePostInput, Post, PostFilters } from './schemas';
 import type { ChurchMembershipService } from '../churches/membership-service';
+import type { CacheInvalidationService } from '../cache/cache-invalidation.service';
 import {
     PostNotFoundError,
     PostUnauthorizedError,
@@ -31,7 +32,8 @@ export interface PostService {
 export class PostServiceImpl implements PostService {
     constructor(
         private readonly repository: PostRepository,
-        private readonly membershipService: ChurchMembershipService
+        private readonly membershipService: ChurchMembershipService,
+        private readonly cacheInvalidationService: CacheInvalidationService
     ) {
     }
 
@@ -58,7 +60,12 @@ export class PostServiceImpl implements PostService {
             throw new InsufficientChurchRoleError(['Owner', 'Manager'], membership.role);
         }
 
-        return this.repository.create(validated, authorId);
+        const post = await this.repository.create(validated, authorId);
+
+        // Invalidate list caches after creating new post
+        await this.cacheInvalidationService.invalidateList('post');
+
+        return post;
     }
 
     async updatePost(id: string, input: UpdatePostInput, authorId: string): Promise<Post> {
@@ -80,6 +87,10 @@ export class PostServiceImpl implements PostService {
             throw new PostNotFoundError(id);
         }
 
+        // Invalidate both resource and list caches after updating
+        await this.cacheInvalidationService.invalidateResource('post', id);
+        await this.cacheInvalidationService.invalidateList('post');
+
         return post;
     }
 
@@ -100,6 +111,10 @@ export class PostServiceImpl implements PostService {
         if (!deleted) {
             throw new PostNotFoundError(id);
         }
+
+        // Invalidate both resource and list caches after deleting
+        await this.cacheInvalidationService.invalidateResource('post', id);
+        await this.cacheInvalidationService.invalidateList('post');
     }
 
     async getPostById(id: string): Promise<Post> {
@@ -143,6 +158,10 @@ export class PostServiceImpl implements PostService {
             throw new PostNotFoundError(id);
         }
 
+        // Invalidate both resource and list caches after publishing
+        await this.cacheInvalidationService.invalidateResource('post', id);
+        await this.cacheInvalidationService.invalidateList('post');
+
         return post;
     }
 
@@ -167,6 +186,10 @@ export class PostServiceImpl implements PostService {
         if (!post) {
             throw new PostNotFoundError(id);
         }
+
+        // Invalidate both resource and list caches after unpublishing
+        await this.cacheInvalidationService.invalidateResource('post', id);
+        await this.cacheInvalidationService.invalidateList('post');
 
         return post;
     }

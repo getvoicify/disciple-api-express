@@ -33,7 +33,7 @@ import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
 import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
-import {createCacheRepository} from "./cache";
+import {createCacheRepository, CacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 
 dotenv.config();
@@ -63,7 +63,6 @@ const keycloakConfig = {
 
 const {adapter: keycloakAdapter, outbox} = setupKeycloakAdapter(db, keycloakConfig);
 const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
-const noteService = new NoteServiceImpl(notesPgRepo);
 
 const churchRepository = new PostgresChurchRepository(db);
 const churchMemberRepository = new PostgresChurchMemberRepository(db);
@@ -83,13 +82,16 @@ const thumbnailGenerator = new SharpThumbnailGenerator();
 const thumbnailService = new ThumbnailServiceImpl(r2Service, mediaRepository, httpClient, thumbnailGenerator);
 const galleryService = new GalleryServiceImpl(galleryRepository, mediaRepository, thumbnailService);
 
+const cacheRepository = createCacheRepository();
+const cacheInvalidationService = new CacheInvalidationService(cacheRepository, process.env.NODE_ENV || 'development');
+
+const noteService = new NoteServiceImpl(notesPgRepo, cacheInvalidationService);
+
 const postRepository = new PostgresPostRepository(db, keycloakAdapter);
-const postService = new PostServiceImpl(postRepository, churchMemberService);
+const postService = new PostServiceImpl(postRepository, churchMemberService, cacheInvalidationService);
 
 const seriesRepository = new PostgresSeriesRepository(db);
 const seriesService = new SeriesServiceImpl(seriesRepository, churchMemberService, postRepository);
-
-const cacheRepository = createCacheRepository();
 
 const app = express();
 app.use(express.json());

@@ -220,4 +220,211 @@ describe('InMemoryCacheRepository', () => {
       expect(finalKey1).toBeNull();
     });
   });
+
+  describe('deletePattern', () => {
+    it('should delete all keys matching wildcard pattern', async () => {
+      await repository.write('prod:note:list:hash1', 'value1');
+      await repository.write('prod:note:list:hash2', 'value2');
+      await repository.write('prod:note:single:uuid-123', 'value3');
+      await repository.write('prod:post:list', 'value4');
+
+      await repository.deletePattern('prod:note:*');
+
+      const result1 = await repository.read('prod:note:list:hash1');
+      const result2 = await repository.read('prod:note:list:hash2');
+      const result3 = await repository.read('prod:note:single:uuid-123');
+      const result4 = await repository.read('prod:post:list');
+
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(result3).toBeNull();
+      expect(result4).toBe('value4'); // Should not be deleted
+    });
+
+    it('should handle pattern with no matching keys', async () => {
+      await repository.write('key1', 'value1');
+      await repository.write('key2', 'value2');
+
+      await expect(repository.deletePattern('nonexistent:*')).resolves.not.toThrow();
+
+      const result1 = await repository.read('key1');
+      const result2 = await repository.read('key2');
+
+      expect(result1).toBe('value1');
+      expect(result2).toBe('value2');
+    });
+
+    it('should delete multiple keys matching pattern', async () => {
+      await repository.write('test:key:1', 'value1');
+      await repository.write('test:key:2', 'value2');
+      await repository.write('test:key:3', 'value3');
+      await repository.write('test:key:4', 'value4');
+      await repository.write('test:key:5', 'value5');
+      await repository.write('other:key', 'value6');
+
+      await repository.deletePattern('test:key:*');
+
+      const result1 = await repository.read('test:key:1');
+      const result2 = await repository.read('test:key:2');
+      const result3 = await repository.read('test:key:3');
+      const result4 = await repository.read('test:key:4');
+      const result5 = await repository.read('test:key:5');
+      const result6 = await repository.read('other:key');
+
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(result3).toBeNull();
+      expect(result4).toBeNull();
+      expect(result5).toBeNull();
+      expect(result6).toBe('value6');
+    });
+
+    it('should handle pattern with single character wildcard', async () => {
+      await repository.write('key:a:suffix', 'value1');
+      await repository.write('key:b:suffix', 'value2');
+      await repository.write('key:ab:suffix', 'value3');
+
+      await repository.deletePattern('key:?:suffix');
+
+      const result1 = await repository.read('key:a:suffix');
+      const result2 = await repository.read('key:b:suffix');
+      const result3 = await repository.read('key:ab:suffix');
+
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(result3).toBe('value3'); // Should not match single-char wildcard
+    });
+
+    it('should handle pattern with character sets', async () => {
+      await repository.write('key:1', 'value1');
+      await repository.write('key:2', 'value2');
+      await repository.write('key:a', 'value3');
+
+      await repository.deletePattern('key:[12]');
+
+      const result1 = await repository.read('key:1');
+      const result2 = await repository.read('key:2');
+      const result3 = await repository.read('key:a');
+
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(result3).toBe('value3');
+    });
+
+    it('should handle exact match pattern', async () => {
+      await repository.write('exact:key', 'value1');
+      await repository.write('exact:key2', 'value2');
+
+      await repository.deletePattern('exact:key');
+
+      const result1 = await repository.read('exact:key');
+      const result2 = await repository.read('exact:key2');
+
+      expect(result1).toBeNull();
+      expect(result2).toBe('value2');
+    });
+  });
+
+  describe('deleteByPrefix', () => {
+    it('should delete all keys with given prefix', async () => {
+      await repository.write('prod:note:list', 'value1');
+      await repository.write('prod:note:list:hash1', 'value2');
+      await repository.write('prod:note:single:uuid-123', 'value3');
+      await repository.write('prod:post:list', 'value4');
+
+      await repository.deleteByPrefix('prod:note:');
+
+      const result1 = await repository.read('prod:note:list');
+      const result2 = await repository.read('prod:note:list:hash1');
+      const result3 = await repository.read('prod:note:single:uuid-123');
+      const result4 = await repository.read('prod:post:list');
+
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(result3).toBeNull();
+      expect(result4).toBe('value4');
+    });
+
+    it('should handle prefix with no matching keys', async () => {
+      await repository.write('key1', 'value1');
+      await repository.write('key2', 'value2');
+
+      await expect(repository.deleteByPrefix('nonexistent:')).resolves.not.toThrow();
+
+      const result1 = await repository.read('key1');
+      const result2 = await repository.read('key2');
+
+      expect(result1).toBe('value1');
+      expect(result2).toBe('value2');
+    });
+
+    it('should append wildcard to prefix automatically', async () => {
+      await repository.write('test:key1', 'value1');
+      await repository.write('test:key2', 'value2');
+      await repository.write('other:key', 'value3');
+
+      await repository.deleteByPrefix('test:');
+
+      const result1 = await repository.read('test:key1');
+      const result2 = await repository.read('test:key2');
+      const result3 = await repository.read('other:key');
+
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(result3).toBe('value3');
+    });
+
+    it('should handle empty prefix', async () => {
+      await repository.write('key1', 'value1');
+      await repository.write('key2', 'value2');
+      await repository.write('key3', 'value3');
+
+      await repository.deleteByPrefix('');
+
+      const result1 = await repository.read('key1');
+      const result2 = await repository.read('key2');
+      const result3 = await repository.read('key3');
+
+      // Empty prefix should match all keys
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(result3).toBeNull();
+    });
+
+    it('should escape special glob characters in prefix', async () => {
+      await repository.write('key:*:test', 'value1');
+      await repository.write('key:a:test', 'value2');
+      await repository.write('key:*:other', 'value3');
+
+      await repository.deleteByPrefix('key:*:');
+
+      const result1 = await repository.read('key:*:test');
+      const result2 = await repository.read('key:a:test');
+      const result3 = await repository.read('key:*:other');
+
+      // Should only delete keys that literally start with "key:*:"
+      expect(result1).toBeNull();
+      expect(result2).toBe('value2');
+      expect(result3).toBeNull();
+    });
+
+    it('should delete large number of keys efficiently', async () => {
+      const promises = Array.from({ length: 1000 }, (_, i) =>
+        repository.write(`prefix:${i}`, `value${i}`)
+      );
+      await Promise.all(promises);
+
+      await repository.write('other:key', 'value');
+
+      await repository.deleteByPrefix('prefix:');
+
+      for (let i = 0; i < 1000; i++) {
+        const result = await repository.read(`prefix:${i}`);
+        expect(result).toBeNull();
+      }
+
+      const otherResult = await repository.read('other:key');
+      expect(otherResult).toBe('value');
+    });
+  });
 });

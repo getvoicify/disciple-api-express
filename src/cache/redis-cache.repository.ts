@@ -74,6 +74,62 @@ export class RedisCacheRepository implements CacheRepository {
 
   }
 
+  async deletePattern(pattern: string): Promise<void> {
+    const batchSize = 1000; // Delete in batches to prevent memory issues
+    let totalDeleted = 0;
+    let cursor = '0';
+    const batch: string[] = [];
+
+    logger.debug({ pattern }, 'Starting pattern deletion');
+
+    // Use SCAN to iterate through keys and delete in batches
+    do {
+      const [error, result] = await safeExecute<[string, string[]]>(
+        this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100)
+      );
+
+      if (error) {
+        logger.error({ error, pattern }, 'Error scanning keys for pattern deletion');
+        throw error;
+      }
+
+      if (result) {
+        cursor = result[0];
+        batch.push(...result[1]);
+
+        // Delete in batches when batch size is reached
+        while (batch.length >= batchSize) {
+          const keysToDelete = batch.splice(0, batchSize);
+          const [delError] = await safeExecute(this.redis.del(...keysToDelete));
+          if (delError) {
+            logger.error({ error: delError, pattern, deletedSoFar: totalDeleted }, 'Error deleting batch of keys');
+            throw delError;
+          }
+          totalDeleted += keysToDelete.length;
+        }
+      }
+    } while (cursor !== '0');
+
+    // Delete remaining keys in final batch
+    if (batch.length > 0) {
+      const [error] = await safeExecute(this.redis.del(...batch));
+      if (error) {
+        logger.error({ error, pattern, deletedSoFar: totalDeleted }, 'Error deleting final batch of keys');
+        throw error;
+      }
+      totalDeleted += batch.length;
+    }
+
+    logger.info({ pattern, totalDeleted }, 'Deleted keys matching pattern');
+  }
+
+  async deleteByPrefix(prefix: string): Promise<void> {
+    // Escape Redis glob pattern metacharacters to treat prefix literally
+    const escapedPrefix = prefix.replace(/[*?[\]\\]/g, '\\$&');
+    const pattern = escapedPrefix + '*';
+    await this.deletePattern(pattern);
+  }
+
   async disconnect(): Promise<void> {
     const [error] = await safeExecute(() => this.redis.disconnect());
     if (error) {

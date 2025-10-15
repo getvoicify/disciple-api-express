@@ -29,6 +29,7 @@ export default defineConfig([
       '**/node_modules/**',
       '**/dist/**',
       '**/build/**',
+      'scripts/**',
       '**/*.js',
       '**/*.mjs',
       '**/*.cjs',

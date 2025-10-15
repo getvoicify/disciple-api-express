@@ -1,98 +1,76 @@
 import { type Request } from 'express';
-import { type Middleware } from "../utils/middleware";
-import { keyEnvPrefixer } from '../utils/key-env-prefixer.util';
-
-interface UserPayload {
-	sub?: string;
-}
+import { type Middleware } from '../utils/middleware';
+import { generateCacheKey, CacheKeyType } from '../cache/cache-key-generator.util';
 
 interface AuthenticatedRequest extends Request {
-	user?: [unknown, { payload?: UserPayload }];
-	ids?: string[];
 	filters?: Record<string, any>;
 	key?: string;
 }
 
-const SEPARATOR = ':';
-
-const extractUserId = (req: AuthenticatedRequest): string | undefined =>
-	req.user?.[1]?.payload?.sub;
-
-const formatIds = (ids: string[] | undefined): string =>
-	(ids ?? []).join('-');
-
-const formatFilters = (filters: Record<string, any> | undefined): string => {
-	if (!filters || Object.keys(filters).length === 0) {
-		return '';
-	}
-
-	return Object.keys(filters)
-		.sort()
-		.filter(key => filters[key] !== undefined && filters[key] !== null)
-		.map(key => {
-			const value = filters[key];
-			const formattedValue = Array.isArray(value) ? value.join(',') : value;
-			return `${key}=${formattedValue}`;
-		})
-		.join(SEPARATOR);
-};
-
-const buildListKey = (resource: string, userId: string | undefined, ids: string, filters: string): string => {
-	const baseKey = `${resource}list`;
-	const parts = [baseKey];
-
-	if (userId) {
-		parts.push(userId);
-		parts.push(ids); // Always include ids position when user exists
-	} else if (ids) {
-		parts.push(ids);
-	}
-
-	if (filters) {
-		parts.push(filters);
-	}
-
-	return parts.join(SEPARATOR);
-};
-
-const buildSingleKey = (resource: string, userId: string | undefined, id: string | undefined, filters: string): string => {
-	const parts = [resource];
-
-	if (userId) {
-		parts.push('');
-		parts.push(userId);
-		parts.push(id || '');
-	} else {
-		parts[0] = `${resource}${id}`;
-	}
-
-	if (filters) {
-		if (parts.length === 1) {
-			// No user, so we need to add filters after resource+id
-			parts.push(filters);
-		} else {
-			// User exists, add filters at the end
-			parts.push(filters);
-		}
-	}
-
-	return parts.filter(p => p !== '').join(SEPARATOR);
-};
-
+/**
+ * Generates cache keys using the simplified format: {env}:{resource}:{type}[:{id}][:{filterHash}]
+ *
+ * @param resource - The resource type (e.g., 'post', 'note', 'devotional')
+ * @param isList - Whether this is a list key (true) or single resource key (false)
+ * @param resourceParamsId - The parameter name containing the resource ID (for single resources)
+ *
+ * @example
+ * // List without filters: test:post:list
+ * keyGenerator('post')
+ *
+ * @example
+ * // List with filters: test:post:list:a3f2c1
+ * keyGenerator('post')
+ *
+ * @example
+ * // Single resource: test:post:single:uuid-123
+ * keyGenerator('post', false, 'id')
+ */
 export const keyGenerator = (
 	resource: string,
 	isList = true,
 	resourceParamsId?: string
 ): Middleware => (req, _, next) => {
 	const request = req as AuthenticatedRequest;
-	const userId = extractUserId(request);
-	const formattedFilters = formatFilters(request.filters);
 
-	const key = isList
-		? buildListKey(resource, userId, formatIds(request.ids), formattedFilters)
-		: buildSingleKey(resource, userId, request.params[resourceParamsId], formattedFilters);
+	try {
+		// Get environment (defaults to 'development' if not set)
+		const env = process.env.NODE_ENV || 'development';
 
-	request.key = keyEnvPrefixer(key);
+		if (isList) {
+			// Generate list key
+			const key = generateCacheKey(
+				env,
+				resource,
+				CacheKeyType.LIST,
+				undefined,
+				request.filters
+			);
+			request.key = key;
+		} else {
+			// Generate single resource key
+			const id = resourceParamsId ? request.params[resourceParamsId] : undefined;
 
-	next();
-}
+			// Handle empty/undefined IDs gracefully - don't set key
+			if (!id || !id.trim()) {
+				// Don't set request.key for invalid IDs
+				next();
+				return;
+			}
+
+			const key = generateCacheKey(
+				env,
+				resource,
+				CacheKeyType.SINGLE,
+				id,
+				undefined // Single resource keys don't use filters for now
+			);
+			request.key = key;
+		}
+
+		next();
+	} catch {
+		// If key generation fails, continue without caching
+		next();
+	}
+};

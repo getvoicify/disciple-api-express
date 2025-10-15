@@ -3,6 +3,7 @@ import {type PostService, PostServiceImpl} from '../../posts/service';
 import type {PostRepository} from '../../posts/repository';
 import type {CreatePostInput, Post, UpdatePostInput} from '../../posts/schemas';
 import {InsufficientChurchRoleError, PostNotFoundError} from '../../posts/errors';
+import type {CacheInvalidationService} from '../../cache';
 
 // Mock repository
 const createMockRepository = () => ({
@@ -21,17 +22,27 @@ const createMockMembershipService = () => ({
   isOwnerOrManager: vi.fn(),
 });
 
+// Mock cache invalidation service
+const createMockCacheInvalidationService = () => ({
+  invalidateResource: vi.fn(),
+  invalidateList: vi.fn(),
+  invalidateAll: vi.fn(),
+});
+
 describe('PostService', () => {
   let mockRepository: ReturnType<typeof createMockRepository>;
   let mockMembershipService: ReturnType<typeof createMockMembershipService>;
+  let mockCacheInvalidationService: ReturnType<typeof createMockCacheInvalidationService>;
   let service: PostService;
 
   beforeEach(() => {
     mockRepository = createMockRepository();
     mockMembershipService = createMockMembershipService();
+    mockCacheInvalidationService = createMockCacheInvalidationService();
     service = new PostServiceImpl(
       mockRepository as unknown as PostRepository,
-      mockMembershipService as any
+      mockMembershipService as any,
+      mockCacheInvalidationService as unknown as CacheInvalidationService
     );
   });
 
@@ -77,6 +88,7 @@ describe('PostService', () => {
 
       expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(authorId, input.churchId);
       expect(mockRepository.create).toHaveBeenCalledWith(input, authorId);
+      expect(mockCacheInvalidationService.invalidateList).toHaveBeenCalledWith('post');
       expect(result).toEqual(mockPost);
     });
 
@@ -102,6 +114,7 @@ describe('PostService', () => {
       await service.createPost(input, authorId);
 
       expect(mockRepository.create).toHaveBeenCalled();
+      expect(mockCacheInvalidationService.invalidateList).toHaveBeenCalledWith('post');
     });
 
     it('should throw error when user is not church owner or manager', async () => {
@@ -211,6 +224,8 @@ describe('PostService', () => {
 
       expect(mockRepository.findById).toHaveBeenCalledWith(postId);
       expect(mockRepository.update).toHaveBeenCalledWith(postId, updateInput);
+      expect(mockCacheInvalidationService.invalidateResource).toHaveBeenCalledWith('post', postId);
+      expect(mockCacheInvalidationService.invalidateList).toHaveBeenCalledWith('post');
       expect(result).toEqual(mockUpdatedPost);
     });
 
@@ -290,6 +305,8 @@ describe('PostService', () => {
 
       expect(mockRepository.findById).toHaveBeenCalledWith(postId);
       expect(mockRepository.delete).toHaveBeenCalledWith(postId);
+      expect(mockCacheInvalidationService.invalidateResource).toHaveBeenCalledWith('post', postId);
+      expect(mockCacheInvalidationService.invalidateList).toHaveBeenCalledWith('post');
     });
 
     it('should throw error when post not found', async () => {
@@ -459,6 +476,8 @@ describe('PostService', () => {
 
       expect(mockRepository.findById).toHaveBeenCalledWith(postId);
       expect(mockRepository.update).toHaveBeenCalledWith(postId, { status: 'published' });
+      expect(mockCacheInvalidationService.invalidateResource).toHaveBeenCalledWith('post', postId);
+      expect(mockCacheInvalidationService.invalidateList).toHaveBeenCalledWith('post');
       expect(result).toEqual(mockPublishedPost);
     });
 
@@ -561,6 +580,8 @@ describe('PostService', () => {
 
       expect(mockRepository.findById).toHaveBeenCalledWith(postId);
       expect(mockRepository.update).toHaveBeenCalledWith(postId, { status: 'draft' });
+      expect(mockCacheInvalidationService.invalidateResource).toHaveBeenCalledWith('post', postId);
+      expect(mockCacheInvalidationService.invalidateList).toHaveBeenCalledWith('post');
       expect(result).toEqual(mockDraftPost);
     });
 
