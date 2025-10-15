@@ -1,5 +1,6 @@
 import { type CacheRepository } from './cache.repository';
 import { serialize, deserialize } from './cache-serialization.util';
+import { logger } from '../logging';
 
 interface CacheEntry {
   value: string;
@@ -60,11 +61,103 @@ export class InMemoryCacheRepository implements CacheRepository {
     return true;
   }
 
+  async deletePattern(pattern: string): Promise<void> {
+    const startTime = Date.now();
+    const regex = this.globToRegex(pattern);
+    const keysToDelete: string[] = [];
+
+    for (const key of this.cache.keys()) {
+      if (regex.test(key)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    for (const key of keysToDelete) {
+      this.cache.delete(key);
+      this.clearTimer(key);
+    }
+
+    const duration = Date.now() - startTime;
+    logger.debug(
+      { pattern, deletedCount: keysToDelete.length, duration },
+      'In-memory cache pattern deletion completed'
+    );
+  }
+
+  async deleteByPrefix(prefix: string): Promise<void> {
+    const startTime = Date.now();
+    const keysToDelete: string[] = [];
+
+    // Optimized: use simple string comparison instead of regex
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    for (const key of keysToDelete) {
+      this.cache.delete(key);
+      this.clearTimer(key);
+    }
+
+    const duration = Date.now() - startTime;
+    logger.debug(
+      { prefix, deletedCount: keysToDelete.length, duration },
+      'In-memory cache prefix deletion completed'
+    );
+  }
+
   private clearTimer(key: string): void {
     const timer = this.timers.get(key);
     if (timer) {
       clearTimeout(timer);
       this.timers.delete(key);
     }
+  }
+
+  private globToRegex(pattern: string): RegExp {
+    let regexStr = '';
+    let i = 0;
+
+    while (i < pattern.length) {
+      const char = pattern[i];
+
+      if (char === '*') {
+        regexStr += '.*';
+        i++;
+      } else if (char === '?') {
+        regexStr += '.';
+        i++;
+      } else if (char === '[') {
+        // Fix: Start search after '[' to handle ']' as first char
+        const closingBracket = pattern.indexOf(']', i + 1);
+        // Fix: Ensure non-empty character set
+        if (closingBracket !== -1 && closingBracket > i + 1) {
+          const charSet = pattern.substring(i + 1, closingBracket);
+          regexStr += '[' + charSet + ']';
+          i = closingBracket + 1;
+        } else {
+          // Treat as literal bracket if no valid closing bracket or empty set
+          regexStr += '\\[';
+          i++;
+        }
+      } else if (char === '\\') {
+        if (i + 1 < pattern.length) {
+          const nextChar = pattern[i + 1];
+          // Fix: Escape the character for regex to make it literal
+          // This prevents \d from being interpreted as a digit pattern
+          regexStr += nextChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          i += 2;
+        } else {
+          regexStr += '\\\\';
+          i++;
+        }
+      } else {
+        regexStr += char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        i++;
+      }
+    }
+
+    return new RegExp('^' + regexStr + '$');
   }
 }
