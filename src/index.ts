@@ -63,7 +63,6 @@ const keycloakConfig = {
 
 const {adapter: keycloakAdapter, outbox} = setupKeycloakAdapter(db, keycloakConfig);
 const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
-const noteService = new NoteServiceImpl(notesPgRepo);
 
 const churchRepository = new PostgresChurchRepository(db);
 const churchMemberRepository = new PostgresChurchMemberRepository(db);
@@ -85,6 +84,8 @@ const galleryService = new GalleryServiceImpl(galleryRepository, mediaRepository
 
 const cacheRepository = createCacheRepository();
 const cacheInvalidationService = new CacheInvalidationService(cacheRepository, process.env.NODE_ENV || 'development');
+
+const noteService = new NoteServiceImpl(notesPgRepo, cacheInvalidationService);
 
 const postRepository = new PostgresPostRepository(db, keycloakAdapter);
 const postService = new PostServiceImpl(postRepository, churchMemberService, cacheInvalidationService);
