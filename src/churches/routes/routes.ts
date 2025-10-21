@@ -3,6 +3,7 @@ import type {ChurchService} from "../service";
 import type {ChurchApprovalService} from "../approval-service";
 import {type ChurchMembershipService} from "../membership-service";
 import type {GalleryService} from "../../gallery/service";
+import type {PostService} from "../../posts/service";
 import {churchCreateEndpoint} from "./churchCreate.endpoint";
 import {validateToken} from "../../utils/validate-token.middleware";
 import {jwtVerify} from "jose";
@@ -39,12 +40,19 @@ import {churchMembershipDeclineInviteEndpoint} from "./membership/churchMembersh
 import {churchMembershipRemoveMemberEndpoint} from "./membership/churchMembershipRemoveMember.endpoint";
 import {churchMembershipBanEndpoint} from "./membership/churchMembershipBan.endpoint";
 import {churchMembershipUpdateRoleEndpoint} from "./membership/churchMembershipUpdateRole.endpoint";
+import {postListEndpoint, ParamsSchema as PostListParamsSchema, QuerySchema as PostListQuerySchema} from "../../posts/routes/postList.endpoint";
+import type {CacheRepository} from "../../cache";
+import {cacheResponseMiddleware} from "../../middleware/cache-response.middleware/cache-response.middleware";
+import {keyGenerator} from "../../middleware/key-generator.middleware";
+import {extractFiltersMiddleware} from "../../middleware/extract-filters.middleware";
 
 
 export const churchesRouter = (
 	churchService: ChurchService,
 	approvalService: ChurchApprovalService,
 	membershipService: ChurchMembershipService,
+	postService: PostService,
+	cacheRepo: CacheRepository,
 	galleryService?: GalleryService
 ) => {
 	const router = Router();
@@ -131,6 +139,16 @@ export const churchesRouter = (
 		validate(UserIdInput, 'params'),
 		validate(UpdateRoleInput, 'body')
 	], churchMembershipUpdateRoleEndpoint(membershipService));
+
+	// Posts endpoints
+	router.get(':churchId/posts', [
+		tokenVerifier(false),
+		validate(PostListParamsSchema, 'params'),
+		validate(PostListQuerySchema, 'query'),
+		extractFiltersMiddleware(PostListQuerySchema, 'query'),
+		keyGenerator('post', true),
+		cacheResponseMiddleware(cacheRepo),
+	], postListEndpoint(postService, cacheRepo, membershipService));
 
 	router.delete(':churchId', [
 		tokenVerifier(true),

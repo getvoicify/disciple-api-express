@@ -1,9 +1,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { postListEndpoint } from '../../posts/routes/postList.endpoint';
 import type { PostService } from '../../posts/service';
 import type { Post } from '../../posts/schemas';
 import type { CacheRepository } from '../../cache';
+import type { ChurchMembershipService } from '../../churches/membership-service';
+import type { EndpointRequest } from '../../types/endpoint-handler';
 
 // Mock service
 const mockService = {
@@ -17,15 +19,30 @@ const mockCacheRepo = {
   delete: vi.fn()
 } as unknown as CacheRepository;
 
-describe('GET /posts - List Posts Endpoint', () => {
-  let req: Partial<Request>;
+// Mock membership service
+const mockMembershipService = {
+  getMembershipByUserAndChurch: vi.fn()
+} as unknown as ChurchMembershipService;
+
+describe('GET /churches/:churchId/posts - List Posts Endpoint', () => {
+  let req: Partial<EndpointRequest>;
   let res: Partial<Response>;
+  const mockUserId = '550e8400-e29b-41d4-a716-446655440099';
+  const mockChurchId = '550e8400-e29b-41d4-a716-446655440003';
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     req = {
-      query: {}
+      params: {
+        churchId: mockChurchId
+      },
+      query: {},
+      user: [undefined, {
+        payload: {
+          sub: mockUserId
+        }
+      }] as any
     };
 
     res = {
@@ -34,196 +51,301 @@ describe('GET /posts - List Posts Endpoint', () => {
     };
   });
 
-  it('should list posts without filters', async () => {
-    const mockPosts: Post[] = [
-      {
-        id: '550e8400-e29b-41d4-a716-446655440001',
-        title: 'Post 1',
-        content: 'Content 1',
-        authorId: '550e8400-e29b-41d4-a716-446655440002',
-        churchId: '550e8400-e29b-41d4-a716-446655440003',
+  describe('path parameters', () => {
+    it('should require churchId in path params', async () => {
+      req.params = {};
+
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: expect.stringContaining('churchId'),
+        success: false,
+      });
+    });
+
+    it('should require valid UUID for churchId', async () => {
+      req.params = { churchId: 'invalid-uuid' };
+
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: expect.any(String),
+        success: false,
+      });
+    });
+  });
+
+  describe('published posts (public access)', () => {
+    it('should list published posts without authentication', async () => {
+      req.user = undefined; // No authentication
+
+      const mockPosts: Post[] = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          title: 'Published Post',
+          content: 'Content 1',
+          authorId: '550e8400-e29b-41d4-a716-446655440002',
+          churchId: mockChurchId,
+          status: 'published',
+          publishedAt: new Date(),
+          image: null,
+          tags: [],
+          categories: [],
+          scriptureReferences: [],
+          seriesId: null,
+          seriesName: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
+      mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
+
+      expect(mockService.listPosts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          churchId: mockChurchId,
+          status: 'published'
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        posts: mockPosts,
+        success: true,
+        count: mockPosts.length
+      });
+      // Should not check membership for published posts
+      expect(mockMembershipService.getMembershipByUserAndChurch).not.toHaveBeenCalled();
+    });
+
+    it('should default to published posts when no status specified', async () => {
+      req.user = undefined;
+      req.query = {}; // No status filter
+
+      const mockPosts: Post[] = [];
+      mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
+
+      expect(mockService.listPosts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'published'
+        })
+      );
+    });
+
+    it('should apply filters along with churchId for published posts', async () => {
+      req.user = undefined;
+      req.query = {
         status: 'published',
-        publishedAt: new Date(),
-        image: null,
-        tags: [],
-        categories: [],
-        scriptureReferences: [],
-        seriesId: null,
-        seriesName: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
+        tags: 'faith,devotional',
+        categories: 'sermon'
+      };
 
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+      const mockPosts: Post[] = [];
+      mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
 
-    expect(mockService.listPosts).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: mockPosts.length
+      expect(mockService.listPosts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          churchId: mockChurchId,
+          status: 'published',
+          tags: ['faith', 'devotional'],
+          categories: ['sermon']
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        posts: mockPosts,
+        success: true,
+        count: 0
+      });
     });
   });
 
-  it('should list posts with filters', async () => {
-    req.query = {
-      churchId: '550e8400-e29b-41d4-a716-446655440003',
-      status: 'published',
-      tags: 'faith,devotional',
-      categories: 'sermon'
-    };
+  describe('draft posts (requires authentication and membership)', () => {
+    it('should require authentication when requesting draft posts', async () => {
+      req.user = undefined;
+      req.query = { status: 'draft' };
 
-    const mockPosts: Post[] = [];
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
 
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'User authentication required',
+        success: false,
+      });
+    });
 
-    expect(mockService.listPosts).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: 0
+    it('should verify user is a member of church when requesting drafts', async () => {
+      req.query = { status: 'draft' };
+      mockMembershipService.getMembershipByUserAndChurch = vi.fn().mockResolvedValue(null);
+
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(
+        mockUserId,
+        mockChurchId
+      );
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        error: expect.stringContaining('not a member'),
+        success: false,
+      });
+    });
+
+    it('should reject if user membership is not active when requesting drafts', async () => {
+      req.query = { status: 'draft' };
+      mockMembershipService.getMembershipByUserAndChurch = vi.fn().mockResolvedValue({
+        id: 'membership-id',
+        churchId: mockChurchId,
+        userId: mockUserId,
+        role: 'Member',
+        status: 'Invited',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: null,
+        invitedAt: null
+      });
+
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        error: expect.stringContaining('active member'),
+        success: false,
+      });
+    });
+
+    it('should list draft posts when user is active member', async () => {
+      req.query = { status: 'draft' };
+
+      const mockPosts: Post[] = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          title: 'Draft Post',
+          content: 'Draft Content',
+          authorId: mockUserId,
+          churchId: mockChurchId,
+          status: 'draft',
+          publishedAt: null,
+          image: null,
+          tags: [],
+          categories: [],
+          scriptureReferences: [],
+          seriesId: null,
+          seriesName: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
+      mockMembershipService.getMembershipByUserAndChurch = vi.fn().mockResolvedValue({
+        id: 'membership-id',
+        churchId: mockChurchId,
+        userId: mockUserId,
+        role: 'Member',
+        status: 'Active',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: null,
+        invitedAt: null
+      });
+
+      mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(
+        mockUserId,
+        mockChurchId
+      );
+      expect(mockService.listPosts).toHaveBeenCalledWith(
+        expect.objectContaining({
+          churchId: mockChurchId,
+          status: 'draft'
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        posts: mockPosts,
+        success: true,
+        count: mockPosts.length
+      });
     });
   });
 
-  it('should handle date filters', async () => {
-    req.query = {
-      startDate: '2024-01-01',
-      endDate: '2024-12-31'
-    };
+  describe('filters', () => {
+    it('should handle date filters', async () => {
+      req.user = undefined;
+      req.query = {
+        startDate: '2024-01-01',
+        endDate: '2024-12-31'
+      };
 
-    const mockPosts: Post[] = [];
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+      const mockPosts: Post[] = [];
+      mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
 
-    const callArgs = (mockService.listPosts as any).mock.calls[0][0];
-    expect(callArgs).toMatchObject({
-      startDate: expect.any(Date),
-      endDate: expect.any(Date)
+      const callArgs = (mockService.listPosts as any).mock.calls[0][0];
+      expect(callArgs).toMatchObject({
+        churchId: mockChurchId,
+        status: 'published',
+        startDate: expect.any(Date),
+        endDate: expect.any(Date)
+      });
     });
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: 0
-    });
-  });
 
-  it('should handle scripture filters', async () => {
-    req.query = {
-      'scripture.book': 'John',
-      'scripture.chapter': '3',
-      'scripture.verse': '16'
-    };
+    it('should handle scripture filters', async () => {
+      req.user = undefined;
+      req.query = {
+        'scripture.book': 'John',
+        'scripture.chapter': '3',
+        'scripture.verse': '16'
+      };
 
-    const mockPosts: Post[] = [];
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+      const mockPosts: Post[] = [];
+      mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
 
-    expect(mockService.listPosts).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: 0
-    });
-  });
-
-  it('should handle authorized IDs from middleware', async () => {
-    req.query = {};
-    req['ids'] = ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'];
-
-    const mockPosts: Post[] = [];
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
-
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
-
-    expect(mockService.listPosts).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: 0
+      const callArgs = (mockService.listPosts as any).mock.calls[0][0];
+      expect(callArgs.scripture).toEqual({
+        book: 'John',
+        chapter: 3,
+        verse: 16
+      });
     });
   });
 
-  it('should handle non-array req["ids"] gracefully', async () => {
-    req.query = {};
-    req['ids'] = 'not-an-array' as any; // Invalid type
+  describe('edge cases', () => {
+    it('should return empty array when no posts found', async () => {
+      req.user = undefined;
 
-    const mockPosts: Post[] = [];
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
+      const mockPosts: Post[] = [];
+      mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
 
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
+      const handler = postListEndpoint(mockService, mockCacheRepo, mockMembershipService);
+      await handler(req as EndpointRequest, res as Response);
 
-    // Should use empty array when ids is not an array
-    const callArgs = (mockService.listPosts as any).mock.calls[0][0];
-    expect(callArgs.authorizedIds).toEqual([]);
-    expect(mockService.listPosts).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: 0
-    });
-  });
-
-  it('should handle missing req["ids"] gracefully', async () => {
-    req.query = {};
-    // req['ids'] is undefined
-
-    const mockPosts: Post[] = [];
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
-
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
-
-    // Should use empty array when ids is missing
-    const callArgs = (mockService.listPosts as any).mock.calls[0][0];
-    expect(callArgs.authorizedIds).toEqual([]);
-    expect(mockService.listPosts).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: 0
-    });
-  });
-
-  it('should handle validation errors', async () => {
-    req.query = {
-      status: 'invalid-status'
-    };
-
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-
-    // Validation now returns error response instead of throwing
-    await handler(req as Request, res as Response);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({
-      error: expect.stringContaining(''),
-      success: false,
-    });
-    expect(mockService.listPosts).not.toHaveBeenCalled();
-  });
-
-  it('should return empty array when no posts found', async () => {
-    const mockPosts: Post[] = [];
-    mockService.listPosts = vi.fn().mockResolvedValue(mockPosts);
-
-    const handler = postListEndpoint(mockService, mockCacheRepo);
-    await handler(req as Request, res as Response);
-
-    expect(res.json).toHaveBeenCalledWith({
-      posts: mockPosts,
-      success: true,
-      count: 0
+      expect(res.json).toHaveBeenCalledWith({
+        posts: mockPosts,
+        success: true,
+        count: 0
+      });
     });
   });
 });

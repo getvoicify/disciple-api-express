@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import type {PostService} from '../service';
+import type {EndpointRequest} from '../../types/endpoint-handler';
 import type express from 'express';
 import {safeExecute} from '../../utils/handle-async';
 import errorCodeFactory from '../../utils/error-code.factory';
@@ -50,7 +51,7 @@ export const PostFetchParamsInput = z.object({
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 export const postFetchEndpoint = (service: PostService) =>
-	async (req: express.Request, res: express.Response) => {
+	async (req: EndpointRequest, res: express.Response) => {
 		const parseResult = PostFetchParamsInput.safeParse(req.params);
 		if (!parseResult.success) {
 			res.status(400).json({
@@ -64,15 +65,35 @@ export const postFetchEndpoint = (service: PostService) =>
 		const [err, post] = await safeExecute(service.getPostById(id));
 
 		if (err) {
+			(req as any).log?.error({ error: err, postId: id }, 'Failed to fetch post');
 			const code = errorCodeFactory(err);
 			res.status(code).json({
 				error: err.message,
 				success: false,
 			});
-		} else {
-			res.json({
-				post,
-				success: true,
-			});
+			return;
 		}
+
+		// Draft posts require authentication
+		const isDraftPost = post.status === 'draft';
+
+		if (isDraftPost) {
+			// Extract and validate user from JWT payload
+			const userPayload = req.user?.[1]?.payload;
+			const authenticatedUserId = userPayload?.sub;
+
+			if (!authenticatedUserId) {
+				res.status(401).json({
+					error: 'Authentication required to view draft posts',
+					success: false,
+				});
+				return;
+			}
+		}
+
+		// Return the post (either published or authenticated draft)
+		res.json({
+			post,
+			success: true,
+		});
 	};

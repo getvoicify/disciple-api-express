@@ -255,7 +255,7 @@ app.get('/api/openapi.yaml', (req, res) => {
 	res.send(yaml.dump(swaggerSpec));
 });
 
-app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, galleryService));
+app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService));
 app.use('/api/notes', notesRouter(noteService));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
