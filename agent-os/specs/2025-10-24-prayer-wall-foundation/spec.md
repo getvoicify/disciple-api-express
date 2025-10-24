@@ -136,8 +136,10 @@ The API must support all UI patterns shown in the high-fidelity mockups:
 
 **Repository Pattern:**
 - Follow pattern from `src/notes/pg-repository.ts` and `src/cache/redis-cache.repository.ts`
+- Use `RawDb` abstraction from `src/utils/database.ts` instead of direct postgres library usage
 - Use `safeExecute` for all async operations
 - Implement repository interfaces for testability
+- All test files should reside in `src/tests/` directory organized by feature
 
 **Handler Factory Pattern:**
 - Follow pattern from existing routes (e.g., `src/notes/routes/`)
@@ -175,8 +177,11 @@ The API must support all UI patterns shown in the high-fidelity mockups:
 - Follow pattern from `src/notes/schemas.ts`
 
 **Database:**
-- PostgreSQL connection via `postgres` package (already in dependencies)
-- Create migrations for all new tables
+- PostgreSQL connection via `RawDb` abstraction from `src/utils/database.ts`
+- Never use the `postgres` package directly - always use `RawDb` type and `getRawDb()` helper
+- Create migrations for all new tables in `/migrations` folder
+- Migration files run in sequence based on naming (e.g., 008, 009, 010...)
+- Use testcontainers for migration testing to ensure migrations work correctly
 - Use UUIDs for primary keys (consistent with existing pattern)
 
 ### New Components Required
@@ -526,15 +531,33 @@ src/
 │   │   └── moderation.schemas.ts
 │   └── types/
 │       └── prayer-wall.types.ts
-└── websocket/
-    ├── socket.server.ts
-    ├── middleware/
-    │   └── auth.middleware.ts
-    ├── handlers/
-    │   ├── prayer.handler.ts
-    │   ├── presence.handler.ts
-    │   └── moderation.handler.ts
-    └── events.ts
+├── websocket/
+│   ├── socket.server.ts
+│   ├── middleware/
+│   │   └── auth.middleware.ts
+│   ├── handlers/
+│   │   ├── prayer.handler.ts
+│   │   ├── presence.handler.ts
+│   │   └── moderation.handler.ts
+│   └── events.ts
+└── tests/
+    ├── prayer-walls/
+    │   ├── repositories/
+    │   │   ├── prayer-wall.repository.test.ts
+    │   │   ├── prayer-request.repository.test.ts
+    │   │   └── ...
+    │   ├── services/
+    │   │   ├── prayer-wall.service.test.ts
+    │   │   ├── prayer-request.service.test.ts
+    │   │   └── ...
+    │   └── routes/
+    │       ├── walls.routes.test.ts
+    │       ├── prayers.routes.test.ts
+    │       └── ...
+    └── websocket/
+        ├── prayer.handler.test.ts
+        ├── presence.handler.test.ts
+        └── ...
 
 migrations/ (root level, continues from existing migrations 001-007)
 ├── 008_create_prayer_walls.sql

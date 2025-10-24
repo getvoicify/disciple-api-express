@@ -8,6 +8,41 @@ This document provides a comprehensive task breakdown for implementing the Praye
 **Total Task Groups:** 23
 **Total Sub-Tasks:** 120+
 
+## IMPORTANT: Updated Technical Requirements
+
+**The following requirements apply to ALL task groups throughout this document:**
+
+### 1. Test File Location
+- **ALL test files MUST reside in `src/tests/` directory**
+- Organize tests by feature: `src/tests/prayer-walls/`, `src/tests/websocket/`, etc.
+- Migration tests: `src/tests/prayer-walls/migrations/`
+- Repository tests: `src/tests/prayer-walls/repositories/`
+- Service tests: `src/tests/prayer-walls/services/`
+- Route/API tests: `src/tests/prayer-walls/routes/`
+
+### 2. Database Abstraction
+- **NEVER use the `postgres` library directly**
+- **ALWAYS use the `RawDb` abstraction from `src/utils/database.ts`**
+- Repository constructors must accept `db: RawDb` parameter
+- Follow the pattern from `src/notes/pg-repository.ts` which uses `RawDb`
+
+### 3. Migration Testing
+- **Use testcontainers for all migration tests**
+- Spin up PostgreSQL container for each migration test suite
+- Verify migrations can run successfully AND be rolled back
+- Migration files are stored in `/migrations` folder and run in sequence
+
+### 4. Code Review Process
+- **After writing tests for each task group, use the coderabbit-reviewer agent**
+- Run the agent to review tests before proceeding with implementation
+- Address any issues found by the agent before moving forward
+- This applies to ALL task groups with test writing (x.1 sub-tasks)
+
+### 5. Test Execution
+- Each task group specifies running "ONLY the 2-8 tests written" for that group
+- This ensures focused, incremental testing following TDD principles
+- Final comprehensive test suite run happens in Task Group 30
+
 ## Development Phases
 
 The tasks are organized into 5 strategic phases aligned with the spec's development workflow:
@@ -18,6 +53,8 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 4. **Phase 4: Moderation & Notifications** (Days 8-9)
 5. **Phase 5: Polish & Performance** (Day 10)
 
+**Note:** Some early task groups (1-6) have been updated with detailed sub-tasks for the above requirements. For all remaining task groups, apply these same requirements even if not explicitly spelled out in each task.
+
 ---
 
 ## Phase 1: Database & Core API (Days 1-3)
@@ -25,92 +62,111 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 ### Task Group 1: Database Schema - Prayer Walls Table
 **Phase:** 1
 **Dependencies:** None
-**Estimated Time:** 2 hours
+**Estimated Time:** 3 hours
 
-- [ ] 1.0 Create prayer walls table migration
-  - [ ] 1.1 Write 2-8 focused tests for prayer wall database operations
-    - Test wall creation with valid data
+- [x] 1.0 Create prayer walls table migration
+  - [x] 1.1 Write 2-8 focused tests for prayer wall database operations in `src/tests/prayer-walls/migrations/`
+    - Test wall creation with valid data using testcontainers
     - Test wall retrieval by church_id
     - Test soft-delete behavior
     - Test unique constraint violations
-  - [ ] 1.2 Create migration file: `/migrations/008_create_prayer_walls.sql`
+    - Use testcontainers to spin up PostgreSQL for migration testing
+    - Ensure tests verify migration can run successfully and be rolled back
+  - [x] 1.2 Review tests using coderabbit-reviewer agent
+    - Run the coderabbit-reviewer agent to review the tests written in 1.1
+    - Address any issues found before proceeding
+  - [x] 1.3 Create migration file: `/migrations/008_create_prayer_walls.sql`
     - Table: `prayer_walls`
     - Fields: id (UUID), church_id (UUID FK), name (VARCHAR 255), description (TEXT), created_by (UUID FK), is_private (BOOLEAN), has_restricted_access (BOOLEAN), schedule (JSONB), video_call_link (VARCHAR 500), status (ENUM), created_at, updated_at, deleted_at
     - Constraints: NOT NULL on required fields, CHECK constraint on status enum
     - Reference existing pattern from `/migrations/002_create_churches_tables.sql`
-  - [ ] 1.3 Run migration and verify table creation
+  - [x] 1.4 Run migration and verify table creation
     - Run ONLY the newly created migration
     - Verify table structure with `\d prayer_walls`
-  - [ ] 1.4 Ensure migration tests pass
-    - Run ONLY the 2-8 tests written in 1.1
-    - Verify migrations run successfully
+  - [x] 1.5 Ensure migration tests pass
+    - Run ONLY the 2-8 tests written in 1.1 (now in src/tests/)
+    - Verify migrations run successfully in testcontainers
+    - Verify rollback works correctly
 
 **Acceptance Criteria:**
-- Migration 008 creates prayer_walls table successfully
-- All constraints and defaults work correctly
-- The 2-8 tests written in 1.1 pass
-- Migration is reversible (down migration works)
+- ✅ Migration 008 creates prayer_walls table successfully
+- ✅ All constraints and defaults work correctly
+- ✅ The 2-8 tests written in 1.1 pass with testcontainers (9/9 tests passing)
+- ✅ Migration is reversible (down migration works)
+- ✅ Tests reviewed and approved by coderabbit-reviewer agent
 
 ---
 
 ### Task Group 2: Database Schema - Prayer Requests & Threading
 **Phase:** 1
 **Dependencies:** Task Group 1
-**Estimated Time:** 2 hours
+**Estimated Time:** 3 hours
 
 - [ ] 2.0 Create prayer requests table with threading support
-  - [ ] 2.1 Write 2-8 focused tests for prayer request operations
-    - Test prayer creation with anonymity levels
+  - [ ] 2.1 Write 2-8 focused tests for prayer request operations in `src/tests/prayer-walls/migrations/`
+    - Test prayer creation with anonymity levels using testcontainers
     - Test self-referential threading (parent_id)
     - Test thread depth calculation
     - Test soft-delete with restoration windows
-  - [ ] 2.2 Create migration file: `/migrations/009_create_prayer_requests.sql`
+    - Use testcontainers for migration testing
+  - [ ] 2.2 Review tests using coderabbit-reviewer agent
+    - Run the coderabbit-reviewer agent to review the tests written in 2.1
+    - Address any issues found before proceeding
+  - [ ] 2.3 Create migration file: `/migrations/009_create_prayer_requests.sql`
     - Table: `prayer_requests`
     - Fields: id (UUID), wall_id (UUID FK), author_id (UUID FK), content (TEXT), anonymity_level (ENUM: identified, anonymous_to_members, fully_anonymous), parent_id (UUID FK self-referential nullable), thread_depth (INTEGER default 0), has_attachment (BOOLEAN), created_at, updated_at, deleted_at, deleted_by (UUID FK nullable)
     - Constraints: CHECK thread_depth BETWEEN 0 AND 3, parent_id references prayer_requests(id)
-  - [ ] 2.3 Create prayer_wall_memberships table
+  - [ ] 2.4 Create prayer_wall_memberships table
     - Table: `prayer_wall_memberships`
     - Fields: id (UUID), wall_id (UUID FK), user_id (UUID FK), joined_at, invited_by (UUID FK nullable), left_at (nullable), is_banned (BOOLEAN default false), banned_at (nullable), banned_by (UUID FK nullable), created_at, updated_at
     - Constraints: UNIQUE(wall_id, user_id, left_at), handles rejoining logic
-  - [ ] 2.4 Run migrations and verify table creation
-  - [ ] 2.5 Ensure prayer request tests pass
-    - Run ONLY the 2-8 tests written in 2.1
+  - [ ] 2.5 Run migrations and verify table creation
+  - [ ] 2.6 Ensure prayer request tests pass
+    - Run ONLY the 2-8 tests written in 2.1 (now in src/tests/)
+    - Verify migrations run successfully in testcontainers
 
 **Acceptance Criteria:**
 - Migration 009 creates both tables successfully
 - Self-referential foreign key for threading works
 - Thread depth constraint enforced
-- The 2-8 tests written in 2.1 pass
+- The 2-8 tests written in 2.1 pass with testcontainers
+- Tests reviewed and approved by coderabbit-reviewer agent
 
 ---
 
 ### Task Group 3: Database Schema - Categories & Supporting Tables
 **Phase:** 1
 **Dependencies:** Task Group 2
-**Estimated Time:** 2 hours
+**Estimated Time:** 3 hours
 
 - [ ] 3.0 Create prayer categories and supporting tables
-  - [ ] 3.1 Write 2-8 focused tests for category operations
-    - Test system category retrieval
+  - [ ] 3.1 Write 2-8 focused tests for category operations in `src/tests/prayer-walls/migrations/`
+    - Test system category retrieval using testcontainers
     - Test custom category creation
     - Test many-to-many category assignment
     - Test category filtering
-  - [ ] 3.2 Create migration file: `/migrations/010_create_prayer_categories.sql`
+    - Use testcontainers for migration testing
+  - [ ] 3.2 Review tests using coderabbit-reviewer agent
+    - Run the coderabbit-reviewer agent to review the tests written in 3.1
+    - Address any issues found before proceeding
+  - [ ] 3.3 Create migration file: `/migrations/010_create_prayer_categories.sql`
     - Table: `prayer_categories` (id, name, church_id nullable, is_system_category, created_at, updated_at)
     - Table: `prayer_request_categories` (id, prayer_request_id FK, category_id FK, created_at)
     - Table: `prayer_attachments` (id, prayer_request_id FK, file_name, file_size, file_type, storage_key, uploaded_by FK, created_at)
-  - [ ] 3.3 Create migration file: `/migrations/011_create_supporting_tables.sql`
+  - [ ] 3.4 Create migration file: `/migrations/011_create_supporting_tables.sql`
     - Table: `flagged_content` (id, prayer_request_id FK, flagged_by FK, reason, status ENUM, reviewed_by FK, reviewed_at, resolution_action ENUM, resolution_notes, created_at, updated_at)
     - Table: `prayer_read_receipts` (id, prayer_request_id FK, user_id FK, read_at, created_at)
     - Table: `notification_preferences` (id, user_id FK, wall_id FK nullable, new_prayers BOOLEAN, responses_to_my_prayers BOOLEAN, replies_to_my_responses BOOLEAN, wall_invitations BOOLEAN, moderation_actions BOOLEAN, created_at, updated_at)
-  - [ ] 3.4 Run migrations and verify all tables created
-  - [ ] 3.5 Ensure category tests pass
-    - Run ONLY the 2-8 tests written in 3.1
+  - [ ] 3.5 Run migrations and verify all tables created
+  - [ ] 3.6 Ensure category tests pass
+    - Run ONLY the 2-8 tests written in 3.1 (now in src/tests/)
+    - Verify migrations run successfully in testcontainers
 
 **Acceptance Criteria:**
 - All 6 supporting tables created successfully
 - Foreign key relationships work correctly
-- The 2-8 tests written in 3.1 pass
+- The 2-8 tests written in 3.1 pass with testcontainers
+- Tests reviewed and approved by coderabbit-reviewer agent
 
 ---
 
@@ -176,32 +232,38 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 ### Task Group 6: Repository Layer - Prayer Wall Repository
 **Phase:** 1
 **Dependencies:** Task Group 5
-**Estimated Time:** 3 hours
+**Estimated Time:** 4 hours
 
 - [ ] 6.0 Implement PrayerWallRepository
-  - [ ] 6.1 Write 2-8 focused tests for PrayerWallRepository
+  - [ ] 6.1 Write 2-8 focused tests for PrayerWallRepository in `src/tests/prayer-walls/repositories/`
     - Test create wall with valid data
     - Test findById with church_id check
     - Test findByChurchId pagination
     - Test update wall details
     - Test soft-delete wall
-  - [ ] 6.2 Create file: `/src/prayer-walls/repositories/prayer-wall.repository.ts`
+  - [ ] 6.2 Review tests using coderabbit-reviewer agent
+    - Run the coderabbit-reviewer agent to review the tests written in 6.1
+    - Address any issues found before proceeding
+  - [ ] 6.3 Create file: `/src/prayer-walls/repositories/prayer-wall.repository.ts`
     - Interface: IPrayerWallRepository
     - Methods: create(data), findById(id, churchId), findByChurchId(churchId, pagination), update(id, data), softDelete(id), restore(id)
+    - **IMPORTANT**: Use `RawDb` type from `src/utils/database.ts` - NO direct postgres library usage
+    - Constructor should accept `db: RawDb` parameter
     - Use safeExecute for all database operations
     - Follow pattern from `/src/notes/pg-repository.ts`
-    - Use postgres package for database queries
-  - [ ] 6.3 Create types file: `/src/prayer-walls/types/prayer-wall.types.ts`
+  - [ ] 6.4 Create types file: `/src/prayer-walls/types/prayer-wall.types.ts`
     - Types: PrayerWall, CreatePrayerWallData, UpdatePrayerWallData, PaginationParams
     - Enums: WallStatus, AnonymityLevel, FlaggedContentStatus
-  - [ ] 6.4 Ensure repository tests pass
-    - Run ONLY the 2-8 tests written in 6.1
+  - [ ] 6.5 Ensure repository tests pass
+    - Run ONLY the 2-8 tests written in 6.1 (now in src/tests/)
 
 **Acceptance Criteria:**
 - Repository implements all CRUD methods
+- Repository uses `RawDb` abstraction (not postgres directly)
 - All database operations use safeExecute
 - The 2-8 tests written in 6.1 pass
 - Follows existing repository pattern
+- Tests reviewed and approved by coderabbit-reviewer agent
 
 ---
 
@@ -1126,17 +1188,27 @@ All code organized under:
   - `/middleware/` - Authentication middleware
   - `socket.server.ts` - Socket.io server
   - `events.ts` - Event definitions
+- `/src/tests/` - ALL test files (as per Updated Technical Requirements)
+  - `/prayer-walls/migrations/` - Migration tests with testcontainers
+  - `/prayer-walls/repositories/` - Repository unit tests
+  - `/prayer-walls/services/` - Service unit tests
+  - `/prayer-walls/routes/` - API/route integration tests
+  - `/websocket/` - WebSocket handler tests
 - `/migrations/` - 6 new migration files (008-013)
 
 ### Key Technical Patterns
 
 All implementation must follow:
-- **TDD**: Tests first, implementation second
+- **TDD**: Tests first, implementation second (write 2-8 tests per task group)
+- **RawDb abstraction**: NEVER use postgres directly, always use `RawDb` from `src/utils/database.ts`
+- **Testcontainers**: Use for all migration tests
+- **Code review**: Use coderabbit-reviewer agent after writing tests
+- **Test location**: All tests in `src/tests/` organized by feature
 - **safeExecute**: All async operations and promises
 - **Structured logging**: Never use console.*, always use logger or req.log
 - **EndpointRequest type**: For all API handlers
 - **User extraction**: `req.user?.[1]?.['payload']?.['sub']`
-- **Repository pattern**: Interface-based for testability
+- **Repository pattern**: Interface-based for testability, injected with `RawDb`
 - **Handler factory**: For endpoint creation
 - **Zod validation**: All request/response validation
 
