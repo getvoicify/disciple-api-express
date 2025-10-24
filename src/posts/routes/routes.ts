@@ -6,15 +6,10 @@ import type {SeriesService} from '../../series/service';
 import {validate} from '../../utils/validate.middleware';
 import {validateToken} from '../../utils/validate-token.middleware';
 import {canAccessMiddleware} from '../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware';
-import {createCacheRepository} from '../../cache';
-import {cacheResponseMiddleware} from '../../middleware/cache-response.middleware/cache-response.middleware';
-import {keyGenerator} from '../../middleware/key-generator.middleware';
-import {extractFiltersMiddleware} from '../../middleware/extract-filters.middleware';
 import {postCreateEndpoint} from './postCreate.endpoint';
 import {postFetchEndpoint} from './postFetch.endpoint';
 import {postUpdateEndpoint} from './postUpdate.endpoint';
 import {postDeleteEndpoint} from './postDelete.endpoint';
-import {postListEndpoint, InputSchema as ListFilterSchema} from './postList.endpoint';
 import {postPublishEndpoint} from './postPublish.endpoint';
 import {dailyDevotionalsEndpoint} from './dailyDevotionals.endpoint';
 import {CreatePostInput, UpdatePostInput} from '../schemas';
@@ -30,7 +25,6 @@ export const PublishActionInput = z.object({
 
 export const postsRouter = (service: PostService, seriesService: SeriesService) => {
 	const router = Router();
-	const cacheRepo = createCacheRepository();
 	const {
 		IAM_ENDPOINT,
 		IAM_REALM,
@@ -47,8 +41,9 @@ export const postsRouter = (service: PostService, seriesService: SeriesService) 
 		tokenVerifier(),
 	], dailyDevotionalsEndpoint(seriesService));
 
-	// Public endpoint - fetch specific post
+	// Public/protected endpoint - fetch specific post (public for published, auth required for drafts)
 	router.get('/:id', [
+		tokenVerifier(false),
 		validate(PostIdParamsInput, 'params'),
 	], postFetchEndpoint(service));
 
@@ -71,19 +66,6 @@ export const postsRouter = (service: PostService, seriesService: SeriesService) 
 		validate(PostIdParamsInput, 'params'),
 		validate(PublishActionInput, 'body'),
 	], postPublishEndpoint(service));
-
-	// Public endpoint with optional filtering - list posts
-	router.get('/', [
-		validate(ListFilterSchema, 'query'),
-		canAccessMiddleware({
-			scope: 'read',
-			resource: 'posts',
-			queryUri: '/posts',
-		}),
-		extractFiltersMiddleware(ListFilterSchema, 'query'),
-		keyGenerator('post', true),
-		cacheResponseMiddleware(cacheRepo),
-	], postListEndpoint(service, cacheRepo));
 
 	// Protected endpoint - create post
 	// Note: Uses singular 'post' resource name (intentional, not 'posts')

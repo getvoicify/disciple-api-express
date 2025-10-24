@@ -1,16 +1,21 @@
+import type {EndpointRequest} from '../../types/endpoint-handler';
 import type express from 'express';
 import {z} from 'zod';
 import type {PostService} from '../service';
 import {type PostFilters} from '../schemas';
 import {safeExecute} from '../../utils/handle-async';
 import {type CacheRepository} from '../../cache';
+import type {ChurchMembershipService} from '../../churches/membership-service';
 import errorCodeFactory from '../../utils/error-code.factory';
 
-export const InputSchema = z.object({
-	churchId: z.string().uuid().optional().nullable(),
-	authorId: z.string().uuid().optional().nullable(),
+export const ParamsSchema = z.object({
+	churchId: z.uuid(),
+});
+
+export const QuerySchema = z.object({
+	authorId: z.uuid().optional().nullable(),
 	status: z.enum(['draft', 'published']).optional().nullable(),
-	seriesId: z.string().uuid().optional().nullable(),
+	seriesId: z.uuid().optional().nullable(),
 	startDate: z.coerce.date().optional().nullable(),
 	endDate: z.coerce.date().optional().nullable(),
 	tags: z.string().optional().nullable(),
@@ -22,18 +27,19 @@ export const InputSchema = z.object({
 
 /**
  * @openapi
- * /posts:
+ * /churches/{churchId}/posts:
  *   get:
- *     summary: List all posts
- *     description: Retrieve a list of posts with optional filtering by church, author, status, series, date range, tags, categories, or scripture references
+ *     summary: List posts for a church
+ *     description: Retrieve a list of posts for a specific church. User must be an active member of the church. Supports optional filtering by author, status, series, date range, tags, categories, or scripture references.
  *     tags: [Posts]
  *     parameters:
- *       - in: query
+ *       - in: path
  *         name: churchId
+ *         required: true
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Filter by church ID
+ *         description: The church ID to list posts for
  *       - in: query
  *         name: authorId
  *         schema:
@@ -117,26 +123,49 @@ export const InputSchema = z.object({
  *                       description: Number of posts returned
  *                       example: 5
  *       400:
- *         description: Invalid query parameters
+ *         description: Invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - User is not an active member of the church
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const postListEndpoint = (service: PostService, cacheRepo: CacheRepository) =>
-	async (req: express.Request, res: express.Response) => {
-		const parseResult = InputSchema.safeParse(req.query);
-
-		if (!parseResult.success) {
+export const postListEndpoint = (service: PostService, cacheRepo: CacheRepository, membershipService: ChurchMembershipService) =>
+	async (req: EndpointRequest, res: express.Response) => {
+		// Validate path params
+		const paramsResult = ParamsSchema.safeParse(req.params);
+		if (!paramsResult.success) {
 			res.status(400).json({
-				error: parseResult.error.message,
+				error: paramsResult.error.message,
+				success: false,
+			});
+			return;
+		}
+
+		const { churchId } = paramsResult.data;
+
+		// Validate query params
+		const queryResult = QuerySchema.safeParse(req.query);
+		if (!queryResult.success) {
+			res.status(400).json({
+				error: queryResult.error.message,
 				success: false,
 			});
 			return;
 		}
 
 		const {
-			churchId,
 			authorId,
 			status,
 			seriesId,
@@ -147,16 +176,62 @@ export const postListEndpoint = (service: PostService, cacheRepo: CacheRepositor
 			'scripture.book': scriptureBook,
 			'scripture.chapter': scriptureChapter,
 			'scripture.verse': scriptureVerse
-		} = parseResult.data;
+		} = queryResult.data;
 
-		const authorizedIds = Array.isArray(req['ids']) ? req['ids'] : [];
+		// Draft posts require authentication and active church membership
+		const isRequestingDraftPosts = status === 'draft';
 
-		// Build filters with authorization constraint
+		if (isRequestingDraftPosts) {
+			// Extract and validate user from JWT payload
+			const userPayload = req.user?.[1]?.payload;
+			const authenticatedUserId = userPayload?.sub;
+
+			if (!authenticatedUserId) {
+				res.status(401).json({
+					error: 'User authentication required',
+					success: false,
+				});
+				return;
+			}
+
+			// Verify user has active membership in the church
+			const [membershipErr, membership] = await safeExecute(
+				membershipService.getMembershipByUserAndChurch(authenticatedUserId, churchId)
+			);
+
+			if (membershipErr) {
+				(req as any).log?.error({ error: membershipErr, userId: authenticatedUserId, churchId }, 'Failed to verify church membership');
+				const code = errorCodeFactory(membershipErr);
+				res.status(code).json({
+					error: membershipErr.message,
+					success: false,
+				});
+				return;
+			}
+
+			if (!membership) {
+				res.status(403).json({
+					error: 'You are not a member of this church',
+					success: false,
+				});
+				return;
+			}
+
+			if (membership.status !== 'Active') {
+				res.status(403).json({
+					error: 'You must be an active member of this church',
+					success: false,
+				});
+				return;
+			}
+		}
+
+		// Build filters - churchId is required from path
+		// Default to published posts for public access
 		const filters: PostFilters = {
-			authorizedIds,
 			churchId,
 			authorId,
-			status,
+			status: status || 'published',
 			seriesId,
 			startDate,
 			endDate,
@@ -187,6 +262,7 @@ export const postListEndpoint = (service: PostService, cacheRepo: CacheRepositor
 		const [err, posts] = await safeExecute(service.listPosts(filters));
 
 		if (err) {
+			(req as any).log?.error({ error: err, filters }, 'Failed to list posts');
 			const code = errorCodeFactory(err);
 			res.status(code).json({
 				error: err.message,
@@ -206,6 +282,7 @@ export const postListEndpoint = (service: PostService, cacheRepo: CacheRepositor
 		const key = req['key'];
 
 		if (key) {
+			(req as any).log?.debug({ key }, 'Writing cache');
 			await safeExecute(cacheRepo.write(key, response));
 		}
 	}

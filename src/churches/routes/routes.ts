@@ -3,6 +3,7 @@ import type {ChurchService} from "../service";
 import type {ChurchApprovalService} from "../approval-service";
 import {type ChurchMembershipService} from "../membership-service";
 import type {GalleryService} from "../../gallery/service";
+import type {PostService} from "../../posts/service";
 import {churchCreateEndpoint} from "./churchCreate.endpoint";
 import {validateToken} from "../../utils/validate-token.middleware";
 import {jwtVerify} from "jose";
@@ -39,12 +40,19 @@ import {churchMembershipDeclineInviteEndpoint} from "./membership/churchMembersh
 import {churchMembershipRemoveMemberEndpoint} from "./membership/churchMembershipRemoveMember.endpoint";
 import {churchMembershipBanEndpoint} from "./membership/churchMembershipBan.endpoint";
 import {churchMembershipUpdateRoleEndpoint} from "./membership/churchMembershipUpdateRole.endpoint";
+import {postListEndpoint, ParamsSchema as PostListParamsSchema, QuerySchema as PostListQuerySchema} from "../../posts/routes/postList.endpoint";
+import type {CacheRepository} from "../../cache";
+import {cacheResponseMiddleware} from "../../middleware/cache-response.middleware/cache-response.middleware";
+import {keyGenerator} from "../../middleware/key-generator.middleware";
+import {extractFiltersMiddleware} from "../../middleware/extract-filters.middleware";
 
 
 export const churchesRouter = (
 	churchService: ChurchService,
 	approvalService: ChurchApprovalService,
 	membershipService: ChurchMembershipService,
+	postService: PostService,
+	cacheRepo: CacheRepository,
 	galleryService?: GalleryService
 ) => {
 	const router = Router();
@@ -65,17 +73,17 @@ export const churchesRouter = (
 	], churchPendingListEndpoint(approvalService));
 
 	// Admin endpoints
-	router.get(':churchId/approval-history', [
+	router.get('/:churchId/approval-history', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
 	], churchApprovalHistoryEndpoint(approvalService));
 
-	router.post(':churchId/approve', [
+	router.post('/:churchId/approve', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
 	], churchApproveEndpoint(approvalService));
 
-	router.post(':churchId/reject', [
+	router.post('/:churchId/reject', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params'),
 		validate(RejectionInput, 'body'),
@@ -83,62 +91,72 @@ export const churchesRouter = (
 
 	// Membership endpoints
 
-	router.post(':churchId/join', [
+	router.post('/:churchId/join', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
 	], churchMembershipJoinEndpoint(membershipService));
 
-	router.post(':churchId/leave', [
+	router.post('/:churchId/leave', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
 	], churchMembershipLeaveEndpoint(membershipService));
 
-	router.get(':churchId/members', [
+	router.get('/:churchId/members', [
 		tokenVerifier(false),
 		validate(ChurchIdInput, 'params')
 	], churchMembershipListEndpoint(membershipService));
 
-	router.post(':churchId/invite', [
+	router.post('/:churchId/invite', [
 		tokenVerifier(true),
 		validate(InvitationInput, 'body')
 	], churchMembershipInviteEndpoint(membershipService));
 
-	router.post(':churchId/accept-invitation', [
+	router.post('/:churchId/accept-invitation', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
 	], churchMembershipAcceptInviteEndpoint(membershipService));
 
-	router.post(':churchId/decline-invitation', [
+	router.post('/:churchId/decline-invitation', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
 	], churchMembershipDeclineInviteEndpoint(membershipService));
 
-	router.delete(':churchId/members/:userId', [
+	router.delete('/:churchId/members/:userId', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params'),
 		validate(UserIdInput, 'params')
 	], churchMembershipRemoveMemberEndpoint(membershipService));
 
-	router.post(':churchId/members/:userId/ban', [
+	router.post('/:churchId/members/:userId/ban', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params'),
 		validate(UserIdInput, 'params')
 	], churchMembershipBanEndpoint(membershipService));
 
-	router.put(':churchId/members/:userId/role', [
+	router.put('/:churchId/members/:userId/role', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params'),
 		validate(UserIdInput, 'params'),
 		validate(UpdateRoleInput, 'body')
 	], churchMembershipUpdateRoleEndpoint(membershipService));
 
-	router.delete(':churchId', [
+	// Posts endpoints
+	router.get('/:churchId/posts', [
+		tokenVerifier(false),
+		validate(PostListParamsSchema, 'params'),
+		validate(PostListQuerySchema, 'query'),
+		extractFiltersMiddleware(PostListQuerySchema, 'query'),
+		keyGenerator('post', true),
+		cacheResponseMiddleware(cacheRepo),
+	], postListEndpoint(postService, cacheRepo, membershipService));
+
+	router.delete('/:churchId', [
 		tokenVerifier(true),
 		validate(ChurchDeleteInput, 'params')
 	], churchDeleteEndpoint(churchService));
 
 	router.get(
-		':churchId',
+		'/:churchId',
 		[
 			tokenVerifier(false),
 			validate(ChurchFetchInput, 'params')
@@ -146,7 +164,7 @@ export const churchesRouter = (
 		churchFetchEndpoint(churchService)
 	);
 
-	router.put(':churchId', [
+	router.put('/:churchId', [
 		tokenVerifier(true),
 		validate(ChurchUpdateParamsInput, 'params'),
 		validate(ChurchUpdateInput, 'body'),

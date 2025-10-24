@@ -44,13 +44,6 @@ describe('Post Routes', () => {
       expect.any(Function)
     );
 
-    // Should register GET /posts with middleware array
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      '/',
-      expect.any(Array),
-      expect.any(Function)
-    );
-
     // Should register GET /posts/:id with middleware array
     expect(mockRouter.get).toHaveBeenCalledWith(
       '/:id',
@@ -87,18 +80,18 @@ describe('Post Routes', () => {
     );
   });
 
-  it('should use validation and access control middleware for list endpoint', () => {
+  it('should use optional authentication for fetch endpoint', () => {
     postsRouter(mockService, mockSeriesService);
 
-    // The GET /posts endpoint should use middleware array
-    const listCall = (mockRouter.get as Mock).mock.calls.find(
-      call => call[0] === '/'
+    // The GET /posts/:id endpoint should use middleware array with optional auth
+    const fetchCall = (mockRouter.get as Mock).mock.calls.find(
+      call => call[0] === '/:id'
     );
 
-    expect(listCall).toBeDefined();
-    expect(listCall[1]).toBeInstanceOf(Array);
-    // Should have multiple middleware (validation, canAccess, filters, cache)
-    expect(listCall[1].length).toBeGreaterThan(1);
+    expect(fetchCall).toBeDefined();
+    expect(fetchCall[1]).toBeInstanceOf(Array);
+    // Should have middleware (tokenVerifier, validation)
+    expect(fetchCall[1].length).toBeGreaterThan(0);
   });
 
   it('should protect modification endpoints with auth middleware', () => {
