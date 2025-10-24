@@ -1,31 +1,54 @@
 ## Tech stack
 
-Define your technical stack below. This serves as a reference for all team members and helps maintain consistency across the project.
+This project uses a modern Node.js backend stack with TypeScript, Express, and PostgreSQL.
 
 ### Framework & Runtime
-- **Application Framework:** [e.g., Rails, Django, Next.js, Express]
-- **Language/Runtime:** [e.g., Ruby, Python, Node.js, Java]
-- **Package Manager:** [e.g., bundler, pip, npm, yarn]
+- **Application Framework:** Express 5.x
+- **Language/Runtime:** Node.js with TypeScript 5.x
+- **Package Manager:** npm
+- **Development Runtime:** tsx (TypeScript execution)
 
-### Frontend
-- **JavaScript Framework:** [e.g., React, Vue, Svelte, Alpine, vanilla JS]
-- **CSS Framework:** [e.g., Tailwind CSS, Bootstrap, custom]
-- **UI Components:** [e.g., shadcn/ui, Material UI, custom library]
+### Backend Core Libraries
+- **Validation:** Zod (schema validation and parsing)
+- **Authentication:** JOSE (JWT token handling)
+- **Logging:** Pino with pino-http middleware
+- **Error Handling:** Custom safeExecute utility (tuple pattern)
+- **File Uploads:** Multer
 
 ### Database & Storage
-- **Database:** [e.g., PostgreSQL, MySQL, MongoDB]
-- **ORM/Query Builder:** [e.g., ActiveRecord, Prisma, Sequelize]
-- **Caching:** [e.g., Redis, Memcached]
+- **Database:** PostgreSQL
+- **Query Library:** postgres (native PostgreSQL client)
+- **Caching:** Redis (via ioredis)
+- **Cloud Storage:** AWS S3 (via @aws-sdk/client-s3)
+- **Image Processing:** Sharp
 
 ### Testing & Quality
-- **Test Framework:** [e.g., Jest, RSpec, pytest]
-- **Linting/Formatting:** [e.g., ESLint, Prettier, RuboCop]
+- **Test Framework:** Vitest
+- **Test UI:** @vitest/ui
+- **Coverage:** @vitest/coverage-v8
+- **HTTP Testing:** Supertest
+- **Linting:** ESLint with TypeScript ESLint
+- **Type Checking:** TypeScript strict mode
 
-### Deployment & Infrastructure
-- **Hosting:** [e.g., Heroku, AWS, Vercel, Railway]
-- **CI/CD:** [e.g., GitHub Actions, CircleCI]
+### API Documentation
+- **OpenAPI Spec:** Swagger JSDoc
+- **API UI:** Swagger UI Express
+- **Documentation Format:** OpenAPI 3.0
+
+### Development Tools
+- **Hot Reload:** tsx watch mode
+- **Containerization:** Docker & Docker Compose
+- **Configuration:** dotenv (environment variables)
+- **YAML Parsing:** js-yaml, yaml
 
 ### Third-Party Services
-- **Authentication:** [e.g., Auth0, Devise, NextAuth]
-- **Email:** [e.g., SendGrid, Postmark]
-- **Monitoring:** [e.g., Sentry, Datadog]
+- **Authentication:** Keycloak (external identity provider)
+- **Cloud Storage:** AWS S3 or compatible (Cloudflare R2)
+- **Observability:** Structured logging via Pino
+
+### Key Patterns & Utilities
+- **Error Handling:** safeExecute utility for promise/error handling
+- **Logging:** Structured logging with request-scoped correlation IDs
+- **Validation:** Zod schemas for runtime type safety
+- **Authentication:** JWT token validation with JOSE
+- **Dependency Injection:** Factory pattern for endpoints
