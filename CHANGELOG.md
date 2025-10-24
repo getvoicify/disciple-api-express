@@ -1,3 +1,10 @@
+## [2.1.0](https://github.com/getvoicify/disciple-api-express/compare/v2.0.1...v2.1.0) (2025-10-24)
+
+
+### ✨ Features
+
+* reinstall agent os ([#28](https://github.com/getvoicify/disciple-api-express/issues/28)) ([1caa4b2](https://github.com/getvoicify/disciple-api-express/commit/1caa4b296833d7c3599c55a42bd0dde3909b6d47))
+
 ## [2.0.1](https://github.com/getvoicify/disciple-api-express/compare/v2.0.0...v2.0.1) (2025-10-24)
 
 
