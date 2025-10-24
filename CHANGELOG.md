@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/getvoicify/disciple-api-express/compare/v2.0.0...v2.0.1) (2025-10-24)
+
+
+### 🐛 Bug Fixes
+
+* remove resource guard for post list ([#27](https://github.com/getvoicify/disciple-api-express/issues/27)) ([a4fc3f3](https://github.com/getvoicify/disciple-api-express/commit/a4fc3f38200110abdaf7c280d6f86ea46fe81b8e))
+
 ## [2.0.0](https://github.com/getvoicify/disciple-api-express/compare/v1.24.0...v2.0.0) (2025-10-15)
 
 
