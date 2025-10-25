@@ -211,22 +211,22 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 **Dependencies:** Task Group 4
 **Estimated Time:** 1 hour
 
-- [ ] 5.0 Seed system prayer categories
-  - [ ] 5.1 Write 2-8 focused tests for system categories
+- [x] 5.0 Seed system prayer categories
+  - [x] 5.1 Write 2-8 focused tests for system categories
     - Test all 5 system categories are seeded
     - Test is_system_category flag is true
     - Test church_id is NULL for system categories
-  - [ ] 5.2 Create migration file: `/migrations/013_seed_system_categories.sql`
+  - [x] 5.2 Create migration file: `/migrations/013_seed_system_categories.sql`
     - Insert: Healing, Guidance, Thanksgiving, Intercession, Family
     - Set is_system_category = true, church_id = NULL
-  - [ ] 5.3 Run migration and verify categories seeded
-  - [ ] 5.4 Ensure seed tests pass
+  - [x] 5.3 Run migration and verify categories seeded
+  - [x] 5.4 Ensure seed tests pass
     - Run ONLY the 2-8 tests written in 5.1
 
 **Acceptance Criteria:**
-- All 5 system categories inserted
-- Categories have correct flags
-- The 2-8 tests written in 5.1 pass
+- ✅ All 5 system categories inserted (Healing, Guidance, Thanksgiving, Intercession, Family)
+- ✅ Categories have correct flags (is_system_category = true, church_id = NULL)
+- ✅ The 8 tests written in 5.1 pass (8/8 tests passing)
 
 ---
 
