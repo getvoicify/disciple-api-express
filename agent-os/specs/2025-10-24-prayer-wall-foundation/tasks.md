@@ -268,31 +268,44 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 
 ---
 
-### Task Group 7: Repository Layer - Prayer Request Repository
+### Task Group 7: Repository Layer - Prayer Request Repository ✅
 **Phase:** 1
 **Dependencies:** Task Group 6
 **Estimated Time:** 3 hours
 
-- [ ] 7.0 Implement PrayerRequestRepository
-  - [ ] 7.1 Write 2-8 focused tests for PrayerRequestRepository
+- [x] 7.0 Implement PrayerRequestRepository
+  - [x] 7.1 Write 2-8 focused tests for PrayerRequestRepository
     - Test create prayer with threading
     - Test findByWallId with pagination
     - Test findById with thread children
     - Test update prayer content
     - Test soft-delete and restoration
-  - [ ] 7.2 Create file: `/src/prayer-walls/repositories/prayer-request.repository.ts`
+  - [x] 7.2 Create file: `/src/prayer-walls/repositories/prayer-request.repository.ts`
     - Interface: IPrayerRequestRepository
     - Methods: create(data), findById(id), findByWallId(wallId, pagination), findThreadChildren(parentId), update(id, data), softDelete(id, deletedBy), restore(id), validateThreadDepth(parentId)
     - Use recursive CTE for fetching full threads
     - Implement cursor-based pagination
-  - [ ] 7.3 Ensure repository tests pass
+  - [x] 7.3 Ensure repository tests pass
     - Run ONLY the 2-8 tests written in 7.1
 
 **Acceptance Criteria:**
-- Repository handles threading correctly
-- Thread depth validation works
-- The 2-8 tests written in 7.1 pass
-- Pagination uses cursor-based approach
+- ✅ Repository handles threading correctly
+- ✅ Thread depth validation works (max depth 3)
+- ✅ The 8 tests written in 7.1 pass (8/8 passing)
+- ✅ Pagination uses cursor-based approach with timestamp+ID composite
+
+**Test Results:**
+- All 8 tests passing
+- Test file: `src/tests/prayer-walls/repositories/prayer-request.repository.test.ts`
+- Repository file: `src/prayer-walls/repositories/prayer-request.repository.ts`
+- Types file: `src/prayer-walls/types/prayer-wall.types.ts`
+
+**Implementation Notes:**
+- Threading: Self-referential parent_id with automatic thread_depth calculation (0-3)
+- Validation: validateThreadDepth returns parent depth; create() adds +1 and validates max depth
+- Pagination: Cursor-based using timestamp+ID composite for stable ordering
+- Soft-delete: Tracks deleted_by and deleted_at, excludes from queries
+- Recursive CTE: findThreadChildren() retrieves entire thread tree
 
 ---
 
