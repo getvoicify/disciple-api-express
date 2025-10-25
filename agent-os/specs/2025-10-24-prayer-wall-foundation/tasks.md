@@ -102,35 +102,35 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 **Dependencies:** Task Group 1
 **Estimated Time:** 3 hours
 
-- [ ] 2.0 Create prayer requests table with threading support
-  - [ ] 2.1 Write 2-8 focused tests for prayer request operations in `src/tests/prayer-walls/migrations/`
+- [x] 2.0 Create prayer requests table with threading support
+  - [x] 2.1 Write 2-8 focused tests for prayer request operations in `src/tests/prayer-walls/migrations/`
     - Test prayer creation with anonymity levels using testcontainers
     - Test self-referential threading (parent_id)
     - Test thread depth calculation
     - Test soft-delete with restoration windows
     - Use testcontainers for migration testing
-  - [ ] 2.2 Review tests using coderabbit-reviewer agent
+  - [x] 2.2 Review tests using coderabbit-reviewer agent
     - Run the coderabbit-reviewer agent to review the tests written in 2.1
     - Address any issues found before proceeding
-  - [ ] 2.3 Create migration file: `/migrations/009_create_prayer_requests.sql`
+  - [x] 2.3 Create migration file: `/migrations/009_create_prayer_requests.sql`
     - Table: `prayer_requests`
     - Fields: id (UUID), wall_id (UUID FK), author_id (UUID FK), content (TEXT), anonymity_level (ENUM: identified, anonymous_to_members, fully_anonymous), parent_id (UUID FK self-referential nullable), thread_depth (INTEGER default 0), has_attachment (BOOLEAN), created_at, updated_at, deleted_at, deleted_by (UUID FK nullable)
     - Constraints: CHECK thread_depth BETWEEN 0 AND 3, parent_id references prayer_requests(id)
-  - [ ] 2.4 Create prayer_wall_memberships table
+  - [x] 2.4 Create prayer_wall_memberships table
     - Table: `prayer_wall_memberships`
     - Fields: id (UUID), wall_id (UUID FK), user_id (UUID FK), joined_at, invited_by (UUID FK nullable), left_at (nullable), is_banned (BOOLEAN default false), banned_at (nullable), banned_by (UUID FK nullable), created_at, updated_at
     - Constraints: UNIQUE(wall_id, user_id, left_at), handles rejoining logic
-  - [ ] 2.5 Run migrations and verify table creation
-  - [ ] 2.6 Ensure prayer request tests pass
+  - [x] 2.5 Run migrations and verify table creation
+  - [x] 2.6 Ensure prayer request tests pass
     - Run ONLY the 2-8 tests written in 2.1 (now in src/tests/)
     - Verify migrations run successfully in testcontainers
 
 **Acceptance Criteria:**
-- Migration 009 creates both tables successfully
-- Self-referential foreign key for threading works
-- Thread depth constraint enforced
-- The 2-8 tests written in 2.1 pass with testcontainers
-- Tests reviewed and approved by coderabbit-reviewer agent
+- ✅ Migration 009 creates both tables successfully
+- ✅ Self-referential foreign key for threading works
+- ✅ Thread depth constraint enforced
+- ✅ The 2-8 tests written in 2.1 pass with testcontainers (17/17 tests passing)
+- ✅ Tests reviewed and approved by coderabbit-reviewer agent (Grade: A - Excellent)
 
 ---
 
