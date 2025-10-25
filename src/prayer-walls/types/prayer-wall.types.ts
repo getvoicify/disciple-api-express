@@ -111,3 +111,49 @@ export type PrayerWallRow = {
   updated_at: Date;
   deleted_at: Date | null;
 };
+
+/**
+ * PrayerRequest entity representing a prayer submission on a prayer wall
+ */
+export type PrayerRequest = {
+  id: string;
+  wall_id: string;
+  author_id: string;
+  parent_id: string | null;
+  thread_depth: number;
+  content: string;
+  anonymity_level: AnonymityLevel;
+  has_attachment: boolean;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+  deleted_by: string | null;
+};
+
+/**
+ * Data required to create a new prayer request
+ */
+export type CreatePrayerRequestData = {
+  wall_id: string;
+  author_id: string;
+  parent_id?: string | null;
+  content: string;
+  anonymity_level?: AnonymityLevel;
+  has_attachment?: boolean;
+};
+
+/**
+ * Data that can be updated on an existing prayer request
+ */
+export type UpdatePrayerRequestData = {
+  content?: string;
+  has_attachment?: boolean;
+};
+
+/**
+ * Cursor-based pagination parameters for efficient feed queries
+ */
+export type CursorPaginationParams = {
+  limit?: number;
+  cursor?: string; // Last seen ID for cursor-based pagination
+};
