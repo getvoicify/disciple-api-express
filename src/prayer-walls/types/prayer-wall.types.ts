@@ -157,3 +157,95 @@ export type CursorPaginationParams = {
   limit?: number;
   cursor?: string; // Last seen ID for cursor-based pagination
 };
+
+/**
+ * PrayerWallMembership entity representing a user's membership in a prayer wall
+ * Tracks join/leave history, invitations, and ban status
+ */
+export type PrayerWallMembership = {
+  id: string;
+  wall_id: string;
+  user_id: string;
+  joined_at: Date;
+  invited_by: string | null;
+  left_at: Date | null;
+  is_banned: boolean;
+  banned_at: Date | null;
+  banned_by: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+/**
+ * PrayerCategory entity representing a category for organizing prayer requests
+ * Can be either system-wide (available to all churches) or church-specific custom category
+ */
+export type PrayerCategory = {
+  id: string;
+  name: string;
+  church_id: string | null;
+  is_system_category: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
+
+/**
+ * FlaggedContent entity representing a flagged prayer request for moderation
+ * Tracks the moderation workflow from pending to reviewed/dismissed/actioned
+ */
+export type FlaggedContent = {
+  id: string;
+  prayer_request_id: string;
+  flagged_by: string;
+  reason: string;
+  status: FlaggedContentStatus;
+  reviewed_by: string | null;
+  reviewed_at: Date | null;
+  resolution_action: string | null;
+  resolution_notes: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+/**
+ * PrayerReadReceipt entity representing a user's read receipt for a prayer request
+ * Tracks which users have read which prayer requests for engagement metrics and notifications
+ * Unique constraint: one receipt per user per prayer request
+ */
+export type PrayerReadReceipt = {
+  id: string;
+  prayer_request_id: string;
+  user_id: string;
+  read_at: Date;
+  created_at: Date;
+};
+
+/**
+ * NotificationPreferences type representing the granular notification settings
+ * Each preference controls a specific type of notification delivery
+ */
+export type NotificationPreferences = {
+  new_prayers: boolean;
+  responses_to_my_prayers: boolean;
+  replies_to_my_responses: boolean;
+  wall_invitations: boolean;
+  moderation_actions: boolean;
+};
+
+/**
+ * NotificationPreference entity representing a user's notification preferences for a specific wall
+ * Each user can have different notification preferences for each wall they are a member of
+ * Unique constraint: one preference record per (user_id, wall_id)
+ */
+export type NotificationPreference = {
+  id: string;
+  user_id: string;
+  wall_id: string;
+  new_prayers: boolean;
+  responses_to_my_prayers: boolean;
+  replies_to_my_responses: boolean;
+  wall_invitations: boolean;
+  moderation_actions: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
