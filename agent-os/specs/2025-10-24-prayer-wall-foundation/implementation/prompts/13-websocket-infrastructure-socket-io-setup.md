@@ -13,6 +13,7 @@ We're continuing our implementation of Prayer Wall Foundation by implementing ta
     - Test connection rejection with invalid JWT
     - Test room join/leave
     - Test Redis adapter pub/sub
+    - Review the tests using the coderabbit-reviewer agent
   - [ ] 13.2 Install dependencies
     - Run: `npm install socket.io @socket.io/redis-adapter`
     - Run: `npm install --save-dev @types/socket.io`
@@ -47,6 +48,7 @@ Also read these for further context and reference:
 ## Perform the implementation
 
 Implement all tasks assigned to you and ONLY those task(s) that have been assigned to you.
+You should delegate the actual implementation to the appropriate agent(s) for each task.
 
 ### Implementation process:
 

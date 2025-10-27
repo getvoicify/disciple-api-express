@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'js-yaml';
 import dotenv from 'dotenv';
@@ -42,6 +43,7 @@ import {PrayerRequestService} from "./prayer-walls/services/prayer-request.servi
 import {PrayerWallRepository} from "./prayer-walls/repositories/prayer-wall.repository";
 import {PrayerRequestRepository} from "./prayer-walls/repositories/prayer-request.repository";
 import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer-wall-membership.repository";
+import {initializeSocketServer} from "./websocket/socket.server";
 
 dotenv.config();
 
@@ -116,6 +118,8 @@ const prayerRequestService = new PrayerRequestService(
 );
 
 const app = express();
+const httpServer = createServer(app);
+
 app.use(express.json());
 
 // Add request logging middleware - logs all incoming requests and responses
@@ -289,8 +293,15 @@ app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-	logger.info({ port: PORT }, 'Server started');
+// Initialize Socket.io server with Keycloak JWT authentication
+const io = initializeSocketServer(httpServer, {
+	redisUrl: process.env.REDIS_URL,
+	iamEndpoint: IAM_ENDPOINT,
+	iamRealm: IAM_REALM
+});
+
+httpServer.listen(PORT, () => {
+	logger.info({ port: PORT }, 'Server started with WebSocket support');
 });
 
 const sigEndSub = new Subject<void>();

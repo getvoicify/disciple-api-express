@@ -646,39 +646,58 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 
 ## Phase 2: WebSocket & Real-Time (Days 4-5)
 
-### Task Group 13: WebSocket Infrastructure - Socket.io Setup
+### Task Group 13: WebSocket Infrastructure - Socket.io Setup ✅
 **Phase:** 2
 **Dependencies:** Task Group 12
 **Estimated Time:** 4 hours
 
-- [ ] 13.0 Set up Socket.io server with Redis adapter
-  - [ ] 13.1 Write 2-8 focused tests for WebSocket infrastructure
+- [x] 13.0 Set up Socket.io server with Redis adapter
+  - [x] 13.1 Write 2-8 focused tests for WebSocket infrastructure
     - Test WebSocket connection with valid JWT
     - Test connection rejection with invalid JWT
     - Test room join/leave
     - Test Redis adapter pub/sub
-  - [ ] 13.2 Install dependencies
+  - [x] 13.2 Install dependencies
     - Run: `npm install socket.io @socket.io/redis-adapter`
     - Run: `npm install --save-dev @types/socket.io`
-  - [ ] 13.3 Create file: `/src/websocket/socket.server.ts`
+  - [x] 13.3 Create file: `/src/websocket/socket.server.ts`
     - Set up Socket.io server attached to Express
     - Configure Redis adapter for multi-server scaling
     - Namespace: `/churches/:churchId/prayer-walls`
     - Rooms: `wall-{wallId}` for each prayer wall
     - Enable CORS for WebSocket connections
     - Configure reconnection settings
-  - [ ] 13.4 Create file: `/src/websocket/events.ts`
+  - [x] 13.4 Create file: `/src/websocket/events.ts`
     - Define event type constants: prayer:created, prayer:updated, prayer:deleted, prayer:response, prayer:reply, typing:start, typing:stop, user:online, user:offline, user:away, prayer:read, content:flagged, content:hidden, content:restored, user:banned, member:joined, member:left, member:invited
     - Define event payload types
-  - [ ] 13.5 Integrate Socket.io server in `/src/index.ts`
-  - [ ] 13.6 Ensure WebSocket infrastructure tests pass
+  - [x] 13.5 Integrate Socket.io server in `/src/index.ts`
+  - [x] 13.6 Ensure WebSocket infrastructure tests pass
     - Run ONLY the 2-8 tests written in 13.1
 
 **Acceptance Criteria:**
-- Socket.io server runs successfully
-- Redis adapter configured for scaling
-- The 2-8 tests written in 13.1 pass
-- WebSocket connections work
+- ✅ Socket.io server runs successfully
+- ✅ Redis adapter configured for scaling
+- ✅ The 7 tests written in 13.1 pass (7/7 passing)
+- ✅ WebSocket connections work
+- ✅ Keycloak JWT authentication integrated
+- ✅ CodeRabbit review completed (9 issues identified for future improvement)
+
+**Test Results:**
+- All 7 tests passing
+- Test file: `src/tests/websocket/socket.server.test.ts`
+- Server file: `src/websocket/socket.server.ts`
+- Events file: `src/websocket/events.ts`
+
+**Implementation Notes:**
+- Uses existing Keycloak JWT validation via `validateTokenService`
+- Supports both test tokens (HS256) and production tokens (RS256)
+- Redis adapter configured for horizontal scaling
+- Room-based architecture: `wall-{wallId}` for each prayer wall
+- Helper functions: `broadcastToWall()`, `broadcastToWalls()`
+- Structured logging throughout (no console.*)
+- Proper error handling with `safeExecute`
+- Socket.data.userId attached for authorization
+- Integrated in src/index.ts with httpServer
 
 ---
 
