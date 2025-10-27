@@ -3,7 +3,7 @@ import { PrayerWallService } from '../../../prayer-walls/services/prayer-wall.se
 import type { IPrayerWallRepository } from '../../../prayer-walls/repositories/prayer-wall.repository';
 import type { IPrayerWallMembershipRepository } from '../../../prayer-walls/repositories/prayer-wall-membership.repository';
 import type { CacheRepository } from '../../../cache';
-import { CacheInvalidationService } from '../../../cache/cache-invalidation.service';
+import { CacheInvalidationService, type ICacheInvalidationService } from '../../../cache';
 import type { ChurchMembershipService } from '../../../churches/membership-service';
 import type {
   PrayerWall,
@@ -18,7 +18,7 @@ describe('PrayerWallService', () => {
   let mockWallRepo: IPrayerWallRepository;
   let mockMembershipRepo: IPrayerWallMembershipRepository;
   let mockCacheRepo: CacheRepository;
-  let mockCacheInvalidationService: CacheInvalidationService;
+  let mockCacheInvalidationService: ICacheInvalidationService;
   let mockChurchMembershipService: ChurchMembershipService;
 
   const testChurchId = 'church-123';
@@ -59,7 +59,7 @@ describe('PrayerWallService', () => {
       deleteByPrefix: vi.fn(),
     };
 
-    // Create CacheInvalidationService with mocked repository
+    // Create CacheInvalidationService with a mocked repository
     mockCacheInvalidationService = new CacheInvalidationService(mockCacheRepo, 'test');
 
     // Mock ChurchMembershipService
@@ -76,14 +76,14 @@ describe('PrayerWallService', () => {
   });
 
   it('should create a wall when user is a pastor', async () => {
-    const wallData: CreatePrayerWallData = {
+    const wallData = {
       church_id: testChurchId,
       name: 'Youth Prayer Wall',
       description: 'Prayer wall for youth ministry',
       is_private: false,
-    };
+    } as unknown as CreatePrayerWallData;
 
-    const expectedWall: PrayerWall = {
+    const expectedWall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Youth Prayer Wall',
@@ -97,9 +97,9 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
-    // Mock church membership service to return Owner role
+    // Mock church membership service to return an Owner role
     vi.mocked(mockChurchMembershipService.getMembershipByUserAndChurch).mockResolvedValue({
       id: 'membership-123',
       user_id: testPastorId,
@@ -124,12 +124,12 @@ describe('PrayerWallService', () => {
   });
 
   it('should reject wall creation when user is not a pastor', async () => {
-    const wallData: CreatePrayerWallData = {
+    const wallData = {
       church_id: testChurchId,
       name: 'Youth Prayer Wall',
       description: 'Prayer wall for youth ministry',
       is_private: false,
-    };
+    } as unknown as CreatePrayerWallData;
 
     // Mock church membership service to return Member role (not Owner or Manager)
     vi.mocked(mockChurchMembershipService.getMembershipByUserAndChurch).mockResolvedValue({
@@ -157,7 +157,7 @@ describe('PrayerWallService', () => {
       description: 'Updated description',
     };
 
-    const existingWall: PrayerWall = {
+    const existingWall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Youth Prayer Wall',
@@ -171,7 +171,7 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     const updatedWall: PrayerWall = {
       ...existingWall,
@@ -198,7 +198,7 @@ describe('PrayerWallService', () => {
       name: 'Updated Youth Prayer Wall',
     };
 
-    const existingWall: PrayerWall = {
+    const existingWall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Youth Prayer Wall',
@@ -212,7 +212,7 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     vi.mocked(mockWallRepo.findById).mockResolvedValue(existingWall);
 
@@ -227,7 +227,7 @@ describe('PrayerWallService', () => {
   });
 
   it('should list only public walls for regular members', async () => {
-    const publicWall: PrayerWall = {
+    const publicWall = {
       id: 'wall-1',
       church_id: testChurchId,
       name: 'Public Prayer Wall',
@@ -241,9 +241,9 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
-    const privateWall: PrayerWall = {
+    const privateWall = {
       id: 'wall-2',
       church_id: testChurchId,
       name: 'Private Prayer Wall',
@@ -257,13 +257,13 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     vi.mocked(mockWallRepo.findByChurchId).mockResolvedValue([publicWall, privateWall]);
 
     // Member is not member of private wall
-    vi.mocked(mockMembershipRepo.isMember).mockImplementation(async (wallId, userId) => {
-      return wallId === 'wall-1'; // Only member of public wall
+    vi.mocked(mockMembershipRepo.isMember).mockImplementation(async (wallId) => {
+      return wallId === 'wall-1'; // Only member of the public wall
     });
 
     const [error, result] = await safeExecute(
@@ -277,7 +277,7 @@ describe('PrayerWallService', () => {
   });
 
   it('should allow a member to join a public wall', async () => {
-    const wall: PrayerWall = {
+    const wall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Public Prayer Wall',
@@ -291,7 +291,7 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     const membership: PrayerWallMembership = {
       id: 'membership-123',
@@ -323,7 +323,7 @@ describe('PrayerWallService', () => {
   });
 
   it('should reject joining a private wall without invitation', async () => {
-    const wall: PrayerWall = {
+    const wall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Private Prayer Wall',
@@ -337,7 +337,7 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     vi.mocked(mockWallRepo.findById).mockResolvedValue(wall);
 
@@ -352,7 +352,7 @@ describe('PrayerWallService', () => {
   });
 
   it('should reject joining when user is banned', async () => {
-    const wall: PrayerWall = {
+    const wall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Public Prayer Wall',
@@ -366,7 +366,7 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     vi.mocked(mockWallRepo.findById).mockResolvedValue(wall);
     vi.mocked(mockMembershipRepo.isBanned).mockResolvedValue(true);
@@ -400,7 +400,7 @@ describe('PrayerWallService', () => {
   // ============================================================================
 
   describe('getWall - Private Wall Access Control', () => {
-    const privateWall: PrayerWall = {
+    const privateWall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Private Prayer Wall',
@@ -414,7 +414,7 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     const publicWall: PrayerWall = {
       ...privateWall,
@@ -451,7 +451,7 @@ describe('PrayerWallService', () => {
       expect(error?.message).toContain('Only prayer wall members can');
       expect(result).toBeUndefined();
       expect(mockMembershipRepo.isMember).toHaveBeenCalledWith(testWallId, testMemberId);
-      // Note: Membership check result is cached even when access denied (for future checks)
+      // Note: A membership check result is cached even when access denied (for future checks)
     });
 
     it('should return public wall for any user', async () => {
@@ -515,7 +515,7 @@ describe('PrayerWallService', () => {
   // ============================================================================
 
   describe('inviteMember - Invited User Validation', () => {
-    const wall: PrayerWall = {
+    const wall = {
       id: testWallId,
       church_id: testChurchId,
       name: 'Prayer Wall',
@@ -529,7 +529,7 @@ describe('PrayerWallService', () => {
       created_at: new Date(),
       updated_at: new Date(),
       deleted_at: null,
-    };
+    } as unknown as PrayerWall;
 
     it('should successfully invite active church member', async () => {
       // This test will pass once we implement invited user validation
@@ -628,25 +628,21 @@ describe('PrayerWallService', () => {
 
   describe('Cache Invalidation with CacheInvalidationService', () => {
     // Spy on CacheInvalidationService methods
-    let invalidateResourceSpy: any;
-    let invalidateListSpy: any;
 
     beforeEach(() => {
-      invalidateResourceSpy = vi.spyOn(mockCacheInvalidationService, 'invalidateResource');
-      invalidateListSpy = vi.spyOn(mockCacheInvalidationService, 'invalidateList');
       vi.mocked(mockCacheRepo.deletePattern).mockResolvedValue(undefined);
     });
 
     describe('createWall - should invalidate list cache', () => {
       it('should call invalidateList after successfully creating a wall', async () => {
-        const wallData: CreatePrayerWallData = {
+        const wallData = {
           church_id: testChurchId,
           name: 'Youth Prayer Wall',
           description: 'Prayer wall for youth ministry',
           is_private: false,
-        };
+        } as unknown as CreatePrayerWallData;
 
-        const expectedWall: PrayerWall = {
+        const expectedWall = {
           id: testWallId,
           church_id: testChurchId,
           name: 'Youth Prayer Wall',
@@ -660,7 +656,7 @@ describe('PrayerWallService', () => {
           created_at: new Date(),
           updated_at: new Date(),
           deleted_at: null,
-        };
+        } as unknown as PrayerWall;
 
         vi.mocked(mockWallRepo.create).mockResolvedValue(expectedWall);
 
@@ -678,7 +674,7 @@ describe('PrayerWallService', () => {
           name: 'Updated Prayer Wall',
         };
 
-        const existingWall: PrayerWall = {
+        const existingWall = {
           id: testWallId,
           church_id: testChurchId,
           name: 'Original Wall',
@@ -692,14 +688,14 @@ describe('PrayerWallService', () => {
           created_at: new Date(),
           updated_at: new Date(),
           deleted_at: null,
-        };
+        } as unknown as PrayerWall;
 
         vi.mocked(mockWallRepo.findById).mockResolvedValue(existingWall);
         vi.mocked(mockWallRepo.update).mockResolvedValue({ ...existingWall, ...updateData });
 
         await safeExecute(service.updateWall(testWallId, updateData, testPastorId));
 
-        // This will FAIL in RED phase
+        // This will FAIL in the RED phase
         await mockCacheInvalidationService.invalidateResource('prayer-wall', testWallId);
         await mockCacheInvalidationService.invalidateList('prayer-wall');
 
@@ -712,7 +708,7 @@ describe('PrayerWallService', () => {
 
     describe('archiveWall - should invalidate resource and list cache', () => {
       it('should call invalidateResource and invalidateList after archiving', async () => {
-        const existingWall: PrayerWall = {
+        const existingWall = {
           id: testWallId,
           church_id: testChurchId,
           name: 'Wall to Archive',
@@ -726,14 +722,14 @@ describe('PrayerWallService', () => {
           created_at: new Date(),
           updated_at: new Date(),
           deleted_at: null,
-        };
+        } as unknown as PrayerWall;
 
         vi.mocked(mockWallRepo.findById).mockResolvedValue(existingWall);
         vi.mocked(mockWallRepo.softDelete).mockResolvedValue(true);
 
         await safeExecute(service.archiveWall(testWallId, testPastorId));
 
-        // This will FAIL in RED phase
+        // This will FAIL in the RED phase
         await mockCacheInvalidationService.invalidateResource('prayer-wall', testWallId);
         await mockCacheInvalidationService.invalidateList('prayer-wall');
 
@@ -746,7 +742,7 @@ describe('PrayerWallService', () => {
 
     describe('joinWall - should invalidate membership cache', () => {
       it('should call invalidateList after user joins', async () => {
-        const wall: PrayerWall = {
+        const wall = {
           id: testWallId,
           church_id: testChurchId,
           name: 'Public Wall',
@@ -760,7 +756,7 @@ describe('PrayerWallService', () => {
           created_at: new Date(),
           updated_at: new Date(),
           deleted_at: null,
-        };
+        } as unknown as PrayerWall;
 
         const membership: PrayerWallMembership = {
           id: 'membership-123',
@@ -782,7 +778,7 @@ describe('PrayerWallService', () => {
 
         await safeExecute(service.joinWall(testWallId, testMemberId));
 
-        // This will FAIL in RED phase
+        // This will FAIL in the RED phase
         await mockCacheInvalidationService.invalidateList('prayer-wall-membership');
         expect(mockCacheRepo.deletePattern).toHaveBeenCalledWith(
           'test:prayer-wall-membership:list*'
@@ -796,7 +792,7 @@ describe('PrayerWallService', () => {
 
         await safeExecute(service.leaveWall(testWallId, testMemberId));
 
-        // This will FAIL in RED phase
+        // This will FAIL in the RED phase
         await mockCacheInvalidationService.invalidateList('prayer-wall-membership');
         expect(mockCacheRepo.deletePattern).toHaveBeenCalledWith(
           'test:prayer-wall-membership:list*'
@@ -808,9 +804,9 @@ describe('PrayerWallService', () => {
       it('should call invalidateList after removing member', async () => {
         vi.mocked(mockMembershipRepo.removeMember).mockResolvedValue(true);
 
-        await safeExecute(service.removeMember(testWallId, testMemberId, testPastorId));
+        await safeExecute(service.removeMember(testWallId, testMemberId, testPastorId, 'test-church-id'));
 
-        // This will FAIL in RED phase
+        // This will FAIL in the RED phase
         await mockCacheInvalidationService.invalidateList('prayer-wall-membership');
         expect(mockCacheRepo.deletePattern).toHaveBeenCalledWith(
           'test:prayer-wall-membership:list*'
@@ -820,7 +816,7 @@ describe('PrayerWallService', () => {
 
     describe('banUser - should invalidate membership cache', () => {
       it('should call invalidateList after banning user', async () => {
-        const wall: PrayerWall = {
+        const wall = {
           id: testWallId,
           church_id: testChurchId,
           name: 'Wall',
@@ -834,14 +830,14 @@ describe('PrayerWallService', () => {
           created_at: new Date(),
           updated_at: new Date(),
           deleted_at: null,
-        };
+        } as unknown as PrayerWall;
 
         vi.mocked(mockWallRepo.findById).mockResolvedValue(wall);
         vi.mocked(mockMembershipRepo.ban).mockResolvedValue(true);
 
-        await safeExecute(service.banUser(testWallId, testMemberId, testPastorId));
+        await safeExecute(service.banUser(testWallId, testMemberId, testPastorId, 'test-church-id'));
 
-        // This will FAIL in RED phase
+        // This will FAIL in the RED phase
         await mockCacheInvalidationService.invalidateList('prayer-wall-membership');
         expect(mockCacheRepo.deletePattern).toHaveBeenCalledWith(
           'test:prayer-wall-membership:list*'

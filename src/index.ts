@@ -33,7 +33,7 @@ import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
 import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
-import {createCacheRepository, CacheInvalidationService} from "./cache";
+import {createCacheRepository, CacheInvalidationService, type ICacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 import {wallsRouter} from "./prayer-walls/routes/walls.routes";
 import {PrayerWallService} from "./prayer-walls/services/prayer-wall.service";
@@ -87,7 +87,7 @@ const thumbnailService = new ThumbnailServiceImpl(r2Service, mediaRepository, ht
 const galleryService = new GalleryServiceImpl(galleryRepository, mediaRepository, thumbnailService);
 
 const cacheRepository = createCacheRepository();
-const cacheInvalidationService = new CacheInvalidationService(cacheRepository, process.env.NODE_ENV || 'development');
+const cacheInvalidationService: ICacheInvalidationService = new CacheInvalidationService(cacheRepository, process.env.NODE_ENV || 'development');
 
 const noteService = new NoteServiceImpl(notesPgRepo, cacheInvalidationService);
 

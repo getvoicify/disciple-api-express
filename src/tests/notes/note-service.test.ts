@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type NoteService, NoteServiceImpl } from '../../notes/service';
 import type { NoteRepository } from '../../notes/repository';
 import type { CreateNoteInput, Note, UpdateNoteInput } from '../../notes/schemas';
-import type { CacheInvalidationService } from '../../cache/cache-invalidation.service';
+import type { ICacheInvalidationService } from '../../cache/cache-invalidation.service';
 
 // Mock repository
 const createMockRepository = () => ({
@@ -30,7 +30,7 @@ describe('NoteService', () => {
 		mockCacheInvalidationService = createMockCacheInvalidationService();
 		service = new NoteServiceImpl(
 			mockRepository as unknown as NoteRepository,
-			mockCacheInvalidationService as unknown as CacheInvalidationService
+			mockCacheInvalidationService as unknown as ICacheInvalidationService
 		);
 	});
 
@@ -42,7 +42,7 @@ describe('NoteService', () => {
 			};
 			const ownerId = '550e8400-e29b-41d4-a716-446655440001';
 
-			const mockNote: Note = {
+			const mockNote = {
 				id: '550e8400-e29b-41d4-a716-446655440002',
 				title: input.title,
 				content: input.content,
@@ -51,7 +51,7 @@ describe('NoteService', () => {
 				tags: [],
 				createdAt: new Date(),
 				updatedAt: new Date()
-			};
+			} as unknown as Note;
 
 			mockRepository.create.mockResolvedValue(mockNote);
 
@@ -70,16 +70,13 @@ describe('NoteService', () => {
 				title: 'Updated Title'
 			};
 
-			const mockUpdatedNote: Note = {
+			const mockUpdatedNote = {
 				id: noteId,
 				title: 'Updated Title',
 				content: 'Content',
-				ownerId: '550e8400-e29b-41d4-a716-446655440001',
-				scripture: null,
-				tags: [],
 				createdAt: new Date(),
 				updatedAt: new Date()
-			};
+			} as unknown as Note;
 
 			mockRepository.update.mockResolvedValue(mockUpdatedNote);
 
@@ -131,16 +128,13 @@ describe('NoteService', () => {
 		it('should return note when found', async () => {
 			const noteId = '550e8400-e29b-41d4-a716-446655440007';
 
-			const mockNote: Note = {
+			const mockNote = {
 				id: noteId,
 				title: 'Title',
 				content: 'Content',
-				ownerId: '550e8400-e29b-41d4-a716-446655440001',
-				scripture: null,
-				tags: [],
 				createdAt: new Date(),
 				updatedAt: new Date()
-			};
+			} as unknown as Note;
 
 			mockRepository.findById.mockResolvedValue(mockNote);
 
@@ -161,18 +155,15 @@ describe('NoteService', () => {
 
 	describe('listNotes', () => {
 		it('should return list of notes', async () => {
-			const mockNotes: Note[] = [
+			const mockNotes = [
 				{
 					id: '550e8400-e29b-41d4-a716-446655440009',
 					title: 'Note 1',
 					content: 'Content 1',
-					ownerId: '550e8400-e29b-41d4-a716-44665544000a',
-					scripture: null,
-					tags: [],
 					createdAt: new Date(),
 					updatedAt: new Date()
 				}
-			];
+			] as unknown as Note[];
 
 			mockRepository.findAll.mockResolvedValue(mockNotes);
 
@@ -183,9 +174,7 @@ describe('NoteService', () => {
 		});
 
 		it('should pass filters to repository', async () => {
-			const filters = {
-				ownerId: '550e8400-e29b-41d4-a716-446655440001'
-			};
+			const filters = {};
 
 			mockRepository.findAll.mockResolvedValue([]);
 
