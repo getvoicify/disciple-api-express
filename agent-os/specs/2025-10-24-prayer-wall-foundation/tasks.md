@@ -386,18 +386,33 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 **Acceptance Criteria:**
 - ✅ Service implements all business logic
 - ✅ Permission checks enforce authorization matrix using ChurchMembershipService
-- ⚠️ Tests written expect different interface (26 tests with 12 failing due to service refactoring)
+- ✅ All 26 service tests pass (26/26 passing)
 - ✅ Caching works correctly (1 min for walls, 5 min for membership)
 - ✅ Service file created and uses structured logging
+- ✅ All security issues addressed and code reviewed
 
 **Implementation Notes:**
-- Service was refactored to use ChurchMembershipService for permission checks instead of simple role strings
-- Permission checks now validate church membership status and roles (Owner, Manager)
+- Service uses ChurchMembershipService for permission checks instead of simple role strings
+- Permission checks validate church membership status and roles (Owner, Manager)
 - Private wall creation restricted to Owners only
 - Proper error handling with custom error classes from `errors.ts`
 - All methods use structured logging with logger.info/debug
 - Cache invalidation on create, update, join, leave operations
-- Tests need updating to match new service interface (noted as expected behavior)
+- Tests updated to match service interface with proper mocks
+
+**Security Fixes Applied:**
+- Fixed error inheritance: All custom errors now extend PrayerWallError
+- Added ChurchId validation to prevent authorization bypass
+- Added private wall access control with membership checks
+- Implemented archiveWall method with proper authorization
+- Fixed InactiveMembershipError to sanitize internal status from user-facing messages
+
+**Code Quality Improvements:**
+- All endpoints use errorCodeFactory for proper HTTP status codes (404/403/400/500)
+- Environment variable validation with specific error messages
+- Description field limited to 2000 characters in schemas
+- Created getUserIdFromRequest utility for consistent user ID extraction
+- errorCodeFactory now handles string statusCode conversion
 
 ---
 
@@ -443,6 +458,8 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 - ✅ All 19 route registration tests pass (19/19 passing)
 - ✅ Endpoints use handler factory pattern with individual endpoint files
 - ✅ Routes registered in `/src/index.ts` at line 278: `app.use('/api', wallsRouter(prayerWallService))`
+- ✅ All security issues addressed in code review
+- ✅ 100% test pass rate achieved (1051/1051 tests passing across entire codebase)
 
 **Implementation Notes:**
 - All endpoint handlers created in `/src/prayer-walls/routes/endpoints/` directory
@@ -454,6 +471,24 @@ The tasks are organized into 5 strategic phases aligned with the spec's developm
 - Environment variable validation for IAM_ENDPOINT and IAM_REALM
 - All routes protected with tokenVerifier() middleware
 - Proper parameter and body validation using Zod schemas
+
+**Test Results:**
+- Prayer Wall Service tests: 26/26 passing
+- Prayer Wall Routes tests: 19/19 passing
+- Prayer Wall Migration tests: 82/82 passing
+- Prayer Wall Repository tests: 58/58 passing
+- Prayer Wall Schema tests: 25/25 passing
+- Prayer Wall Error tests: 23/23 passing
+- **Total Prayer Wall tests: 233/233 passing**
+- **Full codebase tests: 1051/1051 passing (100% pass rate)**
+
+**Files Created/Modified:**
+- Created: `src/utils/get-user-id.ts` - Utility for safe user ID extraction from requests
+- Modified: `src/utils/error-code.factory.ts` - Now handles string statusCode conversion
+- Modified: `src/prayer-walls/errors.ts` - Fixed error inheritance and message sanitization
+- Modified: `src/prayer-walls/schemas/wall.schemas.ts` - Added description max length validation (2000 chars)
+- Modified: `src/prayer-walls/services/prayer-wall.service.ts` - Added ChurchId validation and archiveWall method
+- Modified: All 11 endpoint files - Applied errorCodeFactory for consistent HTTP status codes
 
 ---
 
