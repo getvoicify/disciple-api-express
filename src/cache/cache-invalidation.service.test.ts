@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { CacheInvalidationService } from './cache-invalidation.service';
+import { CacheInvalidationService, type ICacheInvalidationService } from './cache-invalidation.service';
 import type { CacheRepository } from './cache.repository';
 import { logger } from '../logging';
 
@@ -13,7 +13,7 @@ vi.mock('../logging', () => ({
 }));
 
 describe('CacheInvalidationService', () => {
-	let service: CacheInvalidationService;
+	let service: ICacheInvalidationService;
 	let mockCacheRepository: CacheRepository;
 	const mockEnv = 'test';
 
