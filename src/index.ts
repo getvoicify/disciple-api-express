@@ -36,8 +36,11 @@ import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository, CacheInvalidationService, type ICacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 import {wallsRouter} from "./prayer-walls/routes/walls.routes";
+import {prayersRouter} from "./prayer-walls/routes/prayers.routes";
 import {PrayerWallService} from "./prayer-walls/services/prayer-wall.service";
+import {PrayerRequestService} from "./prayer-walls/services/prayer-request.service";
 import {PrayerWallRepository} from "./prayer-walls/repositories/prayer-wall.repository";
+import {PrayerRequestRepository} from "./prayer-walls/repositories/prayer-request.repository";
 import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer-wall-membership.repository";
 
 dotenv.config();
@@ -100,11 +103,16 @@ const seriesService = new SeriesServiceImpl(seriesRepository, churchMemberServic
 // Prayer Walls setup
 const prayerWallRepository = new PrayerWallRepository(db);
 const prayerWallMembershipRepository = new PrayerWallMembershipRepository(db);
+const prayerRequestRepository = new PrayerRequestRepository(db);
 const prayerWallService = new PrayerWallService(
 	prayerWallRepository,
 	prayerWallMembershipRepository,
 	cacheRepository,
 	churchMemberService
+);
+const prayerRequestService = new PrayerRequestService(
+	prayerRequestRepository,
+	prayerWallMembershipRepository
 );
 
 const app = express();
@@ -276,6 +284,7 @@ app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
 app.use('/api/posts', postsRouter(postService, seriesService));
 app.use('/api/devotional', devotionalRouter(seriesService));
 app.use('/api', wallsRouter(prayerWallService));
+app.use('/api', prayersRouter(prayerRequestService));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);
