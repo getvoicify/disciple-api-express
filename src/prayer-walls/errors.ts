@@ -161,6 +161,101 @@ export class ChurchIdMismatchError extends PrayerWallError {
 }
 
 /**
+ * Error thrown when prayer request is not found
+ */
+export class PrayerRequestNotFoundError extends PrayerWallError {
+  public readonly prayerId: string;
+
+  constructor(prayerId: string) {
+    super(`Prayer request with ID '${prayerId}' not found`, 404);
+    this.name = 'PrayerRequestNotFoundError';
+    this.prayerId = prayerId;
+  }
+}
+
+/**
+ * Error thrown when user is not authorized to perform an operation
+ */
+export class UnauthorizedOperationError extends PrayerWallError {
+  public readonly action: string;
+
+  constructor(action: string) {
+    super(`You are not authorized to ${action}`, 403);
+    this.name = 'UnauthorizedOperationError';
+    this.action = action;
+  }
+}
+
+/**
+ * Error thrown when edit window has expired
+ */
+export class EditWindowExpiredError extends PrayerWallError {
+  public readonly prayerId: string;
+  public readonly windowMinutes: number;
+
+  constructor(prayerId: string, windowMinutes: number) {
+    super(`Edit window has expired (${windowMinutes} minutes)`, 403);
+    this.name = 'EditWindowExpiredError';
+    this.prayerId = prayerId;
+    this.windowMinutes = windowMinutes;
+  }
+}
+
+/**
+ * Error thrown when prayer update fails
+ */
+export class PrayerUpdateFailedError extends PrayerWallError {
+  public readonly prayerId: string;
+
+  constructor(prayerId: string) {
+    super('Failed to update prayer request', 400);
+    this.name = 'PrayerUpdateFailedError';
+    this.prayerId = prayerId;
+  }
+}
+
+/**
+ * Error thrown when thread depth exceeds maximum
+ */
+export class ThreadDepthExceededError extends PrayerWallError {
+  public readonly parentId: string;
+  public readonly currentDepth: number;
+
+  constructor(parentId: string, currentDepth: number) {
+    super(`Maximum thread depth of 3 exceeded (parent at depth ${currentDepth})`, 400);
+    this.name = 'ThreadDepthExceededError';
+    this.parentId = parentId;
+    this.currentDepth = currentDepth;
+  }
+}
+
+/**
+ * Error thrown when prayer content is invalid
+ */
+export class InvalidContentError extends PrayerWallError {
+  public readonly reason: string;
+
+  constructor(reason: string) {
+    super(reason, 400);
+    this.name = 'InvalidContentError';
+    this.reason = reason;
+  }
+}
+
+/**
+ * Error thrown when trying to reply to a deleted prayer
+ */
+export class CannotReplyToDeletedPrayerError extends PrayerWallError {
+  public readonly prayerId: string;
+
+  constructor(prayerId: string) {
+    super('Cannot reply to a deleted prayer request', 400);
+    this.name = 'CannotReplyToDeletedPrayerError';
+    this.prayerId = prayerId;
+  }
+}
+
+/**
  * Type guard to check if error is a PrayerWallError
  */
 export function isPrayerWallError(error: unknown): error is PrayerWallError {
