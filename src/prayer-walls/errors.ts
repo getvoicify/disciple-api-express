@@ -1,0 +1,168 @@
+import { AppError } from '../utils/errors';
+
+/**
+ * Base class for all prayer wall-related errors
+ */
+export abstract class PrayerWallError extends AppError {
+  constructor(message: string, statusCode = 400, isOperational = true) {
+    super(message, statusCode, isOperational);
+    this.name = 'PrayerWallError';
+  }
+}
+
+/**
+ * Error thrown when prayer wall is not found
+ */
+export class PrayerWallNotFoundError extends PrayerWallError {
+  public readonly wallId: string;
+
+  constructor(wallId: string) {
+    super(`Prayer wall with ID '${wallId}' not found`, 404);
+    this.name = 'PrayerWallNotFoundError';
+    this.wallId = wallId;
+  }
+}
+
+/**
+ * Error thrown when user is not a member of the church
+ */
+export class NotChurchMemberError extends PrayerWallError {
+  public readonly churchId: string;
+  public readonly userId: string;
+
+  constructor(userId: string, churchId: string) {
+    super('You are not a member of this church', 403);
+    this.name = 'NotChurchMemberError';
+    this.churchId = churchId;
+    this.userId = userId;
+  }
+}
+
+/**
+ * Error thrown when church membership is not active
+ */
+export class InactiveMembershipError extends PrayerWallError {
+  public readonly status: string;
+
+  constructor(status: string) {
+    // Sanitize message - don't expose internal status to users
+    super('Only active church members can perform this action', 403);
+    this.name = 'InactiveMembershipError';
+    this.status = status;
+  }
+}
+
+/**
+ * Error thrown when user doesn't have required church role
+ */
+export class InsufficientChurchRoleError extends PrayerWallError {
+  public readonly requiredRoles: string[];
+  public readonly userRole?: string;
+
+  constructor(requiredRoles: string[], userRole?: string) {
+    const rolesStr = requiredRoles.join(' or ');
+    const message = userRole
+      ? `Insufficient permissions. Required role: ${rolesStr}. Your role: ${userRole}`
+      : `Insufficient permissions. Required role: ${rolesStr}`;
+    super(message, 403);
+    this.name = 'InsufficientChurchRoleError';
+    this.requiredRoles = requiredRoles;
+    this.userRole = userRole;
+  }
+}
+
+/**
+ * Error thrown when user is banned from a prayer wall
+ */
+export class BannedFromWallError extends PrayerWallError {
+  public readonly wallId: string;
+  public readonly userId: string;
+
+  constructor(userId: string, wallId: string) {
+    super('You are banned from this prayer wall', 403);
+    this.name = 'BannedFromWallError';
+    this.wallId = wallId;
+    this.userId = userId;
+  }
+}
+
+/**
+ * Error thrown when only prayer wall members can perform an action
+ */
+export class WallMembershipRequiredError extends PrayerWallError {
+  public readonly wallId: string;
+  public readonly action: string;
+
+  constructor(action: string, wallId: string) {
+    super(`Only prayer wall members can ${action}`, 403);
+    this.name = 'WallMembershipRequiredError';
+    this.wallId = wallId;
+    this.action = action;
+  }
+}
+
+/**
+ * Error thrown when trying to join a private wall without invitation
+ */
+export class PrivateWallInvitationRequiredError extends PrayerWallError {
+  public readonly wallId: string;
+
+  constructor(wallId: string) {
+    super('Cannot join private wall without invitation', 403);
+    this.name = 'PrivateWallInvitationRequiredError';
+    this.wallId = wallId;
+  }
+}
+
+/**
+ * Error thrown when only the wall creator can perform an action
+ */
+export class WallCreatorOnlyError extends PrayerWallError {
+  public readonly wallId: string;
+  public readonly action: string;
+
+  constructor(action: string, wallId: string) {
+    super(`Only the wall creator can ${action}`, 403);
+    this.name = 'WallCreatorOnlyError';
+    this.wallId = wallId;
+    this.action = action;
+  }
+}
+
+/**
+ * Error thrown when wall update fails
+ */
+export class WallUpdateFailedError extends PrayerWallError {
+  public readonly wallId: string;
+
+  constructor(wallId: string) {
+    super('Failed to update prayer wall', 400);
+    this.name = 'WallUpdateFailedError';
+    this.wallId = wallId;
+  }
+}
+
+/**
+ * Error thrown when church ID in request body doesn't match the authorized church ID
+ */
+export class ChurchIdMismatchError extends PrayerWallError {
+  public readonly expectedChurchId: string;
+  public readonly providedChurchId: string;
+
+  constructor(expectedChurchId: string, providedChurchId: string) {
+    super(
+      `Church ID mismatch: expected ${expectedChurchId}, got ${providedChurchId}`,
+      400
+    );
+    this.name = 'ChurchIdMismatchError';
+    this.expectedChurchId = expectedChurchId;
+    this.providedChurchId = providedChurchId;
+  }
+}
+
+/**
+ * Type guard to check if error is a PrayerWallError
+ */
+export function isPrayerWallError(error: unknown): error is PrayerWallError {
+  return error instanceof PrayerWallError;
+}

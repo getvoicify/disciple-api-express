@@ -35,6 +35,10 @@ import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository, CacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
+import {wallsRouter} from "./prayer-walls/routes/walls.routes";
+import {PrayerWallService} from "./prayer-walls/services/prayer-wall.service";
+import {PrayerWallRepository} from "./prayer-walls/repositories/prayer-wall.repository";
+import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer-wall-membership.repository";
 
 dotenv.config();
 
@@ -92,6 +96,16 @@ const postService = new PostServiceImpl(postRepository, churchMemberService, cac
 
 const seriesRepository = new PostgresSeriesRepository(db);
 const seriesService = new SeriesServiceImpl(seriesRepository, churchMemberService, postRepository);
+
+// Prayer Walls setup
+const prayerWallRepository = new PrayerWallRepository(db);
+const prayerWallMembershipRepository = new PrayerWallMembershipRepository(db);
+const prayerWallService = new PrayerWallService(
+	prayerWallRepository,
+	prayerWallMembershipRepository,
+	cacheRepository,
+	churchMemberService
+);
 
 const app = express();
 app.use(express.json());
@@ -261,6 +275,7 @@ app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
 app.use('/api/posts', postsRouter(postService, seriesService));
 app.use('/api/devotional', devotionalRouter(seriesService));
+app.use('/api', wallsRouter(prayerWallService));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);

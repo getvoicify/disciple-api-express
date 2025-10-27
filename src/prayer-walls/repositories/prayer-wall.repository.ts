@@ -67,7 +67,7 @@ export class PrayerWallRepository implements IPrayerWallRepository {
         RETURNING *
       `;
 
-      return this.mapRowToPrayerWall(result[0]);
+      return this.mapRowToPrayerWall(result[0] as PrayerWallRow);
     });
   }
 
@@ -199,7 +199,7 @@ export class PrayerWallRepository implements IPrayerWallRepository {
         return null;
       }
 
-      return this.mapRowToPrayerWall(result[0]);
+      return this.mapRowToPrayerWall(result[0] as unknown as PrayerWallRow);
     });
   }
 

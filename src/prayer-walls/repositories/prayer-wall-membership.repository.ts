@@ -10,7 +10,7 @@ export interface IPrayerWallMembershipRepository {
   leave(wallId: string, userId: string): Promise<boolean>;
   isMember(wallId: string, userId: string): Promise<boolean>;
   findMembers(wallId: string): Promise<PrayerWallMembership[]>;
-  removeMember(wallId: string, userId: string, removedBy: string): Promise<boolean>;
+  removeMember(wallId: string, userId: string): Promise<boolean>;
   ban(wallId: string, userId: string, bannedBy: string): Promise<boolean>;
   unban(wallId: string, userId: string): Promise<boolean>;
   isBanned(wallId: string, userId: string): Promise<boolean>;
@@ -154,9 +154,10 @@ export class PrayerWallMembershipRepository implements IPrayerWallMembershipRepo
 
   /**
    * Remove a member from a wall (admin action)
-   * Sets left_at timestamp, similar to leave() but tracked via removedBy context
+   * Sets left_at timestamp, similar to leave()
+   * Note: removedBy tracking would require a database migration to add removed_by column
    */
-  async removeMember(wallId: string, userId: string, removedBy: string): Promise<boolean> {
+  async removeMember(wallId: string, userId: string): Promise<boolean> {
     return this.db.begin(async (tx) => {
       const now = new Date();
 
