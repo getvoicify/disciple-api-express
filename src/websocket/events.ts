@@ -104,6 +104,7 @@ export interface PrayerReadPayload {
   wallId: string;
   userId: string;
   readAt: string;
+  readCount: number; // Total number of users who have read the prayer
 }
 
 export interface TypingStartPayload {

@@ -1,12 +1,16 @@
 import type { Server as SocketServer } from 'socket.io';
 import type { PrayerRequest } from '../../prayer-walls/types/prayer-wall.types';
 import { AnonymityLevel } from '../../prayer-walls/types/prayer-wall.types';
-import { PRAYER_EVENTS } from '../events';
+import { PRAYER_EVENTS, MEMBER_EVENTS } from '../events';
 import type {
   PrayerCreatedPayload,
   PrayerUpdatedPayload,
   PrayerDeletedPayload,
   PrayerResponsePayload,
+  PrayerReadPayload,
+  MemberJoinedPayload,
+  MemberLeftPayload,
+  MemberInvitedPayload,
 } from '../events';
 import { logger } from '../../logging';
 
@@ -194,4 +198,124 @@ export function broadcastPrayerResponse(
   );
 
   io.to(roomId).emit(PRAYER_EVENTS.RESPONSE, payload);
+}
+
+/**
+ * Broadcasts a prayer:read event to the prayer wall room
+ *
+ * @param io - The Socket.io server instance
+ * @param prayerId - The ID of the prayer that was read
+ * @param wallId - The ID of the prayer wall
+ * @param userId - The ID of the user who read the prayer
+ * @param readCount - The total number of users who have read the prayer
+ */
+export function broadcastPrayerRead(
+  io: SocketServer,
+  prayerId: string,
+  wallId: string,
+  userId: string,
+  readCount: number
+): void {
+  const payload: PrayerReadPayload = {
+    prayerId,
+    wallId,
+    userId,
+    readAt: new Date().toISOString(),
+    readCount, // Include read count so clients know how many users have read
+  };
+
+  logger.debug(
+    { wallId, prayerId, userId, readCount, eventType: 'read' },
+    'Broadcasting prayer:read event'
+  );
+
+  io.to(wallId).emit(PRAYER_EVENTS.READ, payload);
+}
+
+/**
+ * Broadcasts a member:joined event to the prayer wall room
+ *
+ * @param io - The Socket.io server instance
+ * @param wallId - The ID of the prayer wall
+ * @param userId - The ID of the user who joined
+ * @param userName - The name of the user who joined
+ * @param role - The role of the user in the wall
+ */
+export function broadcastMemberJoined(
+  io: SocketServer,
+  wallId: string,
+  userId: string,
+  userName: string,
+  role: string
+): void {
+  const payload: MemberJoinedPayload = {
+    userId,
+    userName,
+    wallId,
+    role,
+    timestamp: new Date().toISOString(),
+  };
+
+  logger.debug(
+    { wallId, userId, role, eventType: 'member:joined' },
+    'Broadcasting member:joined event'
+  );
+
+  io.to(wallId).emit(MEMBER_EVENTS.JOINED, payload);
+}
+
+/**
+ * Broadcasts a member:left event to the prayer wall room
+ *
+ * @param io - The Socket.io server instance
+ * @param wallId - The ID of the prayer wall
+ * @param userId - The ID of the user who left
+ */
+export function broadcastMemberLeft(
+  io: SocketServer,
+  wallId: string,
+  userId: string
+): void {
+  const payload: MemberLeftPayload = {
+    userId,
+    wallId,
+    timestamp: new Date().toISOString(),
+  };
+
+  logger.debug(
+    { wallId, userId, eventType: 'member:left' },
+    'Broadcasting member:left event'
+  );
+
+  io.to(wallId).emit(MEMBER_EVENTS.LEFT, payload);
+}
+
+/**
+ * Broadcasts a member:invited event to all members in the prayer wall room
+ * This allows existing members to see who is being invited for transparency
+ *
+ * @param io - The Socket.io server instance
+ * @param wallId - The ID of the prayer wall
+ * @param inviteeId - The ID of the user being invited
+ * @param inviterId - The ID of the user who sent the invitation
+ */
+export function broadcastMemberInvited(
+  io: SocketServer,
+  wallId: string,
+  inviteeId: string,
+  inviterId: string
+): void {
+  const payload: MemberInvitedPayload = {
+    userId: inviteeId,
+    invitedBy: inviterId,
+    wallId,
+    timestamp: new Date().toISOString(),
+  };
+
+  logger.debug(
+    { wallId, inviteeId, inviterId, eventType: 'member:invited' },
+    'Broadcasting member:invited event'
+  );
+
+  io.to(wallId).emit(MEMBER_EVENTS.INVITED, payload);
 }
