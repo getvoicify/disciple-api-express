@@ -585,13 +585,17 @@ This document outlines the implementation tasks for the Prayer Wall Foundation f
 - [ ] WebSocket events respect anonymity (utility ready, integration pending)
 
 **Implementation Notes:**
-- Created comprehensive anonymity utility with 23 tests (all passing)
-- Implemented getAuthorInfo() function with proper TypeScript types
-- Code reviewed and approved by coderabbit-reviewer agent
-- Remaining work: Integrate utility into endpoints and services
-- Files created:
-  - `/src/prayer-walls/utils/anonymity.util.ts` (86 lines)
+- ✅ Created core anonymity utility with 23 tests (all passing)
+- ✅ Implemented getAuthorInfo() function with proper TypeScript types
+- ✅ Created apply-anonymity helper utility with 26 tests (all passing)
+- ✅ All code reviewed and approved by coderabbit-reviewer agent
+- ⏳ Remaining work: Integrate utilities into endpoints and WebSocket handlers
+- **Files created**:
+  - `/src/prayer-walls/utils/anonymity.util.ts` (86 lines) - Core logic
   - `/src/tests/prayer-walls/anonymity.util.test.ts` (462 lines, 23 tests)
+  - `/src/prayer-walls/utils/apply-anonymity.util.ts` (79 lines) - API helper
+  - `/src/tests/prayer-walls/apply-anonymity.util.test.ts` (527 lines, 26 tests)
+- **Test Results**: 49/49 tests passing (100% success rate)
 
 ---
 
