@@ -1,9 +1,11 @@
 import type { Response } from 'express';
+import type { Server as SocketServer } from 'socket.io';
 import type { EndpointRequest } from '../../../types/endpoint-handler';
 import type { IPrayerRequestService } from '../../services/prayer-request.service';
 import { UpdatePrayerInput } from '../../schemas/prayer.schemas';
 import { safeExecute } from '../../../utils/handle-async';
 import errorCodeFactory from '../../../utils/error-code.factory';
+import { broadcastPrayerUpdated } from '../../../websocket/handlers/prayer.handler';
 
 /**
  * @openapi
@@ -68,7 +70,7 @@ import errorCodeFactory from '../../../utils/error-code.factory';
  *       404:
  *         description: Prayer request not found
  */
-export const prayerUpdateEndpoint = (service: IPrayerRequestService) =>
+export const prayerUpdateEndpoint = (service: IPrayerRequestService, io?: SocketServer) =>
   async (req: EndpointRequest, res: Response) => {
     const prayerId = req.params.prayerId;
 
@@ -113,4 +115,9 @@ export const prayerUpdateEndpoint = (service: IPrayerRequestService) =>
       prayer,
       success: true,
     });
+
+    // Broadcast prayer:updated event via WebSocket
+    if (io) {
+      broadcastPrayerUpdated(io, prayer);
+    }
   };

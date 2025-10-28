@@ -49,6 +49,11 @@ Also read these for further context and reference:
 ## Perform the implementation
 
 Implement all tasks assigned to you and ONLY those task(s) that have been assigned to you.
+Use the test-driven-developer agent to write the test.
+Do NOT write the implementation code until you have written the test.
+Make sure the tests are failing due to missing implementation and not due to syntax errors.
+Review the tests using the coderabbit-reviewer agent
+You should delegate the actual implementation to the implementer agent for each task.
 
 ### Implementation process:
 

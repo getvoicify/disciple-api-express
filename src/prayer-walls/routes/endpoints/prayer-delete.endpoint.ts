@@ -1,8 +1,10 @@
 import type { Response } from 'express';
+import type { Server as SocketServer } from 'socket.io';
 import type { EndpointRequest } from '../../../types/endpoint-handler';
 import type { IPrayerRequestService } from '../../services/prayer-request.service';
 import { safeExecute } from '../../../utils/handle-async';
 import errorCodeFactory from '../../../utils/error-code.factory';
+import { broadcastPrayerDeleted } from '../../../websocket/handlers/prayer.handler';
 
 /**
  * @openapi
@@ -49,7 +51,7 @@ import errorCodeFactory from '../../../utils/error-code.factory';
  *       404:
  *         description: Prayer request not found
  */
-export const prayerDeleteEndpoint = (service: IPrayerRequestService) =>
+export const prayerDeleteEndpoint = (service: IPrayerRequestService, io?: SocketServer) =>
   async (req: EndpointRequest, res: Response) => {
     const prayerId = req.params.prayerId;
 
@@ -64,6 +66,9 @@ export const prayerDeleteEndpoint = (service: IPrayerRequestService) =>
       });
       return;
     }
+
+    // Get prayer before deletion for WebSocket broadcast
+    const [fetchError, prayer] = await safeExecute(service.getPrayer(prayerId, userId));
 
     const [error] = await safeExecute(service.softDelete(prayerId, userId));
 
@@ -80,4 +85,11 @@ export const prayerDeleteEndpoint = (service: IPrayerRequestService) =>
       message: 'Prayer request deleted successfully',
       success: true,
     });
+
+    // Broadcast prayer:deleted event via WebSocket
+    if (!fetchError && prayer && io) {
+      // Note: Set deleted_at to current time since softDelete() doesn't return the prayer
+      const deletedPrayer = { ...prayer, deleted_at: new Date() };
+      broadcastPrayerDeleted(io, deletedPrayer);
+    }
   };

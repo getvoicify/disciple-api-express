@@ -6,6 +6,7 @@ import { logger } from '../logging';
 import { validateTokenService } from '../utils/token.service';
 import { ROOM_EVENTS } from './events';
 import { createAuthMiddleware } from './middleware/auth.middleware';
+import { registerPrayerHandlers } from './handlers/prayer.handler';
 
 /**
  * Configuration options for initializing the Socket.io server
@@ -93,6 +94,9 @@ export function initializeSocketServer(
   }
 
   io.use(createAuthMiddleware(validateTokenService, endpoint, realm));
+
+  // Register prayer event handlers
+  registerPrayerHandlers(io);
 
   // Connection handler
   io.on('connection', (socket: AuthenticatedSocket) => {

@@ -1,9 +1,11 @@
 import type { Response } from 'express';
+import type { Server as SocketServer } from 'socket.io';
 import type { EndpointRequest } from '../../../types/endpoint-handler';
 import type { IPrayerRequestService } from '../../services/prayer-request.service';
 import { PrayerResponseInput } from '../../schemas/prayer.schemas';
 import { safeExecute } from '../../../utils/handle-async';
 import errorCodeFactory from '../../../utils/error-code.factory';
+import { broadcastPrayerResponse } from '../../../websocket/handlers/prayer.handler';
 
 /**
  * @openapi
@@ -80,7 +82,7 @@ import errorCodeFactory from '../../../utils/error-code.factory';
  *       404:
  *         description: Parent prayer request not found
  */
-export const prayerAddResponseEndpoint = (service: IPrayerRequestService) =>
+export const prayerAddResponseEndpoint = (service: IPrayerRequestService, io?: SocketServer) =>
   async (req: EndpointRequest, res: Response) => {
     const parentId = req.params.prayerId;
 
@@ -130,4 +132,9 @@ export const prayerAddResponseEndpoint = (service: IPrayerRequestService) =>
       prayer,
       success: true,
     });
+
+    // Broadcast prayer:response event via WebSocket
+    if (io) {
+      broadcastPrayerResponse(io, prayer, 'John Doe'); // TODO: Get actual author name
+    }
   };

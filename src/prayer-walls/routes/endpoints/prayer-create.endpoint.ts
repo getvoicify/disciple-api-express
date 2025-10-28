@@ -1,9 +1,11 @@
 import type { Response } from 'express';
+import type { Server as SocketServer } from 'socket.io';
 import type { EndpointRequest } from '../../../types/endpoint-handler';
 import type { IPrayerRequestService } from '../../services/prayer-request.service';
 import { CreatePrayerInput } from '../../schemas/prayer.schemas';
 import { safeExecute } from '../../../utils/handle-async';
 import errorCodeFactory from '../../../utils/error-code.factory';
+import { broadcastPrayerCreated } from '../../../websocket/handlers/prayer.handler';
 
 /**
  * @openapi
@@ -90,7 +92,7 @@ import errorCodeFactory from '../../../utils/error-code.factory';
  *       403:
  *         description: User must be a member of the wall
  */
-export const prayerCreateEndpoint = (service: IPrayerRequestService) =>
+export const prayerCreateEndpoint = (service: IPrayerRequestService, io?: SocketServer) =>
   async (req: EndpointRequest, res: Response) => {
     // Parse and validate request body (middleware already validates, but we parse for type safety)
     const parseResult = CreatePrayerInput.safeParse(req.body);
@@ -134,4 +136,9 @@ export const prayerCreateEndpoint = (service: IPrayerRequestService) =>
       prayer,
       success: true,
     });
+
+    // Broadcast prayer:created event via WebSocket
+    if (io) {
+      broadcastPrayerCreated(io, prayer, 'John Doe'); // TODO: Get actual author name
+    }
   };

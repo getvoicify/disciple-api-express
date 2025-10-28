@@ -282,23 +282,24 @@ app.get('/api/openapi.yaml', (req, res) => {
 });
 
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService));
+// Initialize Socket.io server with Keycloak JWT authentication
+// Must be initialized before registering routes that use WebSocket broadcasting
+const io = initializeSocketServer(httpServer, {
+	redisUrl: process.env.REDIS_URL,
+	iamEndpoint: IAM_ENDPOINT,
+	iamRealm: IAM_REALM
+});
+
 app.use('/api/notes', notesRouter(noteService));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
 app.use('/api/posts', postsRouter(postService, seriesService));
 app.use('/api/devotional', devotionalRouter(seriesService));
 app.use('/api', wallsRouter(prayerWallService));
-app.use('/api', prayersRouter(prayerRequestService));
+app.use('/api', prayersRouter(prayerRequestService, io));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);
-
-// Initialize Socket.io server with Keycloak JWT authentication
-const io = initializeSocketServer(httpServer, {
-	redisUrl: process.env.REDIS_URL,
-	iamEndpoint: IAM_ENDPOINT,
-	iamRealm: IAM_REALM
-});
 
 httpServer.listen(PORT, () => {
 	logger.info({ port: PORT }, 'Server started with WebSocket support');

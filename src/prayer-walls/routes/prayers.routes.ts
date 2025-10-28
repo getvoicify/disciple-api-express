@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { jwtVerify } from 'jose';
+import type { Server as SocketServer } from 'socket.io';
 import type { IPrayerRequestService } from '../services/prayer-request.service';
 import { validate } from '../../utils/validate.middleware';
 import { validateToken } from '../../utils/validate-token.middleware';
@@ -29,7 +30,7 @@ import { prayerAddResponseEndpoint } from './endpoints/prayer-add-response.endpo
  * Prayers reference media IDs via the has_attachment field.
  * Full attachment integration will be implemented in Task Group 20.
  */
-export const prayersRouter = (service: IPrayerRequestService) => {
+export const prayersRouter = (service: IPrayerRequestService, io?: SocketServer) => {
   const router = Router();
   const { IAM_ENDPOINT, IAM_REALM } = process.env;
 
@@ -55,7 +56,7 @@ export const prayersRouter = (service: IPrayerRequestService) => {
   router.post(
     '/prayer-walls/:wallId/prayers',
     [tokenVerifier(), validate(WallIdParams, 'params'), validate(CreatePrayerInput, 'body')],
-    prayerCreateEndpoint(service)
+    prayerCreateEndpoint(service, io)
   );
 
   // GET /prayer-walls/:wallId/prayers/:prayerId - Get prayer with thread
@@ -73,14 +74,14 @@ export const prayersRouter = (service: IPrayerRequestService) => {
       validate(PrayerIdParams, 'params'),
       validate(UpdatePrayerInput, 'body'),
     ],
-    prayerUpdateEndpoint(service)
+    prayerUpdateEndpoint(service, io)
   );
 
   // DELETE /prayer-walls/:wallId/prayers/:prayerId - Soft-delete prayer
   router.delete(
     '/prayer-walls/:wallId/prayers/:prayerId',
     [tokenVerifier(), validate(PrayerIdParams, 'params')],
-    prayerDeleteEndpoint(service)
+    prayerDeleteEndpoint(service, io)
   );
 
   // POST /prayer-walls/:wallId/prayers/:prayerId/restore - Restore deleted prayer
@@ -98,7 +99,7 @@ export const prayersRouter = (service: IPrayerRequestService) => {
       validate(PrayerIdParams, 'params'),
       validate(PrayerResponseInput, 'body'),
     ],
-    prayerAddResponseEndpoint(service)
+    prayerAddResponseEndpoint(service, io)
   );
 
   return router;
