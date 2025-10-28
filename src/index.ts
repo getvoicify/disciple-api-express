@@ -1,5 +1,6 @@
 import express from 'express';
-import { createServer } from 'http';
+import {GrowthBookClient} from "@growthbook/growthbook";
+import {createServer} from 'http';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'js-yaml';
 import dotenv from 'dotenv';
@@ -44,6 +45,7 @@ import {PrayerWallRepository} from "./prayer-walls/repositories/prayer-wall.repo
 import {PrayerRequestRepository} from "./prayer-walls/repositories/prayer-request.repository";
 import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer-wall-membership.repository";
 import {initializeSocketServer} from "./websocket/socket.server";
+import {getUserIdFromRequest} from "./utils/get-user-id";
 
 dotenv.config();
 
@@ -54,9 +56,20 @@ const {
 	POSTGRES_PASSWORD: DB_PASSWORD,
 	DB_HOST,
 	DB_PORT,
+	GB_API_HOST: apiHost,
+	GB_CLIENT_KEY: clientKey,
+	NODE_ENV: env
 } = process.env;
 
+const gb = new GrowthBookClient({
+	apiHost,
+	clientKey,
+})
+
 const db = getRawDb({DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT});
+gb.init({timeout: 3000}).catch((e) => {
+	logger.error({error: e}, 'GrowthBook initialization failed');
+});
 
 const {
 	IAM_ENDPOINT,
@@ -121,6 +134,19 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(express.json());
+
+app.use((req, _, next) => {
+	const url = req.url;
+	const userId = getUserIdFromRequest(req);
+	req['growthbook'] = gb.createScopedInstance({
+		attributes: {
+			url,
+			id: userId ?? 'anonymous',
+			env: env !== 'development' ? env : 'dev',
+		}
+	});
+	next();
+});
 
 // Add request logging middleware - logs all incoming requests and responses
 // Excludes health check endpoint to reduce noise
@@ -189,7 +215,7 @@ app.get('/api/health', async (req, res) => {
 		await db`SELECT 1 as ping`;
 		dbStatus = 'connected';
 	} catch (error) {
-		logger.error({ error }, 'Database health check failed');
+		logger.error({error}, 'Database health check failed');
 		dbStatus = 'disconnected';
 	}
 
@@ -203,7 +229,7 @@ app.get('/api/health', async (req, res) => {
 			redisStatus = isRedisHealthy ? 'connected' : 'disconnected';
 		}
 	} catch (error) {
-		logger.error({ error }, 'Redis health check failed');
+		logger.error({error}, 'Redis health check failed');
 		redisStatus = 'disconnected';
 	}
 
@@ -302,7 +328,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 httpServer.listen(PORT, () => {
-	logger.info({ port: PORT }, 'Server started with WebSocket support');
+	logger.info({port: PORT}, 'Server started with WebSocket support');
 });
 
 const sigEndSub = new Subject<void>();
@@ -312,7 +338,7 @@ interval(1000 * 15).pipe(
 		() => defer(() => safeExecute(outbox.processDue())).pipe(
 			tap(([err]) => {
 				if (err) {
-					logger.error({ error: err }, 'Error processing due events');
+					logger.error({error: err}, 'Error processing due events');
 				}
 			})
 		)
