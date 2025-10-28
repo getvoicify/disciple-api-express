@@ -28,7 +28,7 @@ export function applyAnonymityToPrayer(
   const author = getAuthorInfo(prayer, requestingUser, wall);
 
   // Destructure to remove author_id, keep everything else
-  const { author_id, ...prayerWithoutAuthorId } = prayer;
+  const { author_id: _author_id, ...prayerWithoutAuthorId } = prayer;
 
   // Return the prayer with author object instead of author_id
   return {

@@ -1,5 +1,6 @@
-import { Server as HttpServer } from 'http';
-import { Server as SocketServer, Socket } from 'socket.io';
+import { type Server as HttpServer } from 'http';
+import { Server as SocketServer } from 'socket.io';
+import type { Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { logger } from '../logging';
@@ -14,7 +15,7 @@ import {
   broadcastTypingStop,
 } from './handlers/presence.handler';
 import { PresenceService } from '../prayer-walls/services/presence.service';
-import { RedisCacheRepository } from '../cache/redis-cache.repository';
+import { RedisCacheRepository } from '../cache';
 import { KeycloakUserInfoExtractor } from './services/user-info-extractor.service';
 
 /**

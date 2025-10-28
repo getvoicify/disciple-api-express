@@ -71,9 +71,9 @@ function toISOString(date: Date | string): string {
 /**
  * Registers prayer event handlers on the Socket.io server
  *
- * @param io - The Socket.io server instance
+ * @param _io
  */
-export function registerPrayerHandlers(io: SocketServer): void {
+export function registerPrayerHandlers(_io: SocketServer): void {
   // Event handlers are called directly from services/endpoints
   // This function exists for future socket-level event registration if needed
   logger.debug({}, 'Prayer event handlers registered');
