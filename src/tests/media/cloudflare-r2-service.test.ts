@@ -10,13 +10,25 @@ import {
 } from '../../media/errors';
 
 // Mock AWS SDK modules
-vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn().mockImplementation(() => ({
-    send: vi.fn()
-  })),
-  PutObjectCommand: vi.fn().mockImplementation((params) => ({ ...params, _type: 'PutObjectCommand' })),
-  DeleteObjectCommand: vi.fn().mockImplementation((params) => ({ ...params, _type: 'DeleteObjectCommand' }))
-}));
+vi.mock('@aws-sdk/client-s3', () => {
+  const MockS3Client = vi.fn(function(this: any) {
+    this.send = vi.fn();
+  });
+
+  const MockPutObjectCommand = vi.fn(function(this: any, params: any) {
+    Object.assign(this, { ...params, _type: 'PutObjectCommand' });
+  });
+
+  const MockDeleteObjectCommand = vi.fn(function(this: any, params: any) {
+    Object.assign(this, { ...params, _type: 'DeleteObjectCommand' });
+  });
+
+  return {
+    S3Client: MockS3Client,
+    PutObjectCommand: MockPutObjectCommand,
+    DeleteObjectCommand: MockDeleteObjectCommand
+  };
+});
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: vi.fn()
@@ -53,7 +65,9 @@ describe('CloudflareR2Service', () => {
     };
 
     // Make S3Client constructor return our mock
-    vi.mocked(S3Client).mockImplementation(() => mockS3Client);
+    vi.mocked(S3Client).mockImplementation(function() {
+      return mockS3Client;
+    });
   });
 
   describe('Constructor and Configuration', () => {
