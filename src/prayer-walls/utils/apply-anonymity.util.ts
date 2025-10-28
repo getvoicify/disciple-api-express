@@ -1,7 +1,9 @@
 import type { PrayerRequest, PrayerWall } from '../types/prayer-wall.types';
 import type { EndpointRequest } from '../../types/endpoint-handler';
 import type { AuthorInfo, RequestingUser } from './anonymity.util';
+import type { ChurchMembershipService } from '../../churches/membership-service';
 import { getAuthorInfo } from './anonymity.util';
+import { safeExecute } from '../../utils/handle-async';
 
 /**
  * Anonymized prayer response type with author info instead of author_id
@@ -55,21 +57,49 @@ export function applyAnonymityToPrayers(
 }
 
 /**
- * Helper to extract user role information from an Express request.
+ * Helper to extract user role information from an Express request by querying church membership.
+ *
+ * Determines if a user is a pastor (Owner or Manager with Active status) for a specific church
+ * by querying the church membership service instead of relying on Keycloak realm roles.
  *
  * @param req - Express request with authenticated user
- * @returns RequestingUser with userId and isPastor
+ * @param churchId - The church ID to check membership for
+ * @param membershipService - Church membership service to query user's role
+ * @returns Promise resolving to RequestingUser with userId and isPastor status
  */
-export function getUserRoleFromRequest(req: EndpointRequest): RequestingUser {
+export async function getUserRoleFromRequest(
+  req: EndpointRequest,
+  churchId: string,
+  membershipService: ChurchMembershipService
+): Promise<RequestingUser> {
   // Extract user payload from authenticated request
   const user = req.user?.[1]?.payload;
   const userId = (user?.sub as string) || '';
 
-  // Extract roles from Keycloak token
-  const roles = user?.realm_access?.roles || [];
+  // Early return if no userId - cannot be a pastor without authentication
+  if (!userId) {
+    return { userId: '', isPastor: false };
+  }
 
-  // User is considered a pastor if they have 'pastor' or 'admin' role
-  const isPastor = roles.includes('pastor') || roles.includes('admin');
+  // Query membership service with error handling
+  const [error, membership] = await safeExecute(
+    membershipService.getMembershipByUserAndChurch(userId, churchId)
+  );
+
+  // Handle errors gracefully - treat as regular user on error
+  if (error) {
+    return { userId, isPastor: false };
+  }
+
+  // No membership found - user is not a member
+  if (!membership) {
+    return { userId, isPastor: false };
+  }
+
+  // User is considered a pastor if they are an Owner or Manager with Active status
+  const isPastor =
+    membership.status === 'Active' &&
+    (membership.role === 'Owner' || membership.role === 'Manager');
 
   return {
     userId,

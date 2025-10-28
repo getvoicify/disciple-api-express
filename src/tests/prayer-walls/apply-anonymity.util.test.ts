@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { PrayerRequest, PrayerWall } from '../../prayer-walls/types/prayer-wall.types';
 import { AnonymityLevel } from '../../prayer-walls/types/prayer-wall.types';
 import type { EndpointRequest } from '../../types/endpoint-handler';
-import type { AuthorInfo, RequestingUser } from '../../prayer-walls/utils/anonymity.util';
+import type { RequestingUser } from '../../prayer-walls/utils/anonymity.util';
 import {
   applyAnonymityToPrayer,
   applyAnonymityToPrayers,
@@ -315,211 +315,392 @@ describe('Apply Anonymity Utility - Response Helpers', () => {
   });
 
   // ============================================================================
-  // getUserRoleFromRequest - Extract User Info from Express Request
+  // getUserRoleFromRequest - Extract User Info from Express Request with Church Membership
   // ============================================================================
 
   describe('getUserRoleFromRequest', () => {
-    it('should extract userId correctly from req.user', () => {
-      const mockRequest = {
-        user: [
-          undefined,
-          {
-            payload: {
-              sub: 'user-123-from-jwt',
-              email: 'test@example.com',
-            },
-          },
-        ],
-      } as unknown as EndpointRequest;
+    const wallChurchId = 'church-550e8400-e29b-41d4-a716-446655440000';
 
-      const result = getUserRoleFromRequest(mockRequest);
-
-      expect(result.userId).toBe('user-123-from-jwt');
+    // Helper to create mock ChurchMembershipService
+    const createMockMembershipService = () => ({
+      getMembershipByUserAndChurch: vi.fn(),
+      joinChurch: vi.fn(),
+      leaveChurch: vi.fn(),
+      inviteUser: vi.fn(),
+      acceptInvitation: vi.fn(),
+      declineInvitation: vi.fn(),
+      removeMember: vi.fn(),
+      banMember: vi.fn(),
+      updateMemberRole: vi.fn(),
+      getChurchMembers: vi.fn(),
+      getUserMemberships: vi.fn(),
     });
 
-    it('should identify pastor role correctly', () => {
+    it('should identify Owner as pastor (isPastor = true)', async () => {
+      const userId = 'owner-550e8400-e29b-41d4-a716-446655440001';
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              sub: 'pastor-123',
-              realm_access: {
-                roles: ['member', 'pastor', 'user'],
-              },
+              sub: userId,
+              email: 'owner@example.com',
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-1',
+        churchId: wallChurchId,
+        userId,
+        role: 'Owner',
+        status: 'Active',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: null,
+        invitedAt: null,
+      });
 
-      expect(result.userId).toBe('pastor-123');
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
       expect(result.isPastor).toBe(true);
     });
 
-    it('should identify admin as pastor', () => {
+    it('should identify Manager as pastor (isPastor = true)', async () => {
+      const userId = 'manager-550e8400-e29b-41d4-a716-446655440002';
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              sub: 'admin-123',
-              realm_access: {
-                roles: ['admin', 'user'],
-              },
+              sub: userId,
+              email: 'manager@example.com',
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-2',
+        churchId: wallChurchId,
+        userId,
+        role: 'Manager',
+        status: 'Active',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: 'owner-uuid',
+        invitedAt: new Date(),
+      });
 
-      expect(result.userId).toBe('admin-123');
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
       expect(result.isPastor).toBe(true);
     });
 
-    it('should handle missing role information', () => {
+    it('should identify Member as regular user (isPastor = false)', async () => {
+      const userId = 'member-550e8400-e29b-41d4-a716-446655440003';
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              sub: 'user-123',
-              // No realm_access
+              sub: userId,
+              email: 'member@example.com',
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-3',
+        churchId: wallChurchId,
+        userId,
+        role: 'Member',
+        status: 'Active',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: null,
+        invitedAt: null,
+      });
 
-      expect(result.userId).toBe('user-123');
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
       expect(result.isPastor).toBe(false);
     });
 
-    it('should handle empty roles array', () => {
+    it('should handle no membership (service returns null) as regular user (isPastor = false)', async () => {
+      const userId = 'non-member-550e8400-e29b-41d4-a716-446655440004';
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              sub: 'user-123',
-              realm_access: {
-                roles: [],
-              },
+              sub: userId,
+              email: 'nonmember@example.com',
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue(null);
 
-      expect(result.userId).toBe('user-123');
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
       expect(result.isPastor).toBe(false);
     });
 
-    it('should handle roles array without pastor or admin', () => {
+    it('should handle Banned status as regular user (isPastor = false)', async () => {
+      const userId = 'banned-550e8400-e29b-41d4-a716-446655440005';
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              sub: 'user-123',
-              realm_access: {
-                roles: ['member', 'user', 'viewer'],
-              },
+              sub: userId,
+              email: 'banned@example.com',
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-5',
+        churchId: wallChurchId,
+        userId,
+        role: 'Member',
+        status: 'Banned',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: null,
+        invitedAt: null,
+      });
 
-      expect(result.userId).toBe('user-123');
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
       expect(result.isPastor).toBe(false);
     });
 
-    it('should handle undefined user payload', () => {
+    it('should handle Removed status as regular user (isPastor = false)', async () => {
+      const userId = 'removed-550e8400-e29b-41d4-a716-446655440006';
+      const mockRequest = {
+        user: [
+          undefined,
+          {
+            payload: {
+              sub: userId,
+              email: 'removed@example.com',
+            },
+          },
+        ],
+      } as unknown as EndpointRequest;
+
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-6',
+        churchId: wallChurchId,
+        userId,
+        role: 'Manager',
+        status: 'Removed',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: null,
+        invitedAt: null,
+      });
+
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
+      expect(result.isPastor).toBe(false);
+    });
+
+    it('should handle Invited status as regular user (isPastor = false)', async () => {
+      const userId = 'invited-550e8400-e29b-41d4-a716-446655440007';
+      const mockRequest = {
+        user: [
+          undefined,
+          {
+            payload: {
+              sub: userId,
+              email: 'invited@example.com',
+            },
+          },
+        ],
+      } as unknown as EndpointRequest;
+
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-7',
+        churchId: wallChurchId,
+        userId,
+        role: 'Member',
+        status: 'Invited',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: 'owner-uuid',
+        invitedAt: new Date(),
+      });
+
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
+      expect(result.isPastor).toBe(false);
+    });
+
+    it('should handle missing user payload (userId = "", isPastor = false)', async () => {
       const mockRequest = {
         user: undefined,
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
 
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).not.toHaveBeenCalled();
       expect(result.userId).toBe('');
       expect(result.isPastor).toBe(false);
     });
 
-    it('should handle malformed user array', () => {
+    it('should handle malformed user array (userId = "", isPastor = false)', async () => {
       const mockRequest = {
         user: [undefined],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
 
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).not.toHaveBeenCalled();
       expect(result.userId).toBe('');
       expect(result.isPastor).toBe(false);
     });
 
-    it('should handle missing sub field', () => {
+    it('should handle missing sub field (userId = "", isPastor = false)', async () => {
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              email: 'test@example.com',
+              email: 'nosub@example.com',
               // No sub field
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
 
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).not.toHaveBeenCalled();
       expect(result.userId).toBe('');
       expect(result.isPastor).toBe(false);
     });
 
-    it('should be case-sensitive for role names', () => {
+    it('should handle service throwing error gracefully (isPastor = false)', async () => {
+      const userId = 'error-550e8400-e29b-41d4-a716-446655440008';
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              sub: 'user-123',
-              realm_access: {
-                roles: ['PASTOR', 'Admin'], // Wrong case
-              },
+              sub: userId,
+              email: 'error@example.com',
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockRejectedValue(new Error('Database connection failed'));
 
-      expect(result.userId).toBe('user-123');
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(mockMembershipService.getMembershipByUserAndChurch).toHaveBeenCalledWith(userId, wallChurchId);
+      expect(result.userId).toBe(userId);
       expect(result.isPastor).toBe(false);
     });
 
-    it('should handle both pastor and admin roles present', () => {
+    it('should handle Active Manager correctly (edge case: status and role combination)', async () => {
+      const userId = 'active-manager-550e8400-e29b-41d4-a716-446655440009';
       const mockRequest = {
         user: [
           undefined,
           {
             payload: {
-              sub: 'super-user-123',
-              realm_access: {
-                roles: ['pastor', 'admin', 'user'],
-              },
+              sub: userId,
+              email: 'activemanager@example.com',
             },
           },
         ],
       } as unknown as EndpointRequest;
 
-      const result = getUserRoleFromRequest(mockRequest);
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-9',
+        churchId: wallChurchId,
+        userId,
+        role: 'Manager',
+        status: 'Active',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: 'owner-uuid',
+        invitedAt: new Date(),
+      });
 
-      expect(result.userId).toBe('super-user-123');
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(result.userId).toBe(userId);
+      expect(result.isPastor).toBe(true);
+    });
+
+    it('should handle Active Owner correctly (edge case: status and role combination)', async () => {
+      const userId = 'active-owner-550e8400-e29b-41d4-a716-446655440010';
+      const mockRequest = {
+        user: [
+          undefined,
+          {
+            payload: {
+              sub: userId,
+              email: 'activeowner@example.com',
+            },
+          },
+        ],
+      } as unknown as EndpointRequest;
+
+      const mockMembershipService = createMockMembershipService();
+      mockMembershipService.getMembershipByUserAndChurch.mockResolvedValue({
+        id: 'membership-uuid-10',
+        churchId: wallChurchId,
+        userId,
+        role: 'Owner',
+        status: 'Active',
+        joinedAt: new Date(),
+        updatedAt: new Date(),
+        invitedBy: null,
+        invitedAt: null,
+      });
+
+      const result = await getUserRoleFromRequest(mockRequest, wallChurchId, mockMembershipService as any);
+
+      expect(result.userId).toBe(userId);
       expect(result.isPastor).toBe(true);
     });
   });
