@@ -4,9 +4,8 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { logger } from '../logging';
 import { validateTokenService } from '../utils/token.service';
-import { jwtVerify } from 'jose';
-import { safeExecute } from '../utils/handle-async';
 import { ROOM_EVENTS } from './events';
+import { createAuthMiddleware } from './middleware/auth.middleware';
 
 /**
  * Configuration options for initializing the Socket.io server
@@ -85,65 +84,15 @@ export function initializeSocketServer(
   }
 
   // JWT Authentication middleware
-  io.use(async (socket: AuthenticatedSocket, next) => {
-    const token = socket.handshake.auth?.token ||
-                  socket.handshake.headers?.authorization?.replace('Bearer ', '') ||
-                  (socket.handshake.query?.token as string);
+  const endpoint = options.iamEndpoint || process.env.IAM_ENDPOINT;
+  const realm = options.iamRealm || process.env.IAM_REALM;
 
-    if (!token) {
-      logger.warn({ socketId: socket.id }, 'WebSocket connection attempt without token');
-      return next(new Error('Authentication token required'));
-    }
+  if (!endpoint || !realm) {
+    logger.error('IAM_ENDPOINT and IAM_REALM must be configured for WebSocket authentication');
+    throw new Error('IAM_ENDPOINT and IAM_REALM must be configured');
+  }
 
-    const endpoint = options.iamEndpoint || process.env.IAM_ENDPOINT;
-    const realm = options.iamRealm || process.env.IAM_REALM;
-
-    if (!endpoint || !realm) {
-      logger.error('IAM_ENDPOINT and IAM_REALM must be configured for WebSocket authentication');
-      return next(new Error('Server configuration error'));
-    }
-
-    // For test environments, handle test tokens differently
-    if (process.env.NODE_ENV === 'test' || token.startsWith('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')) {
-      // This allows tests to use HS256 tokens instead of RS256
-      try {
-        const testSecret = new TextEncoder().encode('test-secret-key-for-websocket-testing');
-        const { payload } = await jwtVerify(token, testSecret);
-        const userId = (payload as any).sub as string;
-        socket.data.user = payload;
-        socket.data.userId = userId;
-        socket.userId = userId;
-        return next();
-      } catch (error) {
-        logger.warn({ error: (error as Error).message, socketId: socket.id }, 'Test token validation failed');
-        return next(new Error('Invalid or expired token'));
-      }
-    }
-
-    // Production: Use Keycloak JWT validation
-    const [error, result] = await safeExecute(
-      validateTokenService(token, endpoint, realm, jwtVerify)
-    );
-
-    if (error) {
-      logger.warn({ error: error.message, socketId: socket.id }, 'WebSocket authentication failed');
-      return next(new Error('Invalid or expired token'));
-    }
-
-    // Attach user info to socket
-    // result is [undefined, JWTVerifyResult]
-    const verifyResult = result[1] as any;
-    socket.data.user = verifyResult;
-    socket.data.userId = verifyResult.payload?.sub as string;
-    socket.userId = verifyResult.payload?.sub as string;
-
-    logger.debug({
-      socketId: socket.id,
-      userId: socket.data.userId
-    }, 'WebSocket authentication successful');
-
-    next();
-  });
+  io.use(createAuthMiddleware(validateTokenService, endpoint, realm));
 
   // Connection handler
   io.on('connection', (socket: AuthenticatedSocket) => {
