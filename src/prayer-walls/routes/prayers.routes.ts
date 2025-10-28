@@ -18,7 +18,10 @@ import { KeycloakUserInfoExtractor } from '../../websocket/services/user-info-ex
 // Import individual endpoint handlers
 import { prayerCreateEndpoint } from './endpoints/prayer-create.endpoint';
 import { prayerListEndpoint } from './endpoints/prayer-list.endpoint';
+import { prayerListRootEndpoint } from './endpoints/prayer-list-root.endpoint';
 import { prayerGetEndpoint } from './endpoints/prayer-get.endpoint';
+import { prayerGetChildrenEndpoint } from './endpoints/prayer-get-children.endpoint';
+import { prayerGetThreadEndpoint } from './endpoints/prayer-get-thread.endpoint';
 import { prayerUpdateEndpoint } from './endpoints/prayer-update.endpoint';
 import { prayerDeleteEndpoint } from './endpoints/prayer-delete.endpoint';
 import { prayerRestoreEndpoint } from './endpoints/prayer-restore.endpoint';
@@ -55,6 +58,13 @@ export const prayersRouter = (service: IPrayerRequestService, io?: SocketServer)
     '/prayer-walls/:wallId/prayers',
     [tokenVerifier(), validate(WallIdParams, 'params'), validate(CursorPaginationQuery, 'query')],
     prayerListEndpoint(service)
+  );
+
+  // GET /prayer-walls/:wallId/prayers/root - List only root prayers (optimized query)
+  router.get(
+    '/prayer-walls/:wallId/prayers/root',
+    [tokenVerifier(), validate(WallIdParams, 'params'), validate(CursorPaginationQuery, 'query')],
+    prayerListRootEndpoint(service)
   );
 
   // POST /prayer-walls/:wallId/prayers - Submit prayer
@@ -105,6 +115,20 @@ export const prayersRouter = (service: IPrayerRequestService, io?: SocketServer)
       validate(PrayerResponseInput, 'body'),
     ],
     prayerAddResponseEndpoint(service, io, userInfoExtractor)
+  );
+
+  // GET /prayer-walls/:wallId/prayers/:prayerId/children - Get immediate children (lazy loading)
+  router.get(
+    '/prayer-walls/:wallId/prayers/:prayerId/children',
+    [tokenVerifier(), validate(PrayerIdParams, 'params')],
+    prayerGetChildrenEndpoint(service)
+  );
+
+  // GET /prayer-walls/:wallId/prayers/:prayerId/thread - Get full thread tree (recursive)
+  router.get(
+    '/prayer-walls/:wallId/prayers/:prayerId/thread',
+    [tokenVerifier(), validate(PrayerIdParams, 'params')],
+    prayerGetThreadEndpoint(service)
   );
 
   return router;

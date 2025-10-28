@@ -35,6 +35,13 @@ export interface IPrayerRequestService {
     userId: string,
     pagination?: CursorPaginationParams
   ): Promise<PrayerRequest[]>;
+  listRootPrayers(
+    wallId: string,
+    userId: string,
+    pagination?: CursorPaginationParams
+  ): Promise<PrayerRequest[]>;
+  getDirectChildren(parentId: string, userId: string): Promise<PrayerRequest[]>;
+  getFullThread(rootId: string, userId: string): Promise<PrayerRequest[]>;
   softDelete(prayerId: string, deletedBy: string): Promise<boolean>;
   restore(prayerId: string, restoredBy: string): Promise<boolean>;
   addResponse(
@@ -313,5 +320,80 @@ export class PrayerRequestService implements IPrayerRequestService {
    */
   async validateThreadDepth(parentId: string | null): Promise<number> {
     return this.prayerRequestRepository.validateThreadDepth(parentId);
+  }
+
+  /**
+   * List only root prayers (top-level, no parent) for a wall
+   * Optimized query that excludes threaded responses for better performance
+   * User must be a member to view prayers
+   */
+  async listRootPrayers(
+    wallId: string,
+    userId: string,
+    pagination?: CursorPaginationParams
+  ): Promise<PrayerRequest[]> {
+    // Check if user is a member of the wall
+    const isMember = await this.membershipRepository.isMember(wallId, userId);
+    if (!isMember) {
+      throw new WallMembershipRequiredError('view prayer requests', wallId);
+    }
+
+    logger.debug({ wallId, userId, pagination }, 'Listing root prayers');
+
+    const prayers = await this.prayerRequestRepository.findRootPrayers(wallId, pagination);
+
+    return prayers;
+  }
+
+  /**
+   * Get only direct/immediate children of a parent prayer (one level)
+   * Optimized for lazy-loading responses without deeper descendants
+   * User must have access to the parent prayer's wall
+   */
+  async getDirectChildren(parentId: string, userId: string): Promise<PrayerRequest[]> {
+    // First get the parent to determine the wall
+    const parentPrayer = await this.prayerRequestRepository.findById(parentId);
+
+    if (!parentPrayer) {
+      throw new PrayerRequestNotFoundError(parentId);
+    }
+
+    // Verify user has access to the wall
+    const isMember = await this.membershipRepository.isMember(parentPrayer.wall_id, userId);
+    if (!isMember) {
+      throw new WallMembershipRequiredError('view prayer requests', parentPrayer.wall_id);
+    }
+
+    logger.debug({ parentId, userId }, 'Fetching direct children');
+
+    const children = await this.prayerRequestRepository.findDirectChildren(parentId);
+
+    return children;
+  }
+
+  /**
+   * Get complete thread tree starting from a root prayer
+   * Includes root + all nested descendants using recursive query
+   * User must have access to the root prayer's wall
+   */
+  async getFullThread(rootId: string, userId: string): Promise<PrayerRequest[]> {
+    // First get the root to determine the wall
+    const rootPrayer = await this.prayerRequestRepository.findById(rootId);
+
+    if (!rootPrayer) {
+      throw new PrayerRequestNotFoundError(rootId);
+    }
+
+    // Verify user has access to the wall
+    const isMember = await this.membershipRepository.isMember(rootPrayer.wall_id, userId);
+    if (!isMember) {
+      throw new WallMembershipRequiredError('view prayer requests', rootPrayer.wall_id);
+    }
+
+    logger.debug({ rootId, userId }, 'Fetching full thread tree');
+
+    const thread = await this.prayerRequestRepository.findFullThread(rootId);
+
+    return thread;
   }
 }

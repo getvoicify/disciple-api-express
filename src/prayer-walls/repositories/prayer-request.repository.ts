@@ -15,6 +15,9 @@ export interface IPrayerRequestRepository {
   findById(id: string): Promise<PrayerRequest | null>;
   findByWallId(wallId: string, pagination?: CursorPaginationParams): Promise<PrayerRequest[]>;
   findThreadChildren(parentId: string): Promise<PrayerRequest[]>;
+  findRootPrayers(wallId: string, pagination?: CursorPaginationParams): Promise<PrayerRequest[]>;
+  findDirectChildren(parentId: string): Promise<PrayerRequest[]>;
+  findFullThread(rootId: string): Promise<PrayerRequest[]>;
   update(id: string, data: UpdatePrayerRequestData): Promise<PrayerRequest | null>;
   softDelete(id: string, deletedBy: string): Promise<boolean>;
   restore(id: string): Promise<boolean>;
@@ -209,6 +212,123 @@ export class PrayerRequestRepository implements IPrayerRequestRepository {
         UNION ALL
 
         -- Recursive case: children of children
+        SELECT pr.*
+        FROM prayer_requests pr
+        INNER JOIN thread_tree tt ON pr.parent_id = tt.id
+        WHERE pr.deleted_at IS NULL
+      )
+      SELECT * FROM thread_tree
+      ORDER BY created_at ASC
+    `;
+
+    return result.map((row) => this.mapRowToPrayerRequest(row));
+  }
+
+  /**
+   * Find only root prayers (parent_id IS NULL) for a specific wall
+   * Optimized for listing top-level prayers only, excluding threaded responses
+   * Supports cursor-based pagination for efficient infinite scrolling
+   */
+  async findRootPrayers(
+    wallId: string,
+    pagination?: CursorPaginationParams
+  ): Promise<PrayerRequest[]> {
+    let result;
+
+    if (pagination) {
+      const limit = pagination.limit || 20;
+      const cursor = pagination.cursor;
+
+      if (cursor) {
+        // Cursor-based pagination: find cursor's timestamp, then get older records
+        const cursorRecord = await this.db`
+          SELECT created_at
+          FROM prayer_requests
+          WHERE id = ${cursor}
+        `;
+
+        if (cursorRecord.length === 0) {
+          // Invalid cursor, return empty results
+          return [];
+        }
+
+        const cursorTimestamp = cursorRecord[0].created_at;
+
+        result = await this.db`
+          SELECT *
+          FROM prayer_requests
+          WHERE wall_id = ${wallId}
+            AND parent_id IS NULL
+            AND deleted_at IS NULL
+            AND (
+              created_at < ${cursorTimestamp}
+              OR (created_at = ${cursorTimestamp} AND id < ${cursor})
+            )
+          ORDER BY created_at DESC, id DESC
+          LIMIT ${limit}
+        `;
+      } else {
+        // First page
+        result = await this.db`
+          SELECT *
+          FROM prayer_requests
+          WHERE wall_id = ${wallId}
+            AND parent_id IS NULL
+            AND deleted_at IS NULL
+          ORDER BY created_at DESC, id DESC
+          LIMIT ${limit}
+        `;
+      }
+    } else {
+      // No pagination - return all root prayers
+      result = await this.db`
+        SELECT *
+        FROM prayer_requests
+        WHERE wall_id = ${wallId}
+          AND parent_id IS NULL
+          AND deleted_at IS NULL
+        ORDER BY created_at DESC, id DESC
+      `;
+    }
+
+    return result.map((row) => this.mapRowToPrayerRequest(row));
+  }
+
+  /**
+   * Find only immediate/direct children of a parent prayer (one level, not recursive)
+   * Optimized for lazy-loading responses without fetching deeper nested replies
+   * Returns prayers ordered by created_at ASC for chronological conversation flow
+   */
+  async findDirectChildren(parentId: string): Promise<PrayerRequest[]> {
+    const result = await this.db`
+      SELECT *
+      FROM prayer_requests
+      WHERE parent_id = ${parentId}
+        AND deleted_at IS NULL
+      ORDER BY created_at ASC
+    `;
+
+    return result.map((row) => this.mapRowToPrayerRequest(row));
+  }
+
+  /**
+   * Find complete thread tree starting from a root prayer
+   * Uses recursive CTE to fetch root + all descendants in a single query
+   * Optimized for displaying full conversation thread
+   * Returns prayers ordered by created_at ASC for chronological flow
+   */
+  async findFullThread(rootId: string): Promise<PrayerRequest[]> {
+    const result = await this.db`
+      WITH RECURSIVE thread_tree AS (
+        -- Base case: the root prayer
+        SELECT *
+        FROM prayer_requests
+        WHERE id = ${rootId}
+          AND deleted_at IS NULL
+
+        UNION ALL
+
+        -- Recursive case: all descendants
         SELECT pr.*
         FROM prayer_requests pr
         INNER JOIN thread_tree tt ON pr.parent_id = tt.id
