@@ -9,6 +9,7 @@ import type {
 import { logger } from '../../logging';
 import { PresenceService } from '../../prayer-walls/services/presence.service';
 import { RedisCacheRepository } from '../../cache/redis-cache.repository';
+import { KeycloakUserInfoExtractor } from '../services/user-info-extractor.service';
 
 /**
  * Presence WebSocket Event Handlers
@@ -48,9 +49,12 @@ export function registerPresenceHandlers(
     service = new PresenceService(redisCache);
   }
 
+  // Initialize user info extractor for extracting user names from JWT
+  const userInfoExtractor = new KeycloakUserInfoExtractor(logger);
+
   io.on('connection', (socket: AuthenticatedSocket) => {
     const userId = socket.data.userId;
-    const userName = socket.data.user?.payload?.name || 'Unknown User';
+    const userName = userInfoExtractor.getFullName(socket.data.user);
 
     // Initialize tracking
     if (!socket.data.wallIds) {

@@ -15,6 +15,7 @@ import {
 } from './handlers/presence.handler';
 import { PresenceService } from '../prayer-walls/services/presence.service';
 import { RedisCacheRepository } from '../cache/redis-cache.repository';
+import { KeycloakUserInfoExtractor } from './services/user-info-extractor.service';
 
 /**
  * Configuration options for initializing the Socket.io server
@@ -115,10 +116,13 @@ export function initializeSocketServer(
   // Register prayer event handlers
   registerPrayerHandlers(io);
 
+  // Initialize user info extractor for extracting user names from JWT
+  const userInfoExtractor = new KeycloakUserInfoExtractor(logger);
+
   // Connection handler
   io.on('connection', (socket: AuthenticatedSocket) => {
     const userId = socket.data.userId;
-    const userName = socket.data.user?.payload?.name || 'Unknown User';
+    const userName = userInfoExtractor.getFullName(socket.data.user);
 
     // Initialize wall tracking for this socket
     socket.data.wallIds = new Set<string>();

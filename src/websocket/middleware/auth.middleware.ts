@@ -1,4 +1,5 @@
 import type { Socket } from 'socket.io';
+import { jwtVerify } from 'jose';
 import { logger } from '../../logging';
 import { safeExecute } from '../../utils/handle-async';
 import type { validateTokenService } from '../../utils/token.service';
@@ -27,7 +28,7 @@ import type { validateTokenService } from '../../utils/token.service';
  * ```
  */
 export const createAuthMiddleware = (
-  validateTokenService: typeof validateTokenService,
+  tokenValidator: typeof validateTokenService,
   iamEndpoint: string,
   iamRealm: string
 ) => {
@@ -71,7 +72,7 @@ export const createAuthMiddleware = (
 
     // 3. Validate token
     const [error, result] = await safeExecute(
-      validateTokenService(token, iamEndpoint, iamRealm)
+      tokenValidator(token, iamEndpoint, iamRealm, jwtVerify)
     );
 
     if (error || !result) {

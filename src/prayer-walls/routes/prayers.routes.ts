@@ -12,6 +12,8 @@ import {
   WallIdParams,
   CursorPaginationQuery,
 } from '../schemas/prayer.schemas';
+import { logger } from '../../logging';
+import { KeycloakUserInfoExtractor } from '../../websocket/services/user-info-extractor.service';
 
 // Import individual endpoint handlers
 import { prayerCreateEndpoint } from './endpoints/prayer-create.endpoint';
@@ -45,6 +47,9 @@ export const prayersRouter = (service: IPrayerRequestService, io?: SocketServer)
 
   const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
+  // Initialize user info extractor for extracting author names from JWT tokens
+  const userInfoExtractor = new KeycloakUserInfoExtractor(logger);
+
   // GET /prayer-walls/:wallId/prayers - List prayers (paginated, 20 per page)
   router.get(
     '/prayer-walls/:wallId/prayers',
@@ -56,7 +61,7 @@ export const prayersRouter = (service: IPrayerRequestService, io?: SocketServer)
   router.post(
     '/prayer-walls/:wallId/prayers',
     [tokenVerifier(), validate(WallIdParams, 'params'), validate(CreatePrayerInput, 'body')],
-    prayerCreateEndpoint(service, io)
+    prayerCreateEndpoint(service, io, userInfoExtractor)
   );
 
   // GET /prayer-walls/:wallId/prayers/:prayerId - Get prayer with thread
@@ -99,7 +104,7 @@ export const prayersRouter = (service: IPrayerRequestService, io?: SocketServer)
       validate(PrayerIdParams, 'params'),
       validate(PrayerResponseInput, 'body'),
     ],
-    prayerAddResponseEndpoint(service, io)
+    prayerAddResponseEndpoint(service, io, userInfoExtractor)
   );
 
   return router;
