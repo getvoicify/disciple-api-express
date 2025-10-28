@@ -21,7 +21,7 @@ We're continuing our implementation of Prayer Wall Foundation by implementing ta
     - Handler: onTypingStop - Broadcast to room, remove from Redis
     - Handler: onUserAway - Mark user away after 5 minutes inactive
   - [ ] 16.3 Create file: `/src/prayer-walls/services/presence.service.ts`
-    - Class: PresenceService
+    - Class: PresenceService (implements IPresenceService)
     - Dependencies: RedisCacheRepository
     - Methods: setOnline(userId, wallId), setOffline(userId, wallId), setAway(userId, wallId), getOnlineUsers(wallId), setTyping(userId, wallId, prayerId), clearTyping(userId, wallId, prayerId), getTypingUsers(wallId, prayerId)
     - Use Redis sorted sets with timestamps for TTL
@@ -46,6 +46,11 @@ Also read these for further context and reference:
 ## Perform the implementation
 
 Implement all tasks assigned to you and ONLY those task(s) that have been assigned to you.
+Use the test-driven-developer agent to write the test.
+Do NOT write the implementation code until you have written the test.
+Make sure the tests are failing due to missing implementation and not due to syntax errors.
+Review the tests using the coderabbit-reviewer agent
+You should delegate the actual implementation to the implementer agent for each task.
 
 ### Implementation process:
 

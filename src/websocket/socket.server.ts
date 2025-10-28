@@ -4,9 +4,17 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { logger } from '../logging';
 import { validateTokenService } from '../utils/token.service';
-import { ROOM_EVENTS } from './events';
+import { ROOM_EVENTS, TYPING_EVENTS } from './events';
 import { createAuthMiddleware } from './middleware/auth.middleware';
 import { registerPrayerHandlers } from './handlers/prayer.handler';
+import {
+  broadcastUserOnline,
+  broadcastUserOffline,
+  broadcastTypingStart,
+  broadcastTypingStop,
+} from './handlers/presence.handler';
+import { PresenceService } from '../prayer-walls/services/presence.service';
+import { RedisCacheRepository } from '../cache/redis-cache.repository';
 
 /**
  * Configuration options for initializing the Socket.io server
@@ -26,6 +34,8 @@ interface AuthenticatedSocket extends Socket {
   data: {
     user?: any;
     userId?: string;
+    wallIds?: Set<string>; // Track which walls the user has joined
+    typingTimers?: Map<string, NodeJS.Timeout>; // Track typing auto-clear timers
   };
 }
 
@@ -38,6 +48,7 @@ interface AuthenticatedSocket extends Socket {
  * - Redis pub/sub adapter for multi-server deployments
  * - Room-based communication for prayer walls
  * - Structured logging for all WebSocket events
+ * - Presence tracking and typing indicators
  *
  * @param httpServer - The HTTP server instance to attach Socket.io to
  * @param options - Configuration options including Redis URL, CORS settings, and IAM config
@@ -58,6 +69,8 @@ export function initializeSocketServer(
   });
 
   // Configure Redis adapter for horizontal scaling
+  let presenceService: PresenceService | null = null;
+
   if (options.redisUrl) {
     const pubClient = new Redis(options.redisUrl, {
       maxRetriesPerRequest: null,
@@ -78,6 +91,10 @@ export function initializeSocketServer(
     pubClient.on('connect', () => {
       logger.info('Redis pub client connected for Socket.io adapter');
     });
+
+    // Initialize presence service with Redis
+    const redisCache = new RedisCacheRepository(options.redisUrl);
+    presenceService = new PresenceService(redisCache);
 
     logger.info('Redis adapter configured for Socket.io');
   } else {
@@ -101,6 +118,12 @@ export function initializeSocketServer(
   // Connection handler
   io.on('connection', (socket: AuthenticatedSocket) => {
     const userId = socket.data.userId;
+    const userName = socket.data.user?.payload?.name || 'Unknown User';
+
+    // Initialize wall tracking for this socket
+    socket.data.wallIds = new Set<string>();
+    socket.data.typingTimers = new Map<string, NodeJS.Timeout>();
+
     logger.info({
       socketId: socket.id,
       userId,
@@ -108,25 +131,139 @@ export function initializeSocketServer(
     }, 'Client connected via WebSocket');
 
     // Handle joining prayer wall room
-    socket.on(ROOM_EVENTS.JOIN, (roomId: string) => {
+    socket.on(ROOM_EVENTS.JOIN, async (roomId: string) => {
       socket.join(roomId);
       socket.emit(ROOM_EVENTS.JOINED, { roomId });
+
+      // Track this wall for the user
+      socket.data.wallIds?.add(roomId);
+
       logger.debug({
         socketId: socket.id,
         userId,
         roomId
       }, 'Client joined room');
+
+      // Set user as online in presence service
+      if (presenceService && userId) {
+        const [error] = await presenceService.setOnline(userId, roomId);
+        if (!error) {
+          // Broadcast user:online event to the room
+          broadcastUserOnline(io, roomId, userId, userName);
+        } else {
+          logger.error({ error, userId, roomId }, 'Failed to set user online');
+        }
+      }
     });
 
     // Handle leaving prayer wall room
-    socket.on(ROOM_EVENTS.LEAVE, (roomId: string) => {
+    socket.on(ROOM_EVENTS.LEAVE, async (roomId: string) => {
       socket.leave(roomId);
       socket.emit(ROOM_EVENTS.LEFT, { roomId });
+
+      // Remove from wall tracking
+      socket.data.wallIds?.delete(roomId);
+
       logger.debug({
         socketId: socket.id,
         userId,
         roomId
       }, 'Client left room');
+
+      // Set user as offline in presence service
+      if (presenceService && userId) {
+        const [error] = await presenceService.setOffline(userId, roomId);
+        if (!error) {
+          // Broadcast user:offline event to the room
+          broadcastUserOffline(io, roomId, userId);
+        } else {
+          logger.error({ error, userId, roomId }, 'Failed to set user offline');
+        }
+      }
+    });
+
+    // Handle typing:start event
+    socket.on(TYPING_EVENTS.START, async (data: { wallId: string; prayerId?: string }) => {
+      const { wallId, prayerId } = data;
+
+      logger.debug({
+        socketId: socket.id,
+        userId,
+        wallId,
+        prayerId
+      }, 'User started typing');
+
+      // Set typing in presence service
+      if (presenceService && userId) {
+        const [error] = await presenceService.setTyping(userId, wallId, prayerId);
+        if (!error) {
+          // Cancel any existing auto-clear timer for this typing context
+          const timerKey = prayerId ? `${wallId}:${prayerId}` : wallId;
+          const existingTimer = socket.data.typingTimers?.get(timerKey);
+          if (existingTimer) {
+            clearTimeout(existingTimer);
+          }
+
+          // Broadcast typing:start event to the room
+          broadcastTypingStart(io, wallId, userId, userName, prayerId);
+
+          // Set up auto-clear timer (5 seconds)
+          const autoClearTimer = setTimeout(async () => {
+            logger.debug({
+              userId,
+              wallId,
+              prayerId
+            }, 'Auto-clearing typing indicator after 5 seconds');
+
+            // Clear from presence service
+            if (presenceService && userId) {
+              await presenceService.clearTyping(userId, wallId, prayerId);
+            }
+
+            // Broadcast typing:stop event
+            broadcastTypingStop(io, wallId, userId, prayerId);
+
+            // Remove timer from tracking
+            socket.data.typingTimers?.delete(timerKey);
+          }, 5000);
+
+          // Track the timer
+          socket.data.typingTimers?.set(timerKey, autoClearTimer);
+        } else {
+          logger.error({ error, userId, wallId, prayerId }, 'Failed to set typing indicator');
+        }
+      }
+    });
+
+    // Handle typing:stop event
+    socket.on(TYPING_EVENTS.STOP, async (data: { wallId: string; prayerId?: string }) => {
+      const { wallId, prayerId } = data;
+
+      logger.debug({
+        socketId: socket.id,
+        userId,
+        wallId,
+        prayerId
+      }, 'User stopped typing');
+
+      // Clear typing in presence service
+      if (presenceService && userId) {
+        const [error] = await presenceService.clearTyping(userId, wallId, prayerId);
+        if (!error) {
+          // Cancel auto-clear timer if it exists
+          const timerKey = prayerId ? `${wallId}:${prayerId}` : wallId;
+          const existingTimer = socket.data.typingTimers?.get(timerKey);
+          if (existingTimer) {
+            clearTimeout(existingTimer);
+            socket.data.typingTimers?.delete(timerKey);
+          }
+
+          // Broadcast typing:stop event to the room
+          broadcastTypingStop(io, wallId, userId, prayerId);
+        } else {
+          logger.error({ error, userId, wallId, prayerId }, 'Failed to clear typing indicator');
+        }
+      }
     });
 
     // Handle test message broadcast (for testing purposes)
@@ -140,13 +277,34 @@ export function initializeSocketServer(
     });
 
     // Handle client disconnect
-    socket.on('disconnect', (reason: string) => {
+    socket.on('disconnect', async (reason: string) => {
       logger.info({
         socketId: socket.id,
         userId,
         reason,
         transport: socket.conn.transport.name
       }, 'Client disconnected from WebSocket');
+
+      // Clear all typing timers
+      if (socket.data.typingTimers) {
+        for (const timer of socket.data.typingTimers.values()) {
+          clearTimeout(timer);
+        }
+        socket.data.typingTimers.clear();
+      }
+
+      // Set user offline in all joined walls
+      if (presenceService && userId && socket.data.wallIds) {
+        for (const wallId of socket.data.wallIds) {
+          const [error] = await presenceService.setOffline(userId, wallId);
+          if (!error) {
+            // Broadcast user:offline event to each room
+            broadcastUserOffline(io, wallId, userId);
+          } else {
+            logger.error({ error, userId, wallId }, 'Failed to set user offline on disconnect');
+          }
+        }
+      }
     });
 
     // Handle connection errors

@@ -110,11 +110,13 @@ export interface TypingStartPayload {
   wallId: string;
   userId: string;
   userName?: string;
+  prayerId?: string;
 }
 
 export interface TypingStopPayload {
   wallId: string;
   userId: string;
+  prayerId?: string;
 }
 
 export interface UserOnlinePayload {
