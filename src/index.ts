@@ -137,7 +137,9 @@ const prayerRequestService = new PrayerRequestService(
 const moderationService = new ModerationService(
 	flaggedContentRepository,
 	prayerRequestRepository,
-	prayerWallMembershipRepository
+	prayerWallMembershipRepository,
+	prayerWallRepository,
+	churchMemberService
 );
 
 const app = express();
@@ -333,7 +335,7 @@ app.use('/api/posts', postsRouter(postService, seriesService));
 app.use('/api/devotional', devotionalRouter(seriesService));
 app.use('/api', wallsRouter(prayerWallService));
 app.use('/api', prayersRouter(prayerRequestService, io));
-app.use('/api', moderationRouter(moderationService, io));
+app.use('/api', moderationRouter(moderationService, prayerRequestRepository, io));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);

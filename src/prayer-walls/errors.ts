@@ -256,6 +256,71 @@ export class CannotReplyToDeletedPrayerError extends PrayerWallError {
 }
 
 /**
+ * Error thrown when flagged content record is not found
+ */
+export class FlaggedContentNotFoundError extends PrayerWallError {
+  public readonly flagId: string;
+
+  constructor(flagId: string) {
+    super(`Flagged content with ID '${flagId}' not found`, 404);
+    this.name = 'FlaggedContentNotFoundError';
+    this.flagId = flagId;
+  }
+}
+
+/**
+ * Error thrown when hiding a prayer request fails
+ */
+export class PrayerHideFailedError extends PrayerWallError {
+  public readonly prayerId: string;
+
+  constructor(prayerId: string, _reason?: string) {
+    // Sanitize message - don't expose internal error details to users
+    super(`Failed to hide prayer request '${prayerId}'`, 500);
+    this.name = 'PrayerHideFailedError';
+    this.prayerId = prayerId;
+  }
+}
+
+/**
+ * Error thrown when deleting a prayer request fails
+ */
+export class PrayerDeleteFailedError extends PrayerWallError {
+  public readonly prayerId: string;
+
+  constructor(prayerId: string, _reason?: string) {
+    // Sanitize message - don't expose internal error details to users
+    super(`Failed to delete prayer request '${prayerId}'`, 500);
+    this.name = 'PrayerDeleteFailedError';
+    this.prayerId = prayerId;
+  }
+}
+
+/**
+ * Error thrown when restoring a prayer request fails
+ */
+export class PrayerRestoreFailedError extends PrayerWallError {
+  public readonly prayerId: string;
+
+  constructor(prayerId: string, _reason?: string) {
+    // Sanitize message - don't expose internal error details to users
+    super(`Failed to restore prayer request '${prayerId}'`, 500);
+    this.name = 'PrayerRestoreFailedError';
+    this.prayerId = prayerId;
+  }
+}
+
+/**
+ * Error thrown when church-wide bans are requested but not supported
+ */
+export class ChurchWideBansNotSupportedError extends PrayerWallError {
+  constructor() {
+    super('Church-wide bans are not yet supported. Please ban users individually per wall.', 501);
+    this.name = 'ChurchWideBansNotSupportedError';
+  }
+}
+
+/**
  * Type guard to check if error is a PrayerWallError
  */
 export function isPrayerWallError(error: unknown): error is PrayerWallError {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { jwtVerify } from 'jose';
 import type { Server as SocketServer } from 'socket.io';
 import type { IModerationService } from '../services/moderation.service';
+import type { IPrayerRequestRepository } from '../repositories/prayer-request.repository';
 import { validate } from '../../utils/validate.middleware';
 import { validateToken } from '../../utils/validate-token.middleware';
 import {
@@ -25,7 +26,11 @@ import { banUserEndpoint } from './endpoints/moderation/ban-user.endpoint';
  * Moderation Router
  * Registers all moderation-related endpoints for content flagging, review, and user banning
  */
-export const moderationRouter = (service: IModerationService, io?: SocketServer) => {
+export const moderationRouter = (
+  service: IModerationService,
+  prayerRepository: IPrayerRequestRepository,
+  io?: SocketServer
+) => {
   const router = Router();
   const { IAM_ENDPOINT, IAM_REALM } = process.env;
 
@@ -69,7 +74,7 @@ export const moderationRouter = (service: IModerationService, io?: SocketServer)
       validate(FlagIdParam, 'params'),
       validate(reviewFlaggedContentSchema, 'body'),
     ],
-    reviewFlaggedContentEndpoint(service, io)
+    reviewFlaggedContentEndpoint(service, prayerRepository, io)
   );
 
   // POST /prayer-walls/:wallId/members/:userId/ban - Ban user from wall (pastor-only)

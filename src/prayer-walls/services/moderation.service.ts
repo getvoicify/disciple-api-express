@@ -1,11 +1,23 @@
 import type { IFlaggedContentRepository } from '../repositories/flagged-content.repository';
 import type { IPrayerRequestRepository } from '../repositories/prayer-request.repository';
 import type { IPrayerWallMembershipRepository } from '../repositories/prayer-wall-membership.repository';
+import type { IPrayerWallRepository } from '../repositories/prayer-wall.repository';
+import type { ChurchMembershipService } from '../../churches/membership-service';
 import type { FlaggedContent } from '../types/prayer-wall.types';
 import { FlaggedContentStatus } from '../types/prayer-wall.types';
 import { logger } from '../../logging';
 import { safeExecute } from '../../utils/handle-async';
-import { PrayerRequestNotFoundError } from '../errors';
+import {
+  PrayerRequestNotFoundError,
+  FlaggedContentNotFoundError,
+  PrayerHideFailedError,
+  PrayerDeleteFailedError,
+  PrayerRestoreFailedError,
+  ChurchWideBansNotSupportedError,
+  InsufficientChurchRoleError,
+  NotChurchMemberError,
+  PrayerWallNotFoundError,
+} from '../errors';
 
 /**
  * Service interface for content moderation operations
@@ -19,7 +31,7 @@ export interface IModerationService {
   /**
    * List all pending flags for a church (pastor-only)
    */
-  listFlaggedContent(churchId: string): Promise<FlaggedContent[]>;
+  listFlaggedContent(churchId: string, userId: string): Promise<FlaggedContent[]>;
 
   /**
    * Review flagged content with action (delete/restore)
@@ -55,8 +67,40 @@ export class ModerationService implements IModerationService {
   constructor(
     private readonly flaggedContentRepository: IFlaggedContentRepository,
     private readonly prayerRequestRepository: IPrayerRequestRepository,
-    private readonly membershipRepository: IPrayerWallMembershipRepository
+    private readonly membershipRepository: IPrayerWallMembershipRepository,
+    private readonly prayerWallRepository: IPrayerWallRepository,
+    private readonly churchMembershipService: ChurchMembershipService
   ) {}
+
+  /**
+   * Helper method to verify that a user has pastor-level permissions (Owner or Manager role)
+   * @param userId - The ID of the user to check
+   * @param churchId - The ID of the church
+   * @throws {NotChurchMemberError} If user is not a member of the church
+   * @throws {InsufficientChurchRoleError} If user doesn't have Owner or Manager role
+   */
+  private async verifyPastorRole(userId: string, churchId: string): Promise<void> {
+    const [error, membership] = await safeExecute(
+      this.churchMembershipService.getMembershipByUserAndChurch(userId, churchId)
+    );
+
+    if (error) {
+      logger.error({ error, userId, churchId }, 'Failed to fetch church membership for pastor verification');
+      throw error;
+    }
+
+    if (!membership) {
+      throw new NotChurchMemberError(userId, churchId);
+    }
+
+    const isPastor =
+      membership.status === 'Active' &&
+      (membership.role === 'Owner' || membership.role === 'Manager');
+
+    if (!isPastor) {
+      throw new InsufficientChurchRoleError(['Owner', 'Manager'], membership.role);
+    }
+  }
 
   /**
    * Flag content and auto-hide the prayer request immediately
@@ -101,7 +145,7 @@ export class ModerationService implements IModerationService {
 
     if (!hideSuccess) {
       logger.error({ prayerId }, 'Prayer could not be hidden');
-      throw new PrayerRequestNotFoundError(prayerId);
+      throw new PrayerHideFailedError(prayerId);
     }
 
     logger.info({ prayerId, flagId: flaggedContent!.id }, 'Prayer content flagged and hidden successfully');
@@ -110,10 +154,13 @@ export class ModerationService implements IModerationService {
   }
 
   /**
-   * List all pending flagged content for a church
+   * List all pending flagged content for a church (pastor-only)
    */
-  async listFlaggedContent(churchId: string): Promise<FlaggedContent[]> {
-    logger.debug({ churchId }, 'Listing pending flagged content');
+  async listFlaggedContent(churchId: string, userId: string): Promise<FlaggedContent[]> {
+    logger.debug({ churchId, userId }, 'Listing pending flagged content');
+
+    // Verify user has pastor role
+    await this.verifyPastorRole(userId, churchId);
 
     const [error, pendingFlags] = await safeExecute(
       this.flaggedContentRepository.findPending(churchId)
@@ -170,10 +217,41 @@ export class ModerationService implements IModerationService {
 
     if (!updatedFlag) {
       logger.error({ flagId }, 'Flagged content not found');
-      throw new PrayerRequestNotFoundError(flagId);
+      throw new FlaggedContentNotFoundError(flagId);
     }
 
     const prayerId = updatedFlag.prayer_request_id;
+
+    // Fetch prayer to get prayer_wall_id for pastor verification
+    const [prayerError, prayer] = await safeExecute(
+      this.prayerRequestRepository.findById(prayerId)
+    );
+
+    if (prayerError) {
+      logger.error({ error: prayerError, prayerId }, 'Failed to fetch prayer for pastor verification');
+      throw prayerError;
+    }
+
+    if (!prayer) {
+      throw new PrayerRequestNotFoundError(prayerId);
+    }
+
+    // Fetch wall to get church_id for pastor verification
+    const [wallError, wall] = await safeExecute(
+      this.prayerWallRepository.findById(prayer.wall_id)
+    );
+
+    if (wallError) {
+      logger.error({ error: wallError, wallId: prayer.wall_id }, 'Failed to fetch wall for pastor verification');
+      throw wallError;
+    }
+
+    if (!wall) {
+      throw new PrayerWallNotFoundError(prayer.wall_id);
+    }
+
+    // Verify user has pastor role
+    await this.verifyPastorRole(reviewedBy, wall.church_id);
 
     // Perform the action on the prayer
     if (action === 'delete') {
@@ -188,7 +266,7 @@ export class ModerationService implements IModerationService {
 
       if (!deleteSuccess) {
         logger.error({ prayerId, flagId }, 'Prayer could not be deleted');
-        throw new PrayerRequestNotFoundError(prayerId);
+        throw new PrayerDeleteFailedError(prayerId, 'Soft delete operation failed');
       }
 
       logger.info({ prayerId, flagId, reviewedBy }, 'Prayer soft-deleted after flag review');
@@ -205,7 +283,7 @@ export class ModerationService implements IModerationService {
 
       if (!restoreSuccess) {
         logger.error({ prayerId, flagId }, 'Prayer could not be restored');
-        throw new PrayerRequestNotFoundError(prayerId);
+        throw new PrayerRestoreFailedError(prayerId, 'Unhide operation failed');
       }
 
       logger.info({ prayerId, flagId, reviewedBy }, 'Prayer restored after false flag review');
@@ -265,8 +343,30 @@ export class ModerationService implements IModerationService {
   ): Promise<boolean> {
     logger.info({ wallId, userId, bannedBy, churchWide }, 'Banning user from wall');
 
-    // For now, we only support wall-specific bans
-    // Church-wide bans would require additional logic to ban from all walls
+    // Church-wide bans are not yet supported
+    if (churchWide) {
+      logger.warn({ wallId, userId, bannedBy }, 'Church-wide ban requested but not supported');
+      throw new ChurchWideBansNotSupportedError();
+    }
+
+    // Fetch wall to get church_id for pastor verification
+    const [wallError, wall] = await safeExecute(
+      this.prayerWallRepository.findById(wallId)
+    );
+
+    if (wallError) {
+      logger.error({ error: wallError, wallId }, 'Failed to fetch wall for pastor verification');
+      throw wallError;
+    }
+
+    if (!wall) {
+      throw new PrayerWallNotFoundError(wallId);
+    }
+
+    // Verify user has pastor role
+    await this.verifyPastorRole(bannedBy, wall.church_id);
+
+    // Wall-specific ban
     const [error, success] = await safeExecute(
       this.membershipRepository.ban(wallId, userId, bannedBy)
     );

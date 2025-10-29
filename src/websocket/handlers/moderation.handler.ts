@@ -25,25 +25,27 @@ import { logger } from '../../logging';
  * @param prayerId - The ID of the prayer request that was flagged
  * @param flagId - The ID of the flagged content record
  * @param reason - The reason for flagging
+ * @param flaggedBy - The ID of the user who flagged the content
  */
 export function broadcastContentFlagged(
   io: SocketServer,
   wallId: string,
   prayerId: string,
   flagId: string,
-  reason: string
+  reason: string,
+  flaggedBy: string
 ): void {
   const payload: ContentFlaggedPayload = {
-    contentId: flagId,
+    contentId: prayerId,
     contentType: 'prayer',
     wallId,
-    flaggedBy: '', // This would be populated from the request context
+    flaggedBy,
     reason,
     timestamp: new Date().toISOString(),
   };
 
   logger.debug(
-    { wallId, prayerId, flagId, eventType: 'content:flagged' },
+    { wallId, prayerId, flagId, flaggedBy, eventType: 'content:flagged' },
     'Broadcasting content:flagged event'
   );
 
@@ -89,22 +91,24 @@ export function broadcastContentHidden(
  * @param io - The Socket.io server instance
  * @param wallId - The ID of the prayer wall
  * @param prayerId - The ID of the prayer request that was restored
+ * @param restoredBy - The ID of the user who restored the content
  */
 export function broadcastContentRestored(
   io: SocketServer,
   wallId: string,
-  prayerId: string
+  prayerId: string,
+  restoredBy: string
 ): void {
   const payload: ContentRestoredPayload = {
     contentId: prayerId,
     contentType: 'prayer',
     wallId,
-    restoredBy: '', // This would be populated from the request context
+    restoredBy,
     timestamp: new Date().toISOString(),
   };
 
   logger.debug(
-    { wallId, prayerId, eventType: 'content:restored' },
+    { wallId, prayerId, restoredBy, eventType: 'content:restored' },
     'Broadcasting content:restored event'
   );
 

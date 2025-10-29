@@ -5,6 +5,7 @@ import type { IModerationService } from '../../../services/moderation.service';
 import { flagContentSchema } from '../../../schemas/moderation.schemas';
 import { safeExecute } from '../../../../utils/handle-async';
 import errorCodeFactory from '../../../../utils/error-code.factory';
+import { getUserIdFromRequest } from '../../../../utils/get-user-id';
 import {
   broadcastContentFlagged,
   broadcastContentHidden,
@@ -31,8 +32,7 @@ export const flagContentEndpoint = (service: IModerationService, io?: SocketServ
     const { wallId, prayerId } = req.params;
 
     // Extract user ID from authenticated token
-    const user = req.user?.[1]?.payload;
-    const userId = user?.sub as string;
+    const userId = getUserIdFromRequest(req);
 
     if (!userId) {
       res.status(401).json({
@@ -63,7 +63,7 @@ export const flagContentEndpoint = (service: IModerationService, io?: SocketServ
 
     // Broadcast WebSocket events
     if (io) {
-      broadcastContentFlagged(io, wallId, prayerId, flaggedContent!.id, reason);
+      broadcastContentFlagged(io, wallId, prayerId, flaggedContent!.id, reason, userId);
       broadcastContentHidden(io, wallId, prayerId);
     }
   };

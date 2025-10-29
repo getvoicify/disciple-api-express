@@ -8,7 +8,9 @@ import { logger } from '../../logging';
 import { FlaggedContentRepository } from '../../prayer-walls/repositories/flagged-content.repository';
 import { PrayerRequestRepository } from '../../prayer-walls/repositories/prayer-request.repository';
 import { PrayerWallMembershipRepository } from '../../prayer-walls/repositories/prayer-wall-membership.repository';
+import { PrayerWallRepository } from '../../prayer-walls/repositories/prayer-wall.repository';
 import { ModerationService } from '../../prayer-walls/services/moderation.service';
+import type { ChurchMembershipService } from '../../churches/membership-service';
 import { randomUUID } from 'crypto';
 import { FlaggedContentStatus } from '../../prayer-walls/types/prayer-wall.types';
 
@@ -149,6 +151,21 @@ describe('Moderation Service Tests', () => {
 
     testWallId = wallResult![0].id;
 
+    // Add church memberships for authorization testing
+    const [churchMembershipError] = await safeExecute(
+      db`
+        INSERT INTO church_members (church_id, user_id, role, status)
+        VALUES
+          (${testChurchId}::uuid, ${testPastorId}::uuid, 'Owner', 'Active'),
+          (${testChurchId}::uuid, ${testMemberId}::uuid, 'Member', 'Active')
+      `
+    );
+
+    if (churchMembershipError) {
+      logger.error({ error: churchMembershipError }, 'Failed to add church memberships');
+      throw churchMembershipError;
+    }
+
     // Add members to the wall
     const [memberError] = await safeExecute(
       db`
@@ -189,11 +206,38 @@ describe('Moderation Service Tests', () => {
     const flaggedContentRepository = new FlaggedContentRepository(db);
     const prayerRequestRepository = new PrayerRequestRepository(db);
     const membershipRepository = new PrayerWallMembershipRepository(db);
+    const prayerWallRepository = new PrayerWallRepository(db);
+
+    // Create mock ChurchMembershipService that reads from test database
+    const mockChurchMembershipService: ChurchMembershipService = {
+      getMembershipByUserAndChurch: async (userId: string, churchId: string) => {
+        const [error, result] = await safeExecute(
+          db`
+            SELECT user_id, church_id, role, status
+            FROM church_members
+            WHERE user_id = ${userId}::uuid AND church_id = ${churchId}::uuid
+          `
+        );
+
+        if (error || !result || result.length === 0) {
+          return null;
+        }
+
+        return {
+          user_id: result[0].user_id,
+          church_id: result[0].church_id,
+          role: result[0].role,
+          status: result[0].status,
+        } as any;
+      },
+    } as any;
 
     moderationService = new ModerationService(
       flaggedContentRepository,
       prayerRequestRepository,
-      membershipRepository
+      membershipRepository,
+      prayerWallRepository,
+      mockChurchMembershipService
     );
 
     logger.info({ testChurchId, testPastorId, testMemberId, testWallId, testPrayerId }, 'Test data initialized');
@@ -273,7 +317,7 @@ describe('Moderation Service Tests', () => {
 
     // List pending flags
     const [listError, pendingFlags] = await safeExecute(
-      moderationService.listFlaggedContent(testChurchId)
+      moderationService.listFlaggedContent(testChurchId, testPastorId)
     );
 
     expect(listError).toBeUndefined();
@@ -637,5 +681,52 @@ describe('Moderation Service Tests', () => {
     expect(verifyError).toBeUndefined();
     expect(restoredPrayer![0].deleted_at).toBeNull();
     expect(restoredPrayer![0].deleted_by).toBeNull();
+  });
+
+  it('should prevent non-pastor from listing flagged content', async () => {
+    // Attempt to list flagged content as a regular member (not pastor)
+    const [error, _] = await safeExecute(
+      moderationService.listFlaggedContent(testChurchId, testMemberId)
+    );
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('Insufficient permissions');
+  });
+
+  it('should prevent non-pastor from reviewing flagged content', async () => {
+    // Create and flag a prayer first
+    const [prayerError, prayer] = await safeExecute(
+      db`
+        INSERT INTO prayer_requests (wall_id, author_id, content)
+        VALUES (${testWallId}::uuid, ${testDisruptiveUserId}::uuid, 'Test prayer for auth')
+        RETURNING id
+      `
+    );
+
+    expect(prayerError).toBeUndefined();
+
+    const [flagError, flag] = await safeExecute(
+      moderationService.flagContent(prayer![0].id, testMemberId, 'Test flag for auth')
+    );
+
+    expect(flagError).toBeUndefined();
+
+    // Try to review as non-pastor (should fail)
+    const [reviewError, _] = await safeExecute(
+      moderationService.reviewFlaggedContent(flag!.id, 'delete', testMemberId, 'notes')
+    );
+
+    expect(reviewError).toBeDefined();
+    expect(reviewError?.message).toContain('Insufficient permissions');
+  });
+
+  it('should prevent non-pastor from banning users', async () => {
+    // Attempt to ban user as a regular member (not pastor)
+    const [error, _] = await safeExecute(
+      moderationService.banUser(testWallId, testDisruptiveUserId, testMemberId, false)
+    );
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('Insufficient permissions');
   });
 });
