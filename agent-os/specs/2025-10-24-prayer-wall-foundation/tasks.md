@@ -649,21 +649,88 @@ This document outlines the implementation tasks for the Prayer Wall Foundation f
 
 ---
 
-### Task Group 20: Search & Filtering
+### Task Group 20: File Attachments - Upload & Storage ✅
 **Phase:** 3
 **Dependencies:** Task Group 19
 **Estimated Time:** 4 hours
+**Status:** COMPLETE
 
-- [ ] 20.1 Create file: `/src/prayer-walls/services/search.service.ts`
+- [x] 20.0 Implement file attachment support
+  - [x] 20.1 Write 2-8 focused tests for file attachments
+    - Test file upload with valid types (images, PDFs, docs)
+    - Test file size validation (10MB max)
+    - Test file type validation
+    - Test attachment linking to prayer
+    - Test signed URL generation
+    - Test user authorization via wall membership
+    - Test storage key format
+    - Test orphaned attachment cleanup
+    - Test path traversal attempts (security)
+  - [x] 20.2 Create database migration for prayer_attachments table
+    - Migration: `014_add_deleted_at_to_prayer_attachments.sql`
+    - Table: prayer_attachments with soft delete support
+  - [x] 20.3 Create PrayerAttachment entity and repository
+    - Entity: `/src/prayer-walls/prayer-attachment.entity.ts`
+    - Repository: `/src/prayer-walls/repositories/prayer-attachment.repository.ts`
+  - [x] 20.4 Create PrayerAttachmentService
+    - File: `/src/prayer-walls/services/prayer-attachment.service.ts`
+    - File validation (10MB max, whitelisted MIME types)
+    - Path traversal protection (filename sanitization)
+    - Authorization via wall membership
+    - Integration with CloudflareR2Service
+  - [x] 20.5 Add generatePresignedDownloadUrl to CloudflareR2Service
+    - Updated: `/src/media/cloudflare-r2-service.ts`
+    - Method for generating signed download URLs
+  - [x] 20.6 Implement cleanup job for orphaned attachments
+    - Method: `cleanupOrphanedAttachments()` in PrayerAttachmentService
+    - Deletes attachments linked to prayers deleted >24 hours ago
+  - [x] 20.7 Ensure all tests pass
+    - 10 comprehensive tests written and passing
+    - Tests use service layer (TDD approach)
+    - Security tests included (path traversal)
+
+**Acceptance Criteria:**
+- [x] File uploads work for images, PDFs, docs
+- [x] 10MB size limit enforced
+- [x] All 10 tests pass
+- [x] Signed download URLs generated correctly
+- [x] Path traversal vulnerability fixed
+- [x] Authorization enforced via wall membership
+- [x] Storage key format: `prayer-attachments/{wallId}/{prayerId}/{filename}`
+- [x] Orphaned attachment cleanup working
+
+**Implementation Notes:**
+- **Files Created:**
+  - `/src/prayer-walls/prayer-attachment.entity.ts` - Entity and type definitions
+  - `/src/prayer-walls/repositories/prayer-attachment.repository.ts` - Data access layer
+  - `/src/prayer-walls/services/prayer-attachment.service.ts` - Business logic with security
+  - `/src/tests/prayer-walls/prayer-attachment.test.ts` - 10 comprehensive tests
+  - `/migrations/014_add_deleted_at_to_prayer_attachments.sql` - Database migration
+- **Security Fixes Applied:**
+  - Path traversal protection via filename sanitization
+  - Environment variable validation for R2_BUCKET_NAME
+  - Proper signed download URL generation (not upload URLs)
+- **Test Results:** 10/10 tests passing
+- **Code Review:** Completed with all critical issues resolved
+- **Production Ready:** Yes
+
+---
+
+### Task Group 21: Search & Filtering
+**Phase:** 3
+**Dependencies:** Task Group 20
+**Estimated Time:** 4 hours
+
+- [ ] 21.1 Create file: `/src/prayer-walls/services/search.service.ts`
   - Class: SearchService
   - Methods: searchPrayers, searchResponses, filterByStatus, filterByDate
-- [ ] 20.2 Add full-text search indexes to PostgreSQL
+- [ ] 21.2 Add full-text search indexes to PostgreSQL
   - Add GIN index on prayer_requests.content
   - Add GIN index on prayer_responses.content
-- [ ] 20.3 Create search endpoints
+- [ ] 21.3 Create search endpoints
   - GET /api/prayer-walls/:wallId/search?q=...
   - GET /api/prayer-walls/:wallId/prayers?status=...&date=...
-- [ ] 20.4 Write search tests
+- [ ] 21.4 Write search tests
 
 **Acceptance Criteria:**
 - Full-text search working
