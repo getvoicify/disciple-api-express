@@ -1,3 +1,10 @@
+## [2.3.0](https://github.com/getvoicify/disciple-api-express/compare/v2.2.0...v2.3.0) (2025-10-29)
+
+
+### ✨ Features
+
+* implement prayer wall ([#31](https://github.com/getvoicify/disciple-api-express/issues/31)) ([210018a](https://github.com/getvoicify/disciple-api-express/commit/210018a529736e00b8a0d46b5f69218bd7985dce))
+
 ## [2.2.0](https://github.com/getvoicify/disciple-api-express/compare/v2.1.0...v2.2.0) (2025-10-28)
 
 
