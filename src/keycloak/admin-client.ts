@@ -39,6 +39,15 @@ interface Permission {
 	rsname: string;
 }
 
+interface KeycloakUserRepresentation {
+	id: string;
+	username?: string;
+	email?: string;
+	firstName?: string;
+	lastName?: string;
+	attributes?: Record<string, any>;
+}
+
 export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 	private accessToken: string | null = null;
 	private tokenExpiry = 0;
@@ -242,6 +251,92 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 				p.rsname.includes(resourceType)
 			)
 			.map(p => p.rsid);
+	}
+
+	/**
+	 * Get user attributes from Keycloak
+	 * @param userId - The Keycloak user ID
+	 * @returns User attributes as a key-value record
+	 */
+	async getUserAttributes(userId: string): Promise<Record<string, any>> {
+		await this.ensureValidToken();
+
+		const url = `${this.config.keycloakUrl}/admin/realms/${this.config.realm}/users/${userId}`;
+
+		const [error, response] = await safeExecute(
+			fetch(url, {
+				method: 'GET',
+				headers: {
+					'Authorization': `Bearer ${this.accessToken}`,
+				},
+			})
+		);
+
+		if (error) {
+			logger.error({ error, userId }, 'Failed to fetch user from Keycloak');
+			throw error;
+		}
+
+		if (!response.ok) {
+			if (response.status === 404) {
+				const error = new Error('User not found');
+				error.name = 'UserNotFoundError';
+				throw error;
+			}
+			logger.error({ status: response.status, statusText: response.statusText, userId }, 'Failed to get user attributes');
+			throw new Error(`Failed to get user attributes: ${response.statusText}`);
+		}
+
+		const [jsonError, user] = await safeExecute<KeycloakUserRepresentation>(() => response.json() as Promise<KeycloakUserRepresentation>);
+
+		if (jsonError) {
+			logger.error({ error: jsonError, userId }, 'Failed to parse user response');
+			throw jsonError;
+		}
+
+		logger.debug({ userId, hasAttributes: !!user.attributes }, 'Retrieved user attributes from Keycloak');
+
+		return user.attributes || {};
+	}
+
+	/**
+	 * Update user attributes in Keycloak
+	 * @param userId - The Keycloak user ID
+	 * @param attributes - The attributes to update
+	 */
+	async updateUserAttributes(userId: string, attributes: Record<string, any>): Promise<void> {
+		await this.ensureValidToken();
+
+		const url = `${this.config.keycloakUrl}/admin/realms/${this.config.realm}/users/${userId}`;
+
+		const [error, response] = await safeExecute(
+			fetch(url, {
+				method: 'PUT',
+				headers: {
+					'Authorization': `Bearer ${this.accessToken}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ attributes }),
+			})
+		);
+
+		if (error) {
+			logger.error({ error, userId, attributes }, 'Failed to update user attributes in Keycloak');
+			throw error;
+		}
+
+		if (!response.ok) {
+			if (response.status === 404) {
+				const error = new Error('User not found');
+				error.name = 'UserNotFoundError';
+				logger.warn({ userId }, 'User not found in Keycloak during attribute update');
+				throw error;
+			}
+			logger.error({ status: response.status, statusText: response.statusText, userId }, 'Failed to update user attributes');
+			throw new Error(`Failed to update user attributes: ${response.statusText}`);
+		}
+
+		logger.info({ userId, attributeKeys: Object.keys(attributes) }, 'Successfully updated user attributes in Keycloak');
 	}
 
 	private async ensureValidToken(): Promise<void> {

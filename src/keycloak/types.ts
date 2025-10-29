@@ -30,6 +30,9 @@ export interface KeycloakAdminClient {
 	deleteResource(resourceId: string): Promise<void>;
 	getResourcesByIds(resourceIds: string[]): Promise<KeycloakResource[]>;
 	getUserPermissions(userToken: string, resourceType: string, scope: string): Promise<string[]>;
+	// User attribute methods for church membership sync
+	getUserAttributes(userId: string): Promise<Record<string, any>>;
+	updateUserAttributes(userId: string, attributes: Record<string, any>): Promise<void>;
 }
 
 // Main interface for resource management operations
