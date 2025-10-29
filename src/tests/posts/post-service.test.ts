@@ -3,7 +3,7 @@ import {type PostService, PostServiceImpl} from '../../posts/service';
 import type {PostRepository} from '../../posts/repository';
 import type {CreatePostInput, Post, UpdatePostInput} from '../../posts/schemas';
 import {InsufficientChurchRoleError, PostNotFoundError} from '../../posts/errors';
-import type {CacheInvalidationService} from '../../cache';
+import type {ICacheInvalidationService} from '../../cache';
 
 // Mock repository
 const createMockRepository = () => ({
@@ -42,7 +42,7 @@ describe('PostService', () => {
     service = new PostServiceImpl(
       mockRepository as unknown as PostRepository,
       mockMembershipService as any,
-      mockCacheInvalidationService as unknown as CacheInvalidationService
+      mockCacheInvalidationService as unknown as ICacheInvalidationService
     );
   });
 

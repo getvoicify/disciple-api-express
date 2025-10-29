@@ -12,4 +12,4 @@ export { hashFilters } from './cache-key-hash.util';
 export { generateCacheKey, CacheKeyType } from './cache-key-generator.util';
 
 // Cache invalidation service
-export { CacheInvalidationService } from './cache-invalidation.service';
+export { CacheInvalidationService, ICacheInvalidationService } from './cache-invalidation.service';

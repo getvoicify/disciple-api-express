@@ -2,7 +2,39 @@ import type { CacheRepository } from './cache.repository';
 import { safeExecute } from '../utils/handle-async';
 import { logger } from '../logging';
 
-export class CacheInvalidationService {
+/**
+ * Service interface for cache invalidation operations
+ * Provides methods to invalidate cached resources by ID, lists, or all cache entries for a resource
+ */
+export interface ICacheInvalidationService {
+	/**
+	 * Invalidates a single cached resource by its ID
+	 * @param resource - The type of resource to invalidate (e.g., 'note', 'post')
+	 * @param id - The unique identifier of the resource
+	 * @returns Promise that resolves when invalidation is complete
+	 */
+	invalidateResource(resource: string, id: string): Promise<void>;
+
+	/**
+	 * Invalidates all list caches for a specific resource type
+	 * @param resource - The type of resource whose lists should be invalidated
+	 * @returns Promise that resolves when invalidation is complete
+	 */
+	invalidateList(resource: string): Promise<void>;
+
+	/**
+	 * Invalidates all cache entries for a specific resource type
+	 * @param resource - The type of resource to completely invalidate
+	 * @returns Promise that resolves when invalidation is complete
+	 */
+	invalidateAll(resource: string): Promise<void>;
+}
+
+/**
+ * Service for invalidating cached resources
+ * Implements pattern-based cache invalidation strategies for different resource types
+ */
+export class CacheInvalidationService implements ICacheInvalidationService {
 	constructor(
 		private readonly cacheRepository: CacheRepository,
 		private readonly env: string

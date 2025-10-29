@@ -1,0 +1,31 @@
+task_groups:
+  - name: Task Group 1 - Database Schema - Prayer Walls Table
+  - name: Task Group 2 - Database Schema - Prayer Requests & Threading
+  - name: Task Group 3 - Database Schema - Categories & Supporting Tables
+  - name: Task Group 4 - Database Schema - Indexes & Performance
+  - name: Task Group 5 - Database Schema - Seed System Categories
+  - name: Task Group 6 - Repository Layer - Prayer Wall Repository
+  - name: Task Group 7 - Repository Layer - Prayer Request Repository
+  - name: Task Group 8 - Repository Layer - Membership & Supporting Repositories
+  - name: Task Group 9 - Service Layer - Prayer Wall Service
+  - name: Task Group 10 - API Layer - Prayer Wall Endpoints
+  - name: Task Group 11 - Service Layer - Prayer Request Service
+  - name: Task Group 12 - API Layer - Prayer Request Endpoints
+  - name: Task Group 13 - WebSocket Infrastructure - Socket.io Setup
+  - name: Task Group 14 - WebSocket Middleware - JWT Authentication
+  - name: Task Group 15 - WebSocket Event Handlers - Prayer Events
+  - name: Task Group 16 - WebSocket Event Handlers - Presence & Typing
+  - name: Task Group 17 - WebSocket Event Handlers - Read Receipts & Membership
+  - name: Task Group 18 - Anonymity Enforcement - Service Layer Logic
+  - name: Task Group 19 - Threading Implementation - Query Optimization
+  - name: Task Group 20 - File Attachments - Upload & Storage
+  - name: Task Group 21 - Moderation System - Flagging Workflow
+  - name: Task Group 22 - Notification System - Preferences & Delivery
+  - name: Task Group 23 - Category Management - API Endpoints
+  - name: Task Group 24 - Caching Strategy - Redis Implementation
+  - name: Task Group 25 - Rate Limiting - Abuse Prevention
+  - name: Task Group 26 - Performance Optimization - Query & Index Review
+  - name: Task Group 27 - Load Testing - WebSocket & API
+  - name: Task Group 28 - Integration Testing - End-to-End Flows
+  - name: Task Group 29 - Code Review & Documentation
+  - name: Task Group 30 - Final Test Suite Review & Gap Analysis

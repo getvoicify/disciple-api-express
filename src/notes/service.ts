@@ -6,7 +6,7 @@ import {
 import {z} from "zod";
 import type {NoteRepository} from './repository';
 import type {CreateNoteInput, UpdateNoteInput, Note, NoteFilters} from './schemas';
-import type {CacheInvalidationService} from '../cache/cache-invalidation.service';
+import type {ICacheInvalidationService} from '../cache/cache-invalidation.service';
 
 export interface NoteService {
     createNote(input: CreateNoteInput, ownerId: string): Promise<Note>;
@@ -29,7 +29,7 @@ export interface NoteService {
 export class NoteServiceImpl implements NoteService {
     constructor(
         private readonly repository: NoteRepository,
-        private readonly cacheInvalidationService: CacheInvalidationService
+        private readonly cacheInvalidationService: ICacheInvalidationService
     ) {
     }
 

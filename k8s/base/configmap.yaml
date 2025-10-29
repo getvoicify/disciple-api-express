@@ -12,3 +12,5 @@ data:
   R2_ENDPOINT: "https://82817d5a98bd85f4134527e3cfe79b7a.r2.cloudflarestorage.com"
   R2_BUCKET_NAME: "disciple"
   R2_PUBLIC_URL_BASE: "https://storage.pottersville.church"
+  GB_CLIENT_KEY: "sdk-yxwRsYUrYoKP9daI"
+  GB_API_HOST: "https://proxy.growthbook.getvoicify.com"

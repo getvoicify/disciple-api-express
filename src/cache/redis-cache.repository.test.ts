@@ -18,7 +18,9 @@ describe('RedisCacheRepository', () => {
       on: vi.fn(),
     };
 
-    (Redis as any).mockImplementation(() => mockRedis);
+    (Redis as any).mockImplementation(function() {
+      return mockRedis;
+    });
     repository = new RedisCacheRepository('redis://localhost:6379');
   });
 

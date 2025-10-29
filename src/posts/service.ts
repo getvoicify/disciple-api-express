@@ -7,7 +7,7 @@ import { z } from "zod";
 import type { PostRepository } from './repository';
 import type { CreatePostInput, UpdatePostInput, Post, PostFilters } from './schemas';
 import type { ChurchMembershipService } from '../churches/membership-service';
-import type { CacheInvalidationService } from '../cache/cache-invalidation.service';
+import type { ICacheInvalidationService } from '../cache/cache-invalidation.service';
 import {
     PostNotFoundError,
     PostUnauthorizedError,
@@ -33,7 +33,7 @@ export class PostServiceImpl implements PostService {
     constructor(
         private readonly repository: PostRepository,
         private readonly membershipService: ChurchMembershipService,
-        private readonly cacheInvalidationService: CacheInvalidationService
+        private readonly cacheInvalidationService: ICacheInvalidationService
     ) {
     }
 

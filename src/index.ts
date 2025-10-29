@@ -1,4 +1,6 @@
 import express from 'express';
+import {GrowthBookClient} from "@growthbook/growthbook";
+import {createServer} from 'http';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'js-yaml';
 import dotenv from 'dotenv';
@@ -33,8 +35,20 @@ import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
 import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
-import {createCacheRepository, CacheInvalidationService} from "./cache";
+import {createCacheRepository, CacheInvalidationService, type ICacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
+import {wallsRouter} from "./prayer-walls/routes/walls.routes";
+import {prayersRouter} from "./prayer-walls/routes/prayers.routes";
+import {moderationRouter} from "./prayer-walls/routes/moderation.routes";
+import {PrayerWallService} from "./prayer-walls/services/prayer-wall.service";
+import {PrayerRequestService} from "./prayer-walls/services/prayer-request.service";
+import {ModerationService} from "./prayer-walls/services/moderation.service";
+import {PrayerWallRepository} from "./prayer-walls/repositories/prayer-wall.repository";
+import {PrayerRequestRepository} from "./prayer-walls/repositories/prayer-request.repository";
+import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer-wall-membership.repository";
+import {FlaggedContentRepository} from "./prayer-walls/repositories/flagged-content.repository";
+import {initializeSocketServer} from "./websocket/socket.server";
+import {getUserIdFromRequest} from "./utils/get-user-id";
 
 dotenv.config();
 
@@ -45,9 +59,20 @@ const {
 	POSTGRES_PASSWORD: DB_PASSWORD,
 	DB_HOST,
 	DB_PORT,
+	GB_API_HOST: apiHost,
+	GB_CLIENT_KEY: clientKey,
+	NODE_ENV: env
 } = process.env;
 
+const gb = new GrowthBookClient({
+	apiHost,
+	clientKey,
+})
+
 const db = getRawDb({DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT});
+gb.init({timeout: 3000}).catch((e) => {
+	logger.error({error: e}, 'GrowthBook initialization failed');
+});
 
 const {
 	IAM_ENDPOINT,
@@ -83,7 +108,7 @@ const thumbnailService = new ThumbnailServiceImpl(r2Service, mediaRepository, ht
 const galleryService = new GalleryServiceImpl(galleryRepository, mediaRepository, thumbnailService);
 
 const cacheRepository = createCacheRepository();
-const cacheInvalidationService = new CacheInvalidationService(cacheRepository, process.env.NODE_ENV || 'development');
+const cacheInvalidationService: ICacheInvalidationService = new CacheInvalidationService(cacheRepository, process.env.NODE_ENV || 'development');
 
 const noteService = new NoteServiceImpl(notesPgRepo, cacheInvalidationService);
 
@@ -93,8 +118,47 @@ const postService = new PostServiceImpl(postRepository, churchMemberService, cac
 const seriesRepository = new PostgresSeriesRepository(db);
 const seriesService = new SeriesServiceImpl(seriesRepository, churchMemberService, postRepository);
 
+// Prayer Walls setup
+const prayerWallRepository = new PrayerWallRepository(db);
+const prayerWallMembershipRepository = new PrayerWallMembershipRepository(db);
+const prayerRequestRepository = new PrayerRequestRepository(db);
+const flaggedContentRepository = new FlaggedContentRepository(db);
+
+const prayerWallService = new PrayerWallService(
+	prayerWallRepository,
+	prayerWallMembershipRepository,
+	cacheRepository,
+	churchMemberService
+);
+const prayerRequestService = new PrayerRequestService(
+	prayerRequestRepository,
+	prayerWallMembershipRepository
+);
+const moderationService = new ModerationService(
+	flaggedContentRepository,
+	prayerRequestRepository,
+	prayerWallMembershipRepository,
+	prayerWallRepository,
+	churchMemberService
+);
+
 const app = express();
+const httpServer = createServer(app);
+
 app.use(express.json());
+
+app.use((req, _, next) => {
+	const url = req.url;
+	const userId = getUserIdFromRequest(req);
+	req['growthbook'] = gb.createScopedInstance({
+		attributes: {
+			url,
+			id: userId ?? 'anonymous',
+			env: env !== 'development' ? env : 'dev',
+		}
+	});
+	next();
+});
 
 // Add request logging middleware - logs all incoming requests and responses
 // Excludes health check endpoint to reduce noise
@@ -163,7 +227,7 @@ app.get('/api/health', async (req, res) => {
 		await db`SELECT 1 as ping`;
 		dbStatus = 'connected';
 	} catch (error) {
-		logger.error({ error }, 'Database health check failed');
+		logger.error({error}, 'Database health check failed');
 		dbStatus = 'disconnected';
 	}
 
@@ -177,7 +241,7 @@ app.get('/api/health', async (req, res) => {
 			redisStatus = isRedisHealthy ? 'connected' : 'disconnected';
 		}
 	} catch (error) {
-		logger.error({ error }, 'Redis health check failed');
+		logger.error({error}, 'Redis health check failed');
 		redisStatus = 'disconnected';
 	}
 
@@ -256,17 +320,28 @@ app.get('/api/openapi.yaml', (req, res) => {
 });
 
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService));
+// Initialize Socket.io server with Keycloak JWT authentication
+// Must be initialized before registering routes that use WebSocket broadcasting
+const io = initializeSocketServer(httpServer, {
+	redisUrl: process.env.REDIS_URL,
+	iamEndpoint: IAM_ENDPOINT,
+	iamRealm: IAM_REALM
+});
+
 app.use('/api/notes', notesRouter(noteService));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
 app.use('/api/posts', postsRouter(postService, seriesService));
 app.use('/api/devotional', devotionalRouter(seriesService));
+app.use('/api', wallsRouter(prayerWallService));
+app.use('/api', prayersRouter(prayerRequestService, io));
+app.use('/api', moderationRouter(moderationService, prayerRequestRepository, io));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-	logger.info({ port: PORT }, 'Server started');
+httpServer.listen(PORT, () => {
+	logger.info({port: PORT}, 'Server started with WebSocket support');
 });
 
 const sigEndSub = new Subject<void>();
@@ -276,7 +351,7 @@ interval(1000 * 15).pipe(
 		() => defer(() => safeExecute(outbox.processDue())).pipe(
 			tap(([err]) => {
 				if (err) {
-					logger.error({ error: err }, 'Error processing due events');
+					logger.error({error: err}, 'Error processing due events');
 				}
 			})
 		)

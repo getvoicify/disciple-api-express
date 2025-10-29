@@ -328,6 +328,46 @@ if (err) {
 // use result safely
 ```
 
+#### Interface-Based Services
+Services should implement interfaces to improve testability and enable proper mocking:
+
+```typescript
+// Define interface with generic methods
+export interface ICacheInvalidationService {
+  invalidateResource(resource: string, id: string): Promise<void>;
+  invalidateList(resource: string): Promise<void>;
+  invalidateAll(resource: string): Promise<void>;
+}
+
+// Concrete implementation
+export class CacheInvalidationService implements ICacheInvalidationService {
+  async invalidateResource(resource: string, id: string): Promise<void> {
+    // implementation
+  }
+
+  async invalidateList(resource: string): Promise<void> {
+    // implementation
+  }
+
+  async invalidateAll(resource: string): Promise<void> {
+    // implementation
+  }
+}
+
+// Use in tests with type-safe mocks
+const mockService: ICacheInvalidationService = {
+  invalidateResource: jest.fn(),
+  invalidateList: jest.fn(),
+  invalidateAll: jest.fn(),
+};
+```
+
+**Benefits:**
+- **Type safety** - Ensures mocks match the actual service contract
+- **Easier testing** - Mock objects can be typed as the interface
+- **Better refactoring** - Changes to the interface are caught at compile time
+- **Dependency injection** - Services can depend on interfaces rather than concrete implementations
+
 ## 🔒 Security
 
 - JWT authentication on all API endpoints

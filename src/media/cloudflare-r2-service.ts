@@ -16,14 +16,19 @@ export interface PresignedUploadResult {
     r2Key: string;
 }
 
+export interface PresignedDownloadResult {
+    downloadUrl: string;
+}
+
 // Interface for R2 service
 export interface CloudflareR2Service {
     uploadFile(fileBuffer: Buffer, filename: string, mimeType: string): Promise<UploadResult>;
     deleteFile(r2Key: string): Promise<void>;
     generatePresignedUploadUrl(filename: string, mimeType: string): Promise<PresignedUploadResult>;
+    generatePresignedDownloadUrl(r2Key: string, expiresIn: number): Promise<PresignedDownloadResult>;
 }
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { safeExecute } from '../utils/handle-async';
 import {
@@ -130,6 +135,35 @@ export class CloudflareR2ServiceImpl implements CloudflareR2Service {
         }
 
         return { uploadUrl, r2Key };
+    }
+
+    /**
+     * Generate a presigned URL for downloading a file from R2
+     * @param r2Key - The R2 storage key of the file to download
+     * @param expiresIn - Expiration time in seconds (default: 3600 = 1 hour)
+     * @returns PresignedDownloadResult containing the download URL
+     * @throws R2PresignedUrlError if URL generation fails
+     * @throws FileValidationError if r2Key is invalid
+     */
+    async generatePresignedDownloadUrl(r2Key: string, expiresIn: number = 3600): Promise<PresignedDownloadResult> {
+        if (!r2Key || r2Key.trim() === '') {
+            throw new FileValidationError('R2 key cannot be empty');
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: this.config.bucket,
+            Key: r2Key,
+        });
+
+        const [err, downloadUrl] = await safeExecute(
+            getSignedUrl(this.s3Client, command, { expiresIn })
+        );
+
+        if (err) {
+            throw new R2PresignedUrlError(extractR2ErrorMessage(err), r2Key);
+        }
+
+        return { downloadUrl };
     }
 
     private validateConfig(config: R2Config): void {

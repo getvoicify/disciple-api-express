@@ -16,6 +16,19 @@ export default function errorCodeFactory(err: unknown): number {
 		return err.statusCode;
 	}
 
+	// Handle objects with statusCode as string (convert to number)
+	if (
+		typeof err === 'object' &&
+		err !== null &&
+		'statusCode' in err &&
+		typeof (err as any).statusCode === 'string'
+	) {
+		const statusCode = Number((err as any).statusCode);
+		if (!isNaN(statusCode) && statusCode >= 100 && statusCode < 600) {
+			return statusCode;
+		}
+	}
+
 	// For standard errors, check the message for patterns (backward compatibility)
 	if (err instanceof Error) {
 		const message = err.message.toLowerCase();
