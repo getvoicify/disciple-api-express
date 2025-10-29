@@ -77,7 +77,7 @@ export const reviewFlaggedContentEndpoint = (
           'Failed to fetch prayer for WebSocket broadcast'
         );
       } else if (prayer) {
-        broadcastContentRestored(io, prayer.prayer_wall_id, prayer.id, userId);
+        broadcastContentRestored(io, prayer.wall_id, prayer.id, userId);
       }
     }
   };
