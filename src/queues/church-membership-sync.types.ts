@@ -20,17 +20,17 @@ export type ChurchMembershipEventType = z.infer<typeof ChurchMembershipEventType
 export const ChurchMembershipSyncJobData = z.union([
   z.object({
     eventType: z.literal('ownership-transferred'),
-    churchId: z.string().uuid(),
-    previousOwnerId: z.string().uuid(),
-    newOwnerId: z.string().uuid(),
-    userId: z.string().uuid().optional(),
+    churchId: z.uuid(),
+    previousOwnerId: z.uuid(),
+    newOwnerId: z.uuid(),
+    userId: z.uuid().optional(),
   }),
   z.object({
     eventType: z.enum(['owner-created', 'member-joined', 'member-left']),
-    churchId: z.string().uuid(),
-    userId: z.string().uuid(),
-    previousOwnerId: z.string().uuid().optional(),
-    newOwnerId: z.string().uuid().optional(),
+    churchId: z.uuid(),
+    userId: z.uuid(),
+    previousOwnerId: z.uuid().optional(),
+    newOwnerId: z.uuid().optional(),
   }),
 ]);
 

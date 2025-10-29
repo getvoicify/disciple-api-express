@@ -122,37 +122,37 @@ Estimated Timeline: 2-3 weeks
 #### Task Group 4: Church Membership Sync Job Processor
 **Dependencies:** Task Groups 1, 2, 3
 
-- [ ] 4.0 Complete sync job processor
-  - [ ] 4.1 Write 2-8 focused tests for sync job processor
+- [x] 4.0 Complete sync job processor
+  - [x] 4.1 Write 2-8 focused tests for sync job processor
     - Test processing church creation event (user becomes Owner)
     - Test processing membership join event
     - Test processing membership leave event
     - Test processing ownership transfer (updates both users)
     - Test retry behavior on Keycloak API failure
     - Mock both church membership service and Keycloak Admin API
-  - [ ] 4.2 Create church membership sync job processor
+  - [x] 4.2 Create church membership sync job processor
     - Implement job handler that processes BullMQ jobs
     - Query current user memberships using service from Task Group 3
     - Update Keycloak user attributes using methods from Task Group 2
     - Handle both single-user and multi-user updates (ownership transfer)
     - Use safeExecute for error handling
-  - [ ] 4.3 Define church membership event types
+  - [x] 4.3 Define church membership event types
     - Create event type: `church:membership:owner-created`
     - Create event type: `church:membership:member-joined`
     - Create event type: `church:membership:member-left`
     - Create event type: `church:membership:ownership-transferred`
     - Define payload schemas for each event type using Zod
-  - [ ] 4.4 Implement outbox adapter for church membership events
+  - [x] 4.4 Implement outbox adapter for church membership events
     - Follow pattern from `src/keycloak/generalized-outbox.adapter.ts`
     - Map church membership events to sync job payloads
     - Enqueue BullMQ jobs for each outbox event
     - Handle event deduplication using existing outbox logic
-  - [ ] 4.5 Integrate outbox publisher with BullMQ worker
+  - [x] 4.5 Integrate outbox publisher with BullMQ worker
     - Connect outbox processing to BullMQ job queue
     - Poll outbox for pending church membership events
     - Enqueue jobs and mark outbox events as processed
     - Handle errors and dead letter queue
-  - [ ] 4.6 Ensure sync job processor tests pass
+  - [x] 4.6 Ensure sync job processor tests pass
     - Run ONLY the 2-8 tests written in 4.1
     - Verify all event types processed correctly
     - Verify ownership transfer updates both users
@@ -317,7 +317,7 @@ Recommended implementation sequence:
 3. Task Group 3: Church Membership Query Service - COMPLETED
 
 **Phase 2: Core Sync Logic (Sequential execution)**
-4. Task Group 4: Church Membership Sync Job Processor
+4. Task Group 4: Church Membership Sync Job Processor - COMPLETED
 
 **Phase 3: Event Integration (Sequential execution)**
 5. Task Group 5: Emit Events from Church Membership Endpoints
