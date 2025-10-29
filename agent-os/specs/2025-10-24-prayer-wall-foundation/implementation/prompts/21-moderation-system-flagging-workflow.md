@@ -16,7 +16,7 @@ We're continuing our implementation of Prayer Wall Foundation by implementing ta
     - Test ban user action
     - Test audit trail logging
   - [ ] 21.2 Create file: `/src/prayer-walls/services/moderation.service.ts`
-    - Class: ModerationService
+    - Class: ModerationService (implements IModerationService)
     - Dependencies: FlaggedContentRepository, PrayerRequestRepository, PrayerWallMembershipRepository
     - Methods: flagContent(prayerId, flaggedBy, reason), listFlaggedContent(churchId), reviewFlaggedContent(flagId, action, reviewedBy, notes), deleteContent(prayerId, deletedBy), restoreContent(prayerId, restoredBy), banUser(wallId, userId, bannedBy, churchWide)
     - Business logic: Auto-hide on flag, pastor-only review, audit logging
@@ -59,6 +59,11 @@ Also read these for further context and reference:
 ## Perform the implementation
 
 Implement all tasks assigned to you and ONLY those task(s) that have been assigned to you.
+Use the test-driven-developer agent to write the test.
+Do NOT write the implementation code until you have written the test.
+Make sure the tests are failing due to missing implementation and not due to syntax errors.
+Review the tests using the coderabbit-reviewer agent
+You should delegate the actual implementation to the implementer agent for each task.
 
 ### Implementation process:
 

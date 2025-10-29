@@ -39,11 +39,14 @@ import {createCacheRepository, CacheInvalidationService, type ICacheInvalidation
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 import {wallsRouter} from "./prayer-walls/routes/walls.routes";
 import {prayersRouter} from "./prayer-walls/routes/prayers.routes";
+import {moderationRouter} from "./prayer-walls/routes/moderation.routes";
 import {PrayerWallService} from "./prayer-walls/services/prayer-wall.service";
 import {PrayerRequestService} from "./prayer-walls/services/prayer-request.service";
+import {ModerationService} from "./prayer-walls/services/moderation.service";
 import {PrayerWallRepository} from "./prayer-walls/repositories/prayer-wall.repository";
 import {PrayerRequestRepository} from "./prayer-walls/repositories/prayer-request.repository";
 import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer-wall-membership.repository";
+import {FlaggedContentRepository} from "./prayer-walls/repositories/flagged-content.repository";
 import {initializeSocketServer} from "./websocket/socket.server";
 import {getUserIdFromRequest} from "./utils/get-user-id";
 
@@ -119,6 +122,8 @@ const seriesService = new SeriesServiceImpl(seriesRepository, churchMemberServic
 const prayerWallRepository = new PrayerWallRepository(db);
 const prayerWallMembershipRepository = new PrayerWallMembershipRepository(db);
 const prayerRequestRepository = new PrayerRequestRepository(db);
+const flaggedContentRepository = new FlaggedContentRepository(db);
+
 const prayerWallService = new PrayerWallService(
 	prayerWallRepository,
 	prayerWallMembershipRepository,
@@ -126,6 +131,11 @@ const prayerWallService = new PrayerWallService(
 	churchMemberService
 );
 const prayerRequestService = new PrayerRequestService(
+	prayerRequestRepository,
+	prayerWallMembershipRepository
+);
+const moderationService = new ModerationService(
+	flaggedContentRepository,
 	prayerRequestRepository,
 	prayerWallMembershipRepository
 );
@@ -323,6 +333,7 @@ app.use('/api/posts', postsRouter(postService, seriesService));
 app.use('/api/devotional', devotionalRouter(seriesService));
 app.use('/api', wallsRouter(prayerWallService));
 app.use('/api', prayersRouter(prayerRequestService, io));
+app.use('/api', moderationRouter(moderationService, io));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -22,6 +22,8 @@ export interface IPrayerRequestRepository {
   softDelete(id: string, deletedBy: string): Promise<boolean>;
   restore(id: string): Promise<boolean>;
   validateThreadDepth(parentId: string | null): Promise<number>;
+  hide(id: string): Promise<boolean>;
+  unhide(id: string): Promise<boolean>;
 }
 
 /**
@@ -430,6 +432,50 @@ export class PrayerRequestRepository implements IPrayerRequestRepository {
             updated_at = ${now}
         WHERE id = ${id}
           AND deleted_at IS NOT NULL
+        RETURNING id
+      `;
+
+      return result.length > 0;
+    });
+  }
+
+  /**
+   * Hide a prayer request by setting hidden_at timestamp
+   * Used when content is flagged for moderation
+   * Returns true if prayer was hidden, false if not found
+   */
+  async hide(id: string): Promise<boolean> {
+    return this.db.begin(async (tx) => {
+      const now = new Date();
+
+      const result = await tx`
+        UPDATE prayer_requests
+        SET hidden_at = ${now},
+            updated_at = ${now}
+        WHERE id = ${id}
+          AND deleted_at IS NULL
+        RETURNING id
+      `;
+
+      return result.length > 0;
+    });
+  }
+
+  /**
+   * Unhide a prayer request by clearing hidden_at timestamp
+   * Used when falsely flagged content is restored by pastor
+   * Returns true if prayer was unhidden, false if not found
+   */
+  async unhide(id: string): Promise<boolean> {
+    return this.db.begin(async (tx) => {
+      const now = new Date();
+
+      const result = await tx`
+        UPDATE prayer_requests
+        SET hidden_at = NULL,
+            updated_at = ${now}
+        WHERE id = ${id}
+          AND deleted_at IS NULL
         RETURNING id
       `;
 
