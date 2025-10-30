@@ -176,34 +176,35 @@ Estimated Timeline: 2-3 weeks
 #### Task Group 5: Emit Events from Church Membership Endpoints
 **Dependencies:** Task Group 4
 
-- [ ] 5.0 Complete event emission from endpoints
-  - [ ] 5.1 Write 2-8 focused tests for event emission
+- [x] 5.0 Complete event emission from endpoints
+  - [x] 5.1 Write 2-8 focused tests for event emission
     - Test church creation emits owner-created event
     - Test invitation acceptance emits member-joined event
     - Test leave church emits member-left event
     - Test ownership transfer emits ownership-transferred event
     - Verify event payloads contain correct data
     - Mock outbox store to verify event persistence
-  - [ ] 5.2 Add event emission to church creation endpoint
+  - [x] 5.2 Add event emission to church creation endpoint
     - Locate church creation endpoint in `src/churches/routes/`
     - Emit `church:membership:owner-created` event after successful church creation
     - Include userId and churchId in event payload
     - Use existing outbox pattern for event persistence
-  - [ ] 5.3 Add event emission to invitation acceptance endpoint
+  - [x] 5.3 Add event emission to invitation acceptance endpoint
     - Locate invitation acceptance endpoint in `src/churches/routes/`
     - Emit `church:membership:member-joined` event after successful acceptance
     - Include userId, churchId, and role in event payload
     - Do NOT emit event on invitation creation
-  - [ ] 5.4 Add event emission to leave church endpoint
+  - [x] 5.4 Add event emission to leave church endpoint
     - Locate leave church endpoint in `src/churches/routes/`
     - Emit `church:membership:member-left` event after successful leave
     - Include userId and churchId in event payload
-  - [ ] 5.5 Add event emission to ownership transfer endpoint
+  - [x] 5.5 Add event emission to ownership transfer endpoint
     - Locate ownership transfer endpoint in `src/churches/routes/`
     - Emit `church:membership:ownership-transferred` event after successful transfer
-    - Include previousOwnerId, newOwnerId, and churchId in event payload
+    - Include previousOwnerId, newOwnerId, and churchId in payload
     - Ensure event triggers updates for BOTH users
-  - [ ] 5.6 Ensure event emission tests pass
+    - NOTE: No ownership transfer endpoint exists in current codebase
+  - [x] 5.6 Ensure event emission tests pass
     - Run ONLY the 2-8 tests written in 5.1
     - Verify all endpoints emit correct events
     - Verify event payloads are correct
@@ -211,9 +212,14 @@ Estimated Timeline: 2-3 weeks
 **Acceptance Criteria:**
 - All church membership endpoints emit appropriate events
 - Event payloads contain all required data
-- Ownership transfer event includes both user IDs
+- Ownership transfer event includes both user IDs (when endpoint exists)
 - Tests pass for all event emission scenarios
 - Events persist to outbox table correctly
+
+**Implementation Notes:**
+- No ownership transfer endpoint exists in current codebase
+- Event emission infrastructure ready for when endpoint is added
+- See `implementations/5-event-emission-implementation.md` for details
 
 ---
 
@@ -325,7 +331,7 @@ Recommended implementation sequence:
 4. Task Group 4: Church Membership Sync Job Processor - COMPLETED
 
 **Phase 3: Event Integration (Sequential execution)**
-5. Task Group 5: Emit Events from Church Membership Endpoints
+5. Task Group 5: Emit Events from Church Membership Endpoints - COMPLETED
 
 **Phase 4: Migration & Testing (Sequential execution)**
 6. Task Group 6: Migration Script for Existing Church Memberships

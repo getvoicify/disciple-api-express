@@ -49,6 +49,8 @@ import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer
 import {FlaggedContentRepository} from "./prayer-walls/repositories/flagged-content.repository";
 import {initializeSocketServer} from "./websocket/socket.server";
 import {getUserIdFromRequest} from "./utils/get-user-id";
+import {createChurchMembershipSyncQueue} from "./queues/church-membership-sync.queue";
+import {setupChurchMembershipOutboxAdapter} from "./churches/church-membership-outbox.setup";
 
 dotenv.config();
 
@@ -61,7 +63,8 @@ const {
 	DB_PORT,
 	GB_API_HOST: apiHost,
 	GB_CLIENT_KEY: clientKey,
-	NODE_ENV: env
+	NODE_ENV: env,
+	REDIS_URL: redisUrl
 } = process.env;
 
 const gb = new GrowthBookClient({
@@ -95,6 +98,21 @@ const churchMemberRepository = new PostgresChurchMemberRepository(db);
 const churchService = new ChurchServiceImpl(churchRepository);
 const churchMemberService = new ChurchMembershipServiceImpl(churchRepository, churchMemberRepository);
 const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
+
+// Church Membership Sync Queue and Outbox setup
+// Only create the queue if Redis URL is configured (production/staging)
+let churchMembershipOutboxAdapter;
+if (redisUrl) {
+	const churchMembershipSyncQueue = createChurchMembershipSyncQueue({
+		connection: {
+			url: redisUrl,
+		},
+	});
+	churchMembershipOutboxAdapter = setupChurchMembershipOutboxAdapter(db, churchMembershipSyncQueue);
+	logger.info('Church membership sync queue and outbox adapter initialized');
+} else {
+	logger.warn('Redis URL not configured - church membership sync events will not be emitted');
+}
 
 const mediaRepository = new PostgresMediaRepository(db, keycloakAdapter);
 const r2Service = new CloudflareR2ServiceImpl();
@@ -186,7 +204,7 @@ app.use(requestLogger);
  *                 summary: All services healthy
  *                 value:
  *                   status: "healthy"
- *                   timestamp: "2024-01-15T10:30:00.000Z"
+ *                   timestamp: "2025-01-15T10:30:00.000Z"
  *                   version: "1.0.0"
  *                   database: "connected"
  *                   redis: "connected"
@@ -196,7 +214,7 @@ app.use(requestLogger);
  *                 summary: Some services degraded
  *                 value:
  *                   status: "degraded"
- *                   timestamp: "2024-01-15T10:30:00.000Z"
+ *                   timestamp: "2025-01-15T10:30:00.000Z"
  *                   version: "1.0.0"
  *                   database: "connected"
  *                   redis: "disconnected"
@@ -210,7 +228,7 @@ app.use(requestLogger);
  *               $ref: '#/components/schemas/HealthResponse'
  *             example:
  *               status: "unhealthy"
- *               timestamp: "2024-01-15T10:30:00.000Z"
+ *               timestamp: "2025-01-15T10:30:00.000Z"
  *               version: "1.0.0"
  *               database: "disconnected"
  *               redis: "disconnected"
@@ -319,7 +337,7 @@ app.get('/api/openapi.yaml', (req, res) => {
 	res.send(yaml.dump(swaggerSpec));
 });
 
-app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService));
+app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService, churchMembershipOutboxAdapter));
 // Initialize Socket.io server with Keycloak JWT authentication
 // Must be initialized before registering routes that use WebSocket broadcasting
 const io = initializeSocketServer(httpServer, {
