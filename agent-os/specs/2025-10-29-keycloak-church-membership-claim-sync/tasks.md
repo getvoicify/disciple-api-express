@@ -43,6 +43,11 @@ Estimated Timeline: 2-3 weeks
 - Tests pass for job processing and retry behavior
 - Worker handles graceful shutdown
 
+**Implementation Notes:**
+- Worker entrypoint was initially missing and added on 2025-10-29
+- Centralized handler registry factory created to ensure handlers are registered at runtime
+- See `implementations/1-worker-entrypoint-implementation.md` for supplemental details
+
 ---
 
 ### Keycloak Integration
