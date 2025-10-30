@@ -66,7 +66,7 @@ describe('Church Membership Event Emission', () => {
           },
         },
       ],
-    };
+    } as unknown as EndpointRequest;
   });
 
   describe('Church Creation Event', () => {
