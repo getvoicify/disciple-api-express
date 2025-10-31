@@ -10,6 +10,7 @@
 4. **Review test code** - **ALWAYS use the coderabbit agent to review test code before proceeding**
 5. **Refactor** - Clean up the code while keeping tests green
 6. **Repeat** - Continue the cycle for each new requirement
+7. **Spec file location:** `src/tests`
 
 ### Code Review for Tests
 
