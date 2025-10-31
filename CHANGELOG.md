@@ -1,3 +1,10 @@
+## [2.4.0](https://github.com/getvoicify/disciple-api-express/compare/v2.3.0...v2.4.0) (2025-10-31)
+
+
+### ✨ Features
+
+* church claim extractor ([#32](https://github.com/getvoicify/disciple-api-express/issues/32)) ([5da83d7](https://github.com/getvoicify/disciple-api-express/commit/5da83d7a6c25246d8bf562504301e87b3d9f7dba))
+
 ## [2.3.0](https://github.com/getvoicify/disciple-api-express/compare/v2.2.0...v2.3.0) (2025-10-29)
 
 
