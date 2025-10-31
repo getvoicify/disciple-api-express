@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SyncProcessor } from '../../queues/sync.processor';
-import { JobHandlerRegistry } from '../../queues/handlers/handler-registry';
-import { MembershipSyncService } from '../../queues/handlers/membership-sync.service';
-import { OwnerCreatedHandler } from '../../queues/handlers/owner-created.handler';
-import { MemberJoinedHandler } from '../../queues/handlers/member-joined.handler';
-import { MemberLeftHandler } from '../../queues/handlers/member-left.handler';
-import { OwnershipTransferredHandler } from '../../queues/handlers/ownership-transferred.handler';
-import type { IChurchMembershipQueryService } from '../../churches/church-membership-query.service';
-import type { KeycloakAdminClient } from '../../keycloak/types';
+import { SyncProcessor } from '../../../lib/queue/processor';
+import { JobHandlerRegistry } from '../../../lib/queue/handler-registry';
+import { MembershipSyncService } from '../../../queues/church-membership-sync/handlers/membership-sync.service';
+import { OwnerCreatedHandler } from '../../../queues/church-membership-sync/handlers/owner-created.handler';
+import { MemberJoinedHandler } from '../../../queues/church-membership-sync/handlers/member-joined.handler';
+import { MemberLeftHandler } from '../../../queues/church-membership-sync/handlers/member-left.handler';
+import { OwnershipTransferredHandler } from '../../../queues/church-membership-sync/handlers/ownership-transferred.handler';
+import type { IChurchMembershipQueryService } from '../../../churches/church-membership-query.service';
+import type { KeycloakAdminClient } from '../../../keycloak/types';
 import type { Job } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../../queues/church-membership-sync.types';
+import type { ChurchMembershipSyncJobData } from '../../../queues/church-membership-sync/types';
 
 // Mock services
 const createMockMembershipService = () => ({

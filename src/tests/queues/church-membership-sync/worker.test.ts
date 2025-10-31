@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { Worker, Queue } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../../queues/church-membership-sync.types';
-import { ChurchMembershipSyncJobName } from '../../queues/church-membership-sync.queue';
+import type { ChurchMembershipSyncJobData } from '../../../queues/church-membership-sync/types';
+import { ChurchMembershipSyncJobName } from '../../../queues/church-membership-sync/queue';
 
 // Mock the entire bullmq module
 vi.mock('bullmq', () => {

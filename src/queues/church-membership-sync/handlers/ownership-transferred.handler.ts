@@ -1,8 +1,8 @@
 import type { Job } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../church-membership-sync.types';
-import type { IJobEventHandler } from './job-event-handler.interface';
+import type { ChurchMembershipSyncJobData } from '../types';
+import type { IJobEventHandler } from '../../../lib/queue/job-event-handler.interface';
 import type { MembershipSyncService } from './membership-sync.service';
-import { logger } from '../../logging';
+import { logger } from '../../../logging';
 
 /**
  * Handler for ownership-transferred events

@@ -49,7 +49,7 @@ import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer
 import {FlaggedContentRepository} from "./prayer-walls/repositories/flagged-content.repository";
 import {initializeSocketServer} from "./websocket/socket.server";
 import {getUserIdFromRequest} from "./utils/get-user-id";
-import {createChurchMembershipSyncQueue} from "./queues/church-membership-sync.queue";
+import {createChurchMembershipSyncQueue} from "./queues/church-membership-sync/queue";
 import {setupChurchMembershipOutboxAdapter} from "./churches/church-membership-outbox.setup";
 
 dotenv.config();

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createHandlerRegistry } from '../../queues/handlers/registry-factory';
-import type { MembershipSyncService } from '../../queues/handlers/membership-sync.service';
-import { OwnerCreatedHandler } from '../../queues/handlers/owner-created.handler';
-import { MemberJoinedHandler } from '../../queues/handlers/member-joined.handler';
-import { MemberLeftHandler } from '../../queues/handlers/member-left.handler';
-import { OwnershipTransferredHandler } from '../../queues/handlers/ownership-transferred.handler';
+import { createHandlerRegistry } from '../../../lib/queue/registry-factory';
+import type { MembershipSyncService } from '../../../queues/church-membership-sync/handlers/membership-sync.service';
+import { OwnerCreatedHandler } from '../../../queues/church-membership-sync/handlers/owner-created.handler';
+import { MemberJoinedHandler } from '../../../queues/church-membership-sync/handlers/member-joined.handler';
+import { MemberLeftHandler } from '../../../queues/church-membership-sync/handlers/member-left.handler';
+import { OwnershipTransferredHandler } from '../../../queues/church-membership-sync/handlers/ownership-transferred.handler';
 
 describe('Handler Registry Factory', () => {
   let mockSyncService: MembershipSyncService;

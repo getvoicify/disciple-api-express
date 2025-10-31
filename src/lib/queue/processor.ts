@@ -1,8 +1,8 @@
 import type {Job} from 'bullmq';
-import type {JobDataMapper} from './church-membership-sync.types';
-import type {JobHandlerRegistry} from './handlers/handler-registry';
-import {logger} from '../logging';
-import {safeExecute} from "../utils/handle-async";
+import type {JobDataMapper} from './types';
+import type {JobHandlerRegistry} from './handler-registry';
+import {logger} from '../../logging';
+import {safeExecute} from "../../utils/handle-async";
 
 /**
  * Processor for sync jobs
