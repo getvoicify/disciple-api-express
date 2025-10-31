@@ -1,6 +1,6 @@
 import type { Job } from 'bullmq';
 import type { ChurchMembershipSyncJobData } from '../church-membership-sync.types';
-import type { IChurchMembershipEventHandler } from './church-membership-event-handler.interface';
+import type { IJobEventHandler } from './job-event-handler.interface';
 import type { MembershipSyncService } from './membership-sync.service';
 import { logger } from '../../logging';
 
@@ -8,7 +8,7 @@ import { logger } from '../../logging';
  * Handler for member-left events
  * Syncs the departed member's church memberships to Keycloak (removing the church)
  */
-export class MemberLeftHandler implements IChurchMembershipEventHandler {
+export class MemberLeftHandler implements IJobEventHandler<ChurchMembershipSyncJobData> {
   readonly eventType = 'member-left';
 
   constructor(private readonly syncService: MembershipSyncService) {}

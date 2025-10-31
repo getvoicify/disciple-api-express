@@ -1,15 +1,19 @@
 import dotenv from 'dotenv';
-import { Worker } from 'bullmq';
-import { getRawDb } from './utils/database';
-import { logger } from './logging';
-import { ChurchMembershipSyncProcessor } from './queues/church-membership-sync.processor';
-import { ChurchMembershipSyncJobName } from './queues/church-membership-sync.queue';
-import type { ChurchMembershipSyncJobData } from './queues/church-membership-sync.types';
-import { createHandlerRegistry } from './queues/handlers/registry-factory';
-import { MembershipSyncService } from './queues/handlers/membership-sync.service';
-import { PostgresChurchMemberRepository } from './churches/postgres-repository';
-import { ChurchMembershipQueryService } from './churches/church-membership-query.service';
-import { KeycloakAdminClientImpl, type KeycloakAdminConfig } from './keycloak/admin-client';
+import {Worker} from 'bullmq';
+import {getRawDb} from './utils/database';
+import {logger} from './logging';
+import {SyncProcessor} from './queues/sync.processor';
+import {ChurchMembershipSyncJobName} from './queues/church-membership-sync.queue';
+import type {ChurchMembershipSyncJobData} from './queues/church-membership-sync.types';
+import {createHandlerRegistry} from './queues/handlers/registry-factory';
+import {MembershipSyncService} from './queues/handlers/membership-sync.service';
+import {OwnerCreatedHandler} from './queues/handlers/owner-created.handler';
+import {MemberJoinedHandler} from './queues/handlers/member-joined.handler';
+import {MemberLeftHandler} from './queues/handlers/member-left.handler';
+import {OwnershipTransferredHandler} from './queues/handlers/ownership-transferred.handler';
+import {PostgresChurchMemberRepository} from './churches/postgres-repository';
+import {ChurchMembershipQueryService} from './churches/church-membership-query.service';
+import {KeycloakAdminClientImpl, type KeycloakAdminConfig} from './keycloak/admin-client';
 
 dotenv.config();
 
@@ -75,16 +79,28 @@ const syncService = new MembershipSyncService(
 );
 
 // Initialize handler registry with all event handlers
-const handlerRegistry = createHandlerRegistry(syncService);
+const handlers = [
+  new OwnerCreatedHandler(syncService),
+  new MemberJoinedHandler(syncService),
+  new MemberLeftHandler(syncService),
+  new OwnershipTransferredHandler(syncService),
+];
+const handlerRegistry = createHandlerRegistry(handlers);
 
 // Initialize job processor
-const processor = new ChurchMembershipSyncProcessor(handlerRegistry);
+const churchMembershipSyncProcessor = new SyncProcessor<ChurchMembershipSyncJobData>(
+  handlerRegistry,
+  (data) => ({
+    eventType: data.eventType,
+    entityId: data.churchId,
+  })
+);
 
 // Create BullMQ worker
 const worker = new Worker<ChurchMembershipSyncJobData>(
   ChurchMembershipSyncJobName,
   async (job) => {
-    await processor.process(job);
+    await churchMembershipSyncProcessor.process(job);
   },
   {
     connection: REDIS_URL ? { url: REDIS_URL } : undefined,

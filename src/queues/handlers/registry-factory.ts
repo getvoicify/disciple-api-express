@@ -1,42 +1,36 @@
-import { ChurchMembershipHandlerRegistry } from './handler-registry';
-import { OwnerCreatedHandler } from './owner-created.handler';
-import { MemberJoinedHandler } from './member-joined.handler';
-import { MemberLeftHandler } from './member-left.handler';
-import { OwnershipTransferredHandler } from './ownership-transferred.handler';
-import type { MembershipSyncService } from './membership-sync.service';
+import { JobHandlerRegistry } from './handler-registry';
+import type { IJobEventHandler } from './job-event-handler.interface';
 import { logger } from '../../logging';
 
 /**
- * Creates and configures the handler registry with all available event handlers
+ * Creates and configures a generic handler registry with the provided event handlers
  *
- * This factory function provides a centralized location for handler registration.
- * To add a new handler:
- * 1. Create a new file implementing IChurchMembershipEventHandler
- * 2. Import it in this file
- * 3. Add it to the handlers array
+ * This factory function provides a centralized, reusable way to create handler registries
+ * for any queue type. It accepts an array of handlers and registers them all.
  *
- * The explicit import approach ensures:
+ * The generic approach ensures:
  * - Type safety at compile time
- * - No runtime file system dependencies
+ * - Reusability across different queue types
  * - Works correctly in all environments (test, dev, prod)
  * - Clear visibility of all registered handlers
  *
- * @param syncService - The membership sync service used by handlers
+ * @template T - The job data type that handlers will process
+ * @param handlers - Array of event handlers to register
  * @returns Configured handler registry with all handlers registered
+ *
+ * @example
+ * ```typescript
+ * const handlers = [
+ *   new OwnerCreatedHandler(syncService),
+ *   new MemberJoinedHandler(syncService),
+ * ];
+ * const registry = createHandlerRegistry(handlers);
+ * ```
  */
-export function createHandlerRegistry(
-  syncService: MembershipSyncService
-): ChurchMembershipHandlerRegistry {
-  const registry = new ChurchMembershipHandlerRegistry();
-
-  // Register all event handlers
-  // To add a new handler, import it above and add it to this array
-  const handlers = [
-    new OwnerCreatedHandler(syncService),
-    new MemberJoinedHandler(syncService),
-    new MemberLeftHandler(syncService),
-    new OwnershipTransferredHandler(syncService),
-  ];
+export function createHandlerRegistry<T>(
+  handlers: IJobEventHandler<T>[]
+): JobHandlerRegistry<T> {
+  const registry = new JobHandlerRegistry<T>();
 
   handlers.forEach((handler) => {
     registry.register(handler);
@@ -47,7 +41,7 @@ export function createHandlerRegistry(
       handlerCount: handlers.length,
       eventTypes: handlers.map((h) => h.eventType),
     },
-    'Handler registry initialized with all event handlers'
+    'Handler registry initialized with event handlers'
   );
 
   return registry;
