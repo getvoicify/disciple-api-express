@@ -140,7 +140,7 @@ vi.mock('bullmq', () => {
 });
 
 // Mock the logger to avoid console output during tests
-vi.mock('../../logging', () => ({
+vi.mock('../../../logging', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
