@@ -1,14 +1,14 @@
 import type { Job } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../church-membership-sync.types';
-import type { IChurchMembershipEventHandler } from './church-membership-event-handler.interface';
+import type { ChurchMembershipSyncJobData } from '../types';
+import type { IJobEventHandler } from '../../../lib/queue/job-event-handler.interface';
 import type { MembershipSyncService } from './membership-sync.service';
-import { logger } from '../../logging';
+import { logger } from '../../../logging';
 
 /**
  * Handler for member-joined events
  * Syncs the new member's church memberships to Keycloak
  */
-export class MemberJoinedHandler implements IChurchMembershipEventHandler {
+export class MemberJoinedHandler implements IJobEventHandler<ChurchMembershipSyncJobData> {
   readonly eventType = 'member-joined';
 
   constructor(private readonly syncService: MembershipSyncService) {}

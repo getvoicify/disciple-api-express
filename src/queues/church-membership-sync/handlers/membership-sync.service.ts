@@ -1,7 +1,7 @@
-import type { IChurchMembershipQueryService } from '../../churches/church-membership-query.service';
-import type { KeycloakAdminClient } from '../../keycloak/types';
-import { safeExecute } from '../../utils/handle-async';
-import { logger } from '../../logging';
+import type { IChurchMembershipQueryService } from '../../../churches/church-membership-query.service';
+import type { KeycloakAdminClient } from '../../../keycloak/types';
+import { safeExecute } from '../../../utils/handle-async';
+import { logger } from '../../../logging';
 
 /**
  * Shared service for syncing user church memberships to Keycloak

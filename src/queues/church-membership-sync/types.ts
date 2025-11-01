@@ -35,16 +35,3 @@ export const ChurchMembershipSyncJobData = z.union([
 ]);
 
 export type ChurchMembershipSyncJobData = z.infer<typeof ChurchMembershipSyncJobData>;
-
-/**
- * Queue configuration with retry and backoff settings
- */
-export const QueueConfig = z.object({
-  attempts: z.number().default(5),
-  backoff: z.object({
-    type: z.literal('exponential'),
-    delay: z.number().default(1000), // 1 second initial delay
-  }),
-});
-
-export type QueueConfig = z.infer<typeof QueueConfig>;

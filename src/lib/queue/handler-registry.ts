@@ -1,18 +1,18 @@
-import type { IChurchMembershipEventHandler } from './church-membership-event-handler.interface';
+import type { IJobEventHandler } from './job-event-handler.interface';
 import { logger } from '../../logging';
 
 /**
- * Registry for church membership event handlers
+ * Registry for job event handlers
  * Allows dynamic registration and lookup of handlers by event type
  */
-export class ChurchMembershipHandlerRegistry {
-  private handlers = new Map<string, IChurchMembershipEventHandler>();
+export class JobHandlerRegistry<T> {
+  private handlers = new Map<string, IJobEventHandler<T>>();
 
   /**
    * Register an event handler
    * @param handler - The handler to register
    */
-  register(handler: IChurchMembershipEventHandler): void {
+  register(handler: IJobEventHandler<T>): void {
     if (this.handlers.has(handler.eventType)) {
       logger.warn(
         { eventType: handler.eventType },
@@ -30,7 +30,7 @@ export class ChurchMembershipHandlerRegistry {
    * @returns The registered handler
    * @throws Error if no handler is registered for the event type
    */
-  getHandler(eventType: string): IChurchMembershipEventHandler {
+  getHandler(eventType: string): IJobEventHandler<T> {
     const handler = this.handlers.get(eventType);
 
     if (!handler) {

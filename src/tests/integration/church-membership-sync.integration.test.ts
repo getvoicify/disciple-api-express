@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import type { Job } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../../queues/church-membership-sync.types';
-import { ChurchMembershipSyncProcessor } from '../../queues/church-membership-sync.processor';
-import { ChurchMembershipHandlerRegistry } from '../../queues/handlers/handler-registry';
-import { MembershipSyncService } from '../../queues/handlers/membership-sync.service';
-import { OwnerCreatedHandler } from '../../queues/handlers/owner-created.handler';
-import { MemberJoinedHandler } from '../../queues/handlers/member-joined.handler';
-import { MemberLeftHandler } from '../../queues/handlers/member-left.handler';
-import { OwnershipTransferredHandler } from '../../queues/handlers/ownership-transferred.handler';
+import type { ChurchMembershipSyncJobData } from '../../queues/church-membership-sync/types';
+import { SyncProcessor } from '../../lib/queue/processor';
+import { JobHandlerRegistry } from '../../lib/queue/handler-registry';
+import { MembershipSyncService } from '../../queues/church-membership-sync/handlers/membership-sync.service';
+import { OwnerCreatedHandler } from '../../queues/church-membership-sync/handlers/owner-created.handler';
+import { MemberJoinedHandler } from '../../queues/church-membership-sync/handlers/member-joined.handler';
+import { MemberLeftHandler } from '../../queues/church-membership-sync/handlers/member-left.handler';
+import { OwnershipTransferredHandler } from '../../queues/church-membership-sync/handlers/ownership-transferred.handler';
 import { ChurchMembershipOutboxAdapter } from '../../churches/church-membership-outbox.adapter';
 import type { IChurchMembershipQueryService } from '../../churches/church-membership-query.service';
 import type { KeycloakAdminClient } from '../../keycloak/types';
@@ -39,7 +39,7 @@ vi.mock('../../logging', () => ({
  * - Multi-church membership handling
  */
 describe('Church Membership Sync - Integration Tests', () => {
-  let processor: ChurchMembershipSyncProcessor;
+  let processor: SyncProcessor<ChurchMembershipSyncJobData, ChurchMembershipSyncJobData>;
   let outboxAdapter: ChurchMembershipOutboxAdapter;
   let mockMembershipService: IChurchMembershipQueryService;
   let mockKeycloakClient: KeycloakAdminClient;
@@ -82,14 +82,23 @@ describe('Church Membership Sync - Integration Tests', () => {
     const syncService = new MembershipSyncService(mockMembershipService, mockKeycloakClient);
 
     // Create real handler registry
-    const handlerRegistry = new ChurchMembershipHandlerRegistry();
-    handlerRegistry.register(new OwnerCreatedHandler(syncService));
-    handlerRegistry.register(new MemberJoinedHandler(syncService));
-    handlerRegistry.register(new MemberLeftHandler(syncService));
-    handlerRegistry.register(new OwnershipTransferredHandler(syncService));
+    const handlers = [
+      new OwnerCreatedHandler(syncService),
+      new MemberJoinedHandler(syncService),
+      new MemberLeftHandler(syncService),
+      new OwnershipTransferredHandler(syncService),
+    ];
+    const handlerRegistry = new JobHandlerRegistry<ChurchMembershipSyncJobData>();
+    handlers.forEach(handler => handlerRegistry.register(handler));
 
     // Create real processor
-    processor = new ChurchMembershipSyncProcessor(handlerRegistry);
+    processor = new SyncProcessor<ChurchMembershipSyncJobData, ChurchMembershipSyncJobData>(
+      handlerRegistry,
+      (data) => ({
+        eventType: data.eventType,
+        entityId: data.churchId,
+      })
+    );
 
     // Create outbox adapter
     outboxAdapter = new ChurchMembershipOutboxAdapter(mockOutbox, mockQueue);

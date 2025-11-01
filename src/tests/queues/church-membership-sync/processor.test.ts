@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ChurchMembershipSyncProcessor } from '../../queues/church-membership-sync.processor';
-import { ChurchMembershipHandlerRegistry } from '../../queues/handlers/handler-registry';
-import { MembershipSyncService } from '../../queues/handlers/membership-sync.service';
-import { OwnerCreatedHandler } from '../../queues/handlers/owner-created.handler';
-import { MemberJoinedHandler } from '../../queues/handlers/member-joined.handler';
-import { MemberLeftHandler } from '../../queues/handlers/member-left.handler';
-import { OwnershipTransferredHandler } from '../../queues/handlers/ownership-transferred.handler';
-import type { IChurchMembershipQueryService } from '../../churches/church-membership-query.service';
-import type { KeycloakAdminClient } from '../../keycloak/types';
+import { SyncProcessor } from '../../../lib/queue/processor';
+import { JobHandlerRegistry } from '../../../lib/queue/handler-registry';
+import { MembershipSyncService } from '../../../queues/church-membership-sync/handlers/membership-sync.service';
+import { OwnerCreatedHandler } from '../../../queues/church-membership-sync/handlers/owner-created.handler';
+import { MemberJoinedHandler } from '../../../queues/church-membership-sync/handlers/member-joined.handler';
+import { MemberLeftHandler } from '../../../queues/church-membership-sync/handlers/member-left.handler';
+import { OwnershipTransferredHandler } from '../../../queues/church-membership-sync/handlers/ownership-transferred.handler';
+import type { IChurchMembershipQueryService } from '../../../churches/church-membership-query.service';
+import type { KeycloakAdminClient } from '../../../keycloak/types';
 import type { Job } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../../queues/church-membership-sync.types';
+import type { ChurchMembershipSyncJobData } from '../../../queues/church-membership-sync/types';
 
 // Mock services
 const createMockMembershipService = () => ({
@@ -30,8 +30,8 @@ describe('ChurchMembershipSyncProcessor', () => {
   let mockMembershipService: ReturnType<typeof createMockMembershipService>;
   let mockKeycloakClient: ReturnType<typeof createMockKeycloakClient>;
   let syncService: MembershipSyncService;
-  let handlerRegistry: ChurchMembershipHandlerRegistry;
-  let processor: ChurchMembershipSyncProcessor;
+  let handlerRegistry: JobHandlerRegistry<ChurchMembershipSyncJobData>;
+  let processor: SyncProcessor<ChurchMembershipSyncJobData>;
 
   beforeEach(() => {
     mockMembershipService = createMockMembershipService();
@@ -42,13 +42,22 @@ describe('ChurchMembershipSyncProcessor', () => {
       mockKeycloakClient as unknown as KeycloakAdminClient
     );
 
-    handlerRegistry = new ChurchMembershipHandlerRegistry();
-    handlerRegistry.register(new OwnerCreatedHandler(syncService));
-    handlerRegistry.register(new MemberJoinedHandler(syncService));
-    handlerRegistry.register(new MemberLeftHandler(syncService));
-    handlerRegistry.register(new OwnershipTransferredHandler(syncService));
+    const handlers = [
+      new OwnerCreatedHandler(syncService),
+      new MemberJoinedHandler(syncService),
+      new MemberLeftHandler(syncService),
+      new OwnershipTransferredHandler(syncService),
+    ];
+    handlerRegistry = new JobHandlerRegistry<ChurchMembershipSyncJobData>();
+    handlers.forEach(handler => handlerRegistry.register(handler));
 
-    processor = new ChurchMembershipSyncProcessor(handlerRegistry);
+    processor = new SyncProcessor<ChurchMembershipSyncJobData>(
+      handlerRegistry,
+      (data) => ({
+        eventType: data.eventType,
+        entityId: data.churchId,
+      })
+    );
   });
 
   describe('processOwnerCreatedEvent', () => {

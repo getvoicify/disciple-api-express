@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createHandlerRegistry } from '../../queues/handlers/registry-factory';
-import type { MembershipSyncService } from '../../queues/handlers/membership-sync.service';
+import { createHandlerRegistry } from '../../../lib/queue/registry-factory';
+import type { MembershipSyncService } from '../../../queues/church-membership-sync/handlers/membership-sync.service';
+import { OwnerCreatedHandler } from '../../../queues/church-membership-sync/handlers/owner-created.handler';
+import { MemberJoinedHandler } from '../../../queues/church-membership-sync/handlers/member-joined.handler';
+import { MemberLeftHandler } from '../../../queues/church-membership-sync/handlers/member-left.handler';
+import { OwnershipTransferredHandler } from '../../../queues/church-membership-sync/handlers/ownership-transferred.handler';
 
 describe('Handler Registry Factory', () => {
   let mockSyncService: MembershipSyncService;
@@ -14,16 +18,28 @@ describe('Handler Registry Factory', () => {
 
   describe('centralized handler registration', () => {
     it('should register all available handlers', () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
       const eventTypes = registry.getRegisteredEventTypes();
 
-      // Should have registered at least one handler
-      expect(eventTypes.length).toBeGreaterThan(0);
+      // Should have registered all 4 handlers
+      expect(eventTypes.length).toBe(4);
       expect(Array.isArray(eventTypes)).toBe(true);
     });
 
     it('should register each handler with its event type', () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
       const eventTypes = registry.getRegisteredEventTypes();
 
       // Each event type should have a corresponding handler
@@ -33,7 +49,13 @@ describe('Handler Registry Factory', () => {
     });
 
     it('should allow retrieval of handlers by event type', () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
       const eventTypes = registry.getRegisteredEventTypes();
 
       // Should be able to retrieve each handler
@@ -47,7 +69,13 @@ describe('Handler Registry Factory', () => {
 
   describe('handler functionality', () => {
     it('should pass sync service to all registered handlers', () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
       const eventTypes = registry.getRegisteredEventTypes();
 
       // All handlers should have access to the sync service
@@ -60,7 +88,13 @@ describe('Handler Registry Factory', () => {
     });
 
     it('should throw error when retrieving unregistered handler', () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
 
       expect(() => registry.getHandler('non-existent-event-type')).toThrow(
         'No handler registered for event type: non-existent-event-type'
@@ -70,7 +104,13 @@ describe('Handler Registry Factory', () => {
 
   describe('registry behavior', () => {
     it('should return unique event types', () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
       const eventTypes = registry.getRegisteredEventTypes();
 
       const uniqueEventTypes = [...new Set(eventTypes)];
@@ -78,7 +118,13 @@ describe('Handler Registry Factory', () => {
     });
 
     it('should not register duplicate handlers for same event type', () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
       const eventTypes = registry.getRegisteredEventTypes();
 
       // Count occurrences of each event type
@@ -96,7 +142,13 @@ describe('Handler Registry Factory', () => {
 
   describe('integration with existing handlers', () => {
     it('should be able to invoke a handler with proper job data', async () => {
-      const registry = createHandlerRegistry(mockSyncService);
+      const handlers = [
+        new OwnerCreatedHandler(mockSyncService),
+        new MemberJoinedHandler(mockSyncService),
+        new MemberLeftHandler(mockSyncService),
+        new OwnershipTransferredHandler(mockSyncService),
+      ];
+      const registry = createHandlerRegistry(handlers);
       const eventTypes = registry.getRegisteredEventTypes();
 
       // Find any single-user event type (not ownership-transferred)

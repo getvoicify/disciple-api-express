@@ -1,14 +1,14 @@
 import type { Job } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../church-membership-sync.types';
-import type { IChurchMembershipEventHandler } from './church-membership-event-handler.interface';
+import type { ChurchMembershipSyncJobData } from '../types';
+import type { IJobEventHandler } from '../../../lib/queue/job-event-handler.interface';
 import type { MembershipSyncService } from './membership-sync.service';
-import { logger } from '../../logging';
+import { logger } from '../../../logging';
 
 /**
  * Handler for ownership-transferred events
  * Syncs both the previous and new owner's church memberships to Keycloak
  */
-export class OwnershipTransferredHandler implements IChurchMembershipEventHandler {
+export class OwnershipTransferredHandler implements IJobEventHandler<ChurchMembershipSyncJobData> {
   readonly eventType = 'ownership-transferred';
 
   constructor(private readonly syncService: MembershipSyncService) {}

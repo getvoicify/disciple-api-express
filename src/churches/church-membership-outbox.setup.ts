@@ -5,7 +5,7 @@ import { ChurchMembershipOutboxAdapter } from './church-membership-outbox.adapte
 import type { ChurchMembershipOutboxEvent } from './church-membership-events';
 import { ChurchMembershipOutboxPublisher } from './church-membership-outbox.publisher';
 import type { Queue } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from '../queues/church-membership-sync.types';
+import type { ChurchMembershipSyncJobData } from '../queues/church-membership-sync/types';
 import * as crypto from 'node:crypto';
 
 /**

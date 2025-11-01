@@ -43,7 +43,7 @@ All 9 tests passed successfully:
 **Pattern:** Follows existing Keycloak event patterns from `src/keycloak/generalized-outbox.adapter.ts`
 
 ### 2. Church Membership Sync Job Processor
-**File:** `/Users/thompsonedolo/workspace/disciple-api-express/src/queues/church-membership-sync.processor.ts`
+**File:** `/Users/thompsonedolo/workspace/disciple-api-express/src/queues/sync.processor.ts`
 
 **Purpose:** Core processor that handles BullMQ jobs and syncs membership data to Keycloak.
 

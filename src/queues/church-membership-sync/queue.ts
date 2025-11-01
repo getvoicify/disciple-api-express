@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
 import type { QueueOptions } from 'bullmq';
-import type { ChurchMembershipSyncJobData } from './church-membership-sync.types';
-import { logger } from '../logging';
+import type { ChurchMembershipSyncJobData } from './types';
+import { logger } from '../../logging';
 
 export const ChurchMembershipSyncJobName = 'church-membership-sync';
 
