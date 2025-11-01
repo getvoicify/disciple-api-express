@@ -1,3 +1,10 @@
+## [2.4.1](https://github.com/getvoicify/disciple-api-express/compare/v2.4.0...v2.4.1) (2025-11-01)
+
+
+### 🐛 Bug Fixes
+
+* refactor worker handler ([#33](https://github.com/getvoicify/disciple-api-express/issues/33)) ([9230f6f](https://github.com/getvoicify/disciple-api-express/commit/9230f6f4c20b28e9b1b82c21f5046b76fddc0461))
+
 ## [2.4.0](https://github.com/getvoicify/disciple-api-express/compare/v2.3.0...v2.4.0) (2025-10-31)
 
 
