@@ -2,8 +2,7 @@ import dotenv from 'dotenv';
 import { getRawDb } from './utils/database';
 import { logger } from './logging';
 import { WorkerShutdownManager } from './lib/queue/worker-factory';
-import { createChurchMembershipSyncWorker } from './queues/church-membership-sync/worker';
-import type { KeycloakAdminConfig } from './keycloak/admin-client';
+import { WorkerLoader } from './lib/queue/worker-loader';
 
 dotenv.config();
 
@@ -12,13 +11,13 @@ dotenv.config();
  *
  * This is the entry point for all background job workers. It:
  * - Initializes shared dependencies (database, Redis)
- * - Creates and starts all queue-specific workers
+ * - Automatically discovers and loads all queue workers
  * - Manages graceful shutdown coordination
  *
- * To add a new queue:
- * 1. Create a worker file in src/queues/<feature>/worker.ts
- * 2. Export a factory function: createXxxWorker(deps)
- * 3. Import and initialize it here
+ * To add a new queue worker:
+ * 1. Create src/queues/<feature>/worker.ts with createXxxWorker() factory
+ * 2. Create src/queues/<feature>/worker.config.ts exporting workerConfig
+ * 3. The WorkerLoader will automatically discover and load it
  */
 
 const {
@@ -28,10 +27,6 @@ const {
   POSTGRES_PASSWORD: DB_PASSWORD,
   DB_HOST,
   DB_PORT,
-  IAM_ENDPOINT,
-  IAM_REALM,
-  KEYCLOAK_CLIENT_ID,
-  KEYCLOAK_CLIENT_SECRET,
   NODE_ENV,
 } = process.env;
 
@@ -45,31 +40,42 @@ const db = getRawDb({ DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT });
 const shutdownManager = new WorkerShutdownManager(logger);
 shutdownManager.setupSignalHandlers();
 
-if (IAM_ENDPOINT && IAM_REALM && KEYCLOAK_CLIENT_ID && KEYCLOAK_CLIENT_SECRET) {
-  const keycloakConfig: KeycloakAdminConfig = {
-    realm: IAM_REALM,
-    keycloakUrl: IAM_ENDPOINT.replace('realms', ''),
-    clientId: KEYCLOAK_CLIENT_ID,
-    clientSecret: KEYCLOAK_CLIENT_SECRET,
-  };
+async function initializeWorkers() {
+  const workerLoader = new WorkerLoader(logger);
 
-  const churchMembershipSyncWorker = createChurchMembershipSyncWorker({
+  const results = await workerLoader.loadWorkers({
     db,
     redisUrl: REDIS_URL,
-    keycloakConfig,
+    env: process.env as Record<string, string | undefined>,
   });
 
-  shutdownManager.register(churchMembershipSyncWorker);
-} else {
-  logger.warn(
-    'Keycloak configuration incomplete - church membership sync worker not started'
+  // Register all successfully loaded workers
+  const loadedWorkers = results.filter(r => r.status === 'loaded' && r.worker);
+  for (const result of loadedWorkers) {
+    if (result.worker) {
+      shutdownManager.register(result.worker);
+    }
+  }
+
+  // Log summary
+  const loadedCount = results.filter(r => r.status === 'loaded').length;
+  const disabledCount = results.filter(r => r.status === 'disabled').length;
+  const errorCount = results.filter(r => r.status === 'error').length;
+
+  logger.info(
+    {
+      redisUrl: REDIS_URL ? '***configured***' : 'in-memory',
+      environment: NODE_ENV,
+      workersLoaded: loadedCount,
+      workersDisabled: disabledCount,
+      workersWithErrors: errorCount,
+      workers: results.map(r => ({ name: r.name, status: r.status })),
+    },
+    'Worker orchestrator initialized'
   );
 }
 
-logger.info(
-  {
-    redisUrl: REDIS_URL ? '***configured***' : 'in-memory',
-    environment: NODE_ENV,
-  },
-  'Worker orchestrator initialized'
-);
+initializeWorkers().catch((error) => {
+  logger.error({ error: error.message }, 'Failed to initialize workers');
+  process.exit(1);
+});

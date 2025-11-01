@@ -4,7 +4,7 @@ import type { ILogger } from '../../logging';
 /**
  * Configuration for creating a worker
  */
-export interface WorkerConfig<T = unknown> {
+export interface WorkerConfig {
   queueName: string;
   concurrency?: number;
   redisUrl?: string;
