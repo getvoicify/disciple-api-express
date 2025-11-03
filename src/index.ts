@@ -51,6 +51,7 @@ import {initializeSocketServer} from "./websocket/socket.server";
 import {getUserIdFromRequest} from "./utils/get-user-id";
 import {createChurchMembershipSyncQueue} from "./queues/church-membership-sync/queue";
 import {setupChurchMembershipOutboxAdapter} from "./churches/church-membership-outbox.setup";
+import type { ChurchMembershipOutboxAdapter } from "./churches/church-membership-outbox.adapter";
 
 dotenv.config();
 
@@ -101,7 +102,8 @@ const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
 
 // Church Membership Sync Queue and Outbox setup
 // Only create the queue if Redis URL is configured (production/staging)
-let churchMembershipOutboxAdapter;
+let churchMembershipOutboxAdapter:
+	ChurchMembershipOutboxAdapter | undefined;
 if (redisUrl) {
 	const churchMembershipSyncQueue = createChurchMembershipSyncQueue({
 		connection: {

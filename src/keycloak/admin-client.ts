@@ -309,6 +309,50 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 
 		const url = `${this.config.keycloakUrl}/admin/realms/${this.config.realm}/users/${userId}`;
 
+		// First, fetch the current user to get the complete representation
+		const [getUserError, getUserResponse] = await safeExecute(
+			fetch(url, {
+				method: 'GET',
+				headers: {
+					'Authorization': `Bearer ${this.accessToken}`,
+				},
+			})
+		);
+
+		if (getUserError) {
+			logger.error({ error: getUserError, userId }, 'Failed to fetch user from Keycloak');
+			throw getUserError;
+		}
+
+		if (!getUserResponse.ok) {
+			if (getUserResponse.status === 404) {
+				const error = new Error('User not found');
+				error.name = 'UserNotFoundError';
+				logger.warn({ userId }, 'User not found in Keycloak');
+				throw error;
+			}
+			throw new Error(`Failed to fetch user: ${getUserResponse.statusText}`);
+		}
+
+		const [parseError, currentUser] = await safeExecute(() => getUserResponse.json() as Promise<KeycloakUserRepresentation>);
+
+		if (parseError) {
+			logger.error({ error: parseError, userId }, 'Failed to parse user response');
+			throw parseError;
+		}
+
+		// Merge new attributes with existing attributes
+		const updatedUser = {
+			...currentUser,
+			attributes: {
+				...(currentUser.attributes || {}),
+				...attributes,
+			},
+		};
+
+		logger.debug({ userId, newAttributes: attributes, url }, 'Updating user attributes in Keycloak');
+
+		// Update the user with the complete representation
 		const [error, response] = await safeExecute(
 			fetch(url, {
 				method: 'PUT',
@@ -316,7 +360,7 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 					'Authorization': `Bearer ${this.accessToken}`,
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ attributes }),
+				body: JSON.stringify(updatedUser),
 			})
 		);
 
@@ -332,7 +376,15 @@ export class KeycloakAdminClientImpl implements KeycloakAdminClient {
 				logger.warn({ userId }, 'User not found in Keycloak during attribute update');
 				throw error;
 			}
-			logger.error({ status: response.status, statusText: response.statusText, userId }, 'Failed to update user attributes');
+
+			// Try to get error details from response body
+			const [bodyError, errorBody] = await safeExecute(() => response.text());
+			logger.error({
+				status: response.status,
+				statusText: response.statusText,
+				userId,
+				errorBody: bodyError ? 'Could not read error body' : errorBody
+			}, 'Failed to update user attributes');
 			throw new Error(`Failed to update user attributes: ${response.statusText}`);
 		}
 

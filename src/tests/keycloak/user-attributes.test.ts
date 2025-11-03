@@ -149,6 +149,14 @@ describe('Keycloak User Attributes Management', () => {
   describe('updateUserAttributes', () => {
     it('should update user attributes in Keycloak', async () => {
       const userId = 'user-123';
+      const existingUser = {
+        id: userId,
+        username: 'testuser',
+        email: 'test@example.com',
+        attributes: {
+          existing_attribute: 'existing_value',
+        },
+      };
       const newAttributes = {
         church_membership: JSON.stringify([
           { churchId: 'church-1', role: 'Owner' },
@@ -165,6 +173,12 @@ describe('Keycloak User Attributes Management', () => {
                 expires_in: 3600,
                 token_type: 'Bearer',
               }),
+          });
+        }
+        if (url.includes(`/users/${userId}`) && options?.method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(existingUser),
           });
         }
         if (url.includes(`/users/${userId}`) && options?.method === 'PUT') {
@@ -195,6 +209,14 @@ describe('Keycloak User Attributes Management', () => {
 
     it('should throw error when update fails', async () => {
       const userId = 'user-123';
+      const existingUser = {
+        id: userId,
+        username: 'testuser',
+        email: 'test@example.com',
+        attributes: {
+          existing_attribute: 'existing_value',
+        },
+      };
       const newAttributes = {
         church_membership: '[]',
       };
@@ -209,6 +231,12 @@ describe('Keycloak User Attributes Management', () => {
                 expires_in: 3600,
                 token_type: 'Bearer',
               }),
+          });
+        }
+        if (url.includes(`/users/${userId}`) && options?.method === 'GET') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(existingUser),
           });
         }
         if (url.includes(`/users/${userId}`) && options?.method === 'PUT') {

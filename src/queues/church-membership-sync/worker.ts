@@ -1,37 +1,40 @@
-import { Worker } from 'bullmq';
+import {Worker} from 'bullmq';
 import type postgres from 'postgres';
-import { logger } from '../../logging';
-import { SyncProcessor } from '../../lib/queue/processor';
-import { ChurchMembershipSyncJobName } from './queue';
-import type { ChurchMembershipSyncJobData } from './types';
-import { createHandlerRegistry } from '../../lib/queue/registry-factory';
-import { MembershipSyncService } from './handlers/membership-sync.service';
-import { OwnerCreatedHandler } from './handlers/owner-created.handler';
-import { MemberJoinedHandler } from './handlers/member-joined.handler';
-import { MemberLeftHandler } from './handlers/member-left.handler';
-import { OwnershipTransferredHandler } from './handlers/ownership-transferred.handler';
-import { PostgresChurchMemberRepository } from '../../churches/postgres-repository';
-import { ChurchMembershipQueryService } from '../../churches/church-membership-query.service';
-import { KeycloakAdminClientImpl, type KeycloakAdminConfig } from '../../keycloak/admin-client';
-import { WorkerEventHandlers } from '../../lib/queue/worker-factory';
+import {logger} from '../../logging';
+import {SyncProcessor} from '../../lib/queue/processor';
+import {ChurchMembershipSyncJobName} from './queue';
+import type {ChurchMembershipSyncJobData} from './types';
+import {createHandlerRegistry} from '../../lib/queue/registry-factory';
+import {MembershipSyncService} from './handlers/membership-sync.service';
+import {OwnerCreatedHandler} from './handlers/owner-created.handler';
+import {MemberJoinedHandler} from './handlers/member-joined.handler';
+import {MemberLeftHandler} from './handlers/member-left.handler';
+import {OwnershipTransferredHandler} from './handlers/ownership-transferred.handler';
+import {PostgresChurchMemberRepository} from '../../churches/postgres-repository';
+import {ChurchMembershipQueryService} from '../../churches/church-membership-query.service';
+import {KeycloakAdminClientImpl, type KeycloakAdminConfig} from '../../keycloak/admin-client';
+import {WorkerEventHandlers} from '../../lib/queue/worker-factory';
+import {config} from 'dotenv';
+
+config();
 
 /**
  * Dependencies required to create the church membership sync worker
  */
 export interface ChurchMembershipSyncWorkerDeps {
-  db: postgres.Sql;
-  redisUrl?: string;
-  keycloakConfig: KeycloakAdminConfig;
+	db: postgres.Sql;
+	redisUrl?: string;
+	keycloakConfig: KeycloakAdminConfig;
 }
 
 /**
  * Validates that all required Keycloak environment variables are present
  */
 function validateKeycloakConfig(config: Partial<KeycloakAdminConfig>): asserts config is KeycloakAdminConfig {
-  if (!config.keycloakUrl || !config.realm || !config.clientId || !config.clientSecret) {
-    logger.error('Keycloak configuration is incomplete');
-    throw new Error('keycloakUrl, realm, clientId, and clientSecret are required for church membership sync');
-  }
+	if (!config.keycloakUrl || !config.realm || !config.clientId || !config.clientSecret) {
+		logger.error('Keycloak configuration is incomplete');
+		throw new Error('keycloakUrl, realm, clientId, and clientSecret are required for church membership sync');
+	}
 }
 
 /**
@@ -50,62 +53,64 @@ function validateKeycloakConfig(config: Partial<KeycloakAdminConfig>): asserts c
  * @returns Configured BullMQ worker instance
  */
 export function createChurchMembershipSyncWorker(
-  deps: ChurchMembershipSyncWorkerDeps
+	deps: ChurchMembershipSyncWorkerDeps
 ): Worker<ChurchMembershipSyncJobData> {
-  const { db, redisUrl, keycloakConfig } = deps;
+	const {db, redisUrl, keycloakConfig} = deps;
 
-  validateKeycloakConfig(keycloakConfig);
+	validateKeycloakConfig(keycloakConfig);
 
-  const keycloakAdminClient = new KeycloakAdminClientImpl(keycloakConfig);
+	logger.info({keycloakConfig}, 'Keycloak configuration validated');
 
-  const churchMemberRepository = new PostgresChurchMemberRepository(db);
-  const churchMembershipQueryService = new ChurchMembershipQueryService(churchMemberRepository);
+	const keycloakAdminClient = new KeycloakAdminClientImpl(keycloakConfig);
 
-  const syncService = new MembershipSyncService(churchMembershipQueryService, keycloakAdminClient);
+	const churchMemberRepository = new PostgresChurchMemberRepository(db);
+	const churchMembershipQueryService = new ChurchMembershipQueryService(churchMemberRepository);
 
-  const handlers = [
-    new OwnerCreatedHandler(syncService),
-    new MemberJoinedHandler(syncService),
-    new MemberLeftHandler(syncService),
-    new OwnershipTransferredHandler(syncService),
-  ];
-  const handlerRegistry = createHandlerRegistry(handlers);
+	const syncService = new MembershipSyncService(churchMembershipQueryService, keycloakAdminClient);
 
-  const churchMembershipSyncProcessor = new SyncProcessor<ChurchMembershipSyncJobData>(handlerRegistry, (data) => ({
-    eventType: data.eventType,
-    entityId: data.churchId,
-  }));
+	const handlers = [
+		new OwnerCreatedHandler(syncService),
+		new MemberJoinedHandler(syncService),
+		new MemberLeftHandler(syncService),
+		new OwnershipTransferredHandler(syncService),
+	];
+	const handlerRegistry = createHandlerRegistry(handlers);
 
-  const worker = new Worker<ChurchMembershipSyncJobData>(
-    ChurchMembershipSyncJobName,
-    async (job) => {
-      await churchMembershipSyncProcessor.process(job);
-    },
-    {
-      connection: redisUrl ? { url: redisUrl } : undefined,
-      concurrency: 1,
-    }
-  );
+	const churchMembershipSyncProcessor = new SyncProcessor<ChurchMembershipSyncJobData>(handlerRegistry, (data) => ({
+		eventType: data.eventType,
+		entityId: data.churchId,
+	}));
 
-  const eventHandlers = new WorkerEventHandlers<ChurchMembershipSyncJobData>(
-    logger,
-    (data) => ({
-      jobId: undefined,
-      eventType: data.eventType,
-    })
-  );
-  eventHandlers.attachTo(worker);
+	const worker = new Worker<ChurchMembershipSyncJobData>(
+		ChurchMembershipSyncJobName,
+		async (job) => {
+			await churchMembershipSyncProcessor.process(job);
+		},
+		{
+			connection: redisUrl ? {url: redisUrl} : undefined,
+			concurrency: 1,
+		}
+	);
 
-  logger.info(
-    {
-      queueName: ChurchMembershipSyncJobName,
-      concurrency: 1,
-      redisUrl: redisUrl ? '***configured***' : 'in-memory',
-      handlerCount: handlerRegistry.getRegisteredEventTypes().length,
-      eventTypes: handlerRegistry.getRegisteredEventTypes(),
-    },
-    'Church membership sync worker started'
-  );
+	const eventHandlers = new WorkerEventHandlers<ChurchMembershipSyncJobData>(
+		logger,
+		(data) => ({
+			jobId: undefined,
+			eventType: data.eventType,
+		})
+	);
+	eventHandlers.attachTo(worker);
 
-  return worker;
+	logger.info(
+		{
+			queueName: ChurchMembershipSyncJobName,
+			concurrency: 1,
+			redisUrl: redisUrl ? '***configured***' : 'in-memory',
+			handlerCount: handlerRegistry.getRegisteredEventTypes().length,
+			eventTypes: handlerRegistry.getRegisteredEventTypes(),
+		},
+		'Church membership sync worker started'
+	);
+
+	return worker;
 }
