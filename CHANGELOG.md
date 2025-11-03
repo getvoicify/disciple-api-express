@@ -1,3 +1,10 @@
+## [2.4.2](https://github.com/getvoicify/disciple-api-express/compare/v2.4.1...v2.4.2) (2025-11-03)
+
+
+### 🐛 Bug Fixes
+
+* create church sync ([#34](https://github.com/getvoicify/disciple-api-express/issues/34)) ([000e2fc](https://github.com/getvoicify/disciple-api-express/commit/000e2fc2ebc4516cbe039c8a01f28eecfe282774))
+
 ## [2.4.1](https://github.com/getvoicify/disciple-api-express/compare/v2.4.0...v2.4.1) (2025-11-01)
 
 
