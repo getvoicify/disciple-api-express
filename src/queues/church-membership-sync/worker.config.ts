@@ -17,28 +17,43 @@ export const workerConfig: WorkerConfig<ChurchMembershipSyncWorkerDeps> = {
    * Requires Keycloak configuration to be present
    */
   enabled: (env) => {
-    const { IAM_ENDPOINT, IAM_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET } = env;
-    return !!(IAM_ENDPOINT && IAM_REALM && KEYCLOAK_CLIENT_ID && KEYCLOAK_CLIENT_SECRET);
+    const { IAM_ENDPOINT, IAM_REALM, IAM_CLIENT_ID, IAM_CLIENT_SECRET } = env;
+    return !!(IAM_ENDPOINT && IAM_REALM && IAM_CLIENT_ID && IAM_CLIENT_SECRET);
   },
 
   /**
    * Extract worker-specific dependencies from common dependencies
    */
   getDependencies: (commonDeps: WorkerCommonDeps): ChurchMembershipSyncWorkerDeps => {
-    const { IAM_ENDPOINT, IAM_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET } = commonDeps.env;
+    const { IAM_ENDPOINT, IAM_REALM, IAM_CLIENT_ID, IAM_CLIENT_SECRET } = commonDeps.env;
 
-    if (!IAM_ENDPOINT || !IAM_REALM || !KEYCLOAK_CLIENT_ID || !KEYCLOAK_CLIENT_SECRET) {
+    if (!IAM_ENDPOINT || !IAM_REALM || !IAM_CLIENT_ID || !IAM_CLIENT_SECRET) {
       throw new Error(
-        'Church membership sync worker requires IAM_ENDPOINT, IAM_REALM, KEYCLOAK_CLIENT_ID, and KEYCLOAK_CLIENT_SECRET'
+        'Church membership sync worker requires IAM_ENDPOINT, IAM_REALM, IAM_CLIENT_ID, and IAM_CLIENT_SECRET'
       );
     }
 
+    const keycloakUrl = IAM_ENDPOINT.replace('/realms', '');
     const keycloakConfig: KeycloakAdminConfig = {
       realm: IAM_REALM,
-      keycloakUrl: IAM_ENDPOINT.replace('realms', ''),
-      clientId: KEYCLOAK_CLIENT_ID,
-      clientSecret: KEYCLOAK_CLIENT_SECRET,
+      keycloakUrl,
+      clientId: IAM_CLIENT_ID,
+      clientSecret: IAM_CLIENT_SECRET,
     };
+
+    // Note: Using dynamic import for logger to avoid circular dependencies
+    // in worker configuration. The logger is only used for debugging.
+    import('../../logging').then(({ logger }) => {
+      logger.debug(
+        {
+          originalEndpoint: IAM_ENDPOINT,
+          constructedUrl: keycloakUrl,
+          realm: IAM_REALM,
+          clientId: IAM_CLIENT_ID,
+        },
+        'Church membership sync worker Keycloak configuration'
+      );
+    });
 
     return {
       db: commonDeps.db,
