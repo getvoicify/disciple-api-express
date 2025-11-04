@@ -4,7 +4,6 @@ import {createServer} from 'http';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'js-yaml';
 import dotenv from 'dotenv';
-import {concatMap, defer, interval, Subject, takeUntil, tap} from 'rxjs';
 import {getRawDb} from "./utils/database";
 import {notesRouter} from "./notes/routes/routes";
 import {PostgresNoteRepository} from "./notes/pg-repository";
@@ -90,7 +89,7 @@ const keycloakConfig = {
 	clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
 } satisfies KeycloakAdminConfig;
 
-const {adapter: keycloakAdapter, outbox} = setupKeycloakAdapter(db, keycloakConfig);
+const {adapter: keycloakAdapter, outbox, queue: keycloakOutboxQueue} = setupKeycloakAdapter(db, keycloakConfig, redisUrl);
 const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
 
 const churchRepository = new PostgresChurchRepository(db);
@@ -364,24 +363,20 @@ httpServer.listen(PORT, () => {
 	logger.info({port: PORT}, 'Server started with WebSocket support');
 });
 
-const sigEndSub = new Subject<void>();
-
-interval(1000 * 15).pipe(
-	concatMap(
-		() => defer(() => safeExecute(outbox.processDue())).pipe(
-			tap(([err]) => {
-				if (err) {
-					logger.error({error: err}, 'Error processing due events');
-				}
-			})
-		)
-	),
-	takeUntil(sigEndSub)
-).subscribe();
-
-const clearIntervalFn = () => {
-	sigEndSub.next();
+// Setup fallback repeatable job for Keycloak outbox processing (every 10 seconds)
+// This catches any events that might have been missed by the event-driven triggers
+if (keycloakOutboxQueue) {
+	keycloakOutboxQueue.upsertJobScheduler(
+		'keycloak-outbox-fallback',
+		{ pattern: '*/10 * * * * *' }, // Every 10 seconds
+		{
+			data: {
+				triggeredAt: Date.now(),
+			},
+		}
+	).then(() => {
+		logger.info('Keycloak outbox fallback job scheduled (every 10 seconds)');
+	}).catch((error) => {
+		logger.error({ error: error.message }, 'Failed to schedule fallback job');
+	});
 }
-
-process.on('SIGINT', clearIntervalFn);
-process.on('SIGTERM', clearIntervalFn);
