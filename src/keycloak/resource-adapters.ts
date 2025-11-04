@@ -114,7 +114,7 @@ export class KeycloakAdapterFactory {
 			}
 		];
 
-		this.generalizedAdapter = new GeneralizedKeycloakOutboxAdapter(outbox, customConfigs);
+		this.generalizedAdapter = new GeneralizedKeycloakOutboxAdapter(outbox, undefined, customConfigs);
 	}
 
 	/**
