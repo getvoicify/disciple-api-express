@@ -262,6 +262,30 @@ This project follows [Semantic Versioning](https://semver.org/) and uses [Conven
 - PostgreSQL 16+
 - Redis 7+
 
+### Redis Configuration
+
+**CRITICAL**: Redis MUST be configured with `maxmemory-policy noeviction` for BullMQ job queues to work reliably.
+
+With the default `volatile-lru` eviction policy, Redis may evict job data under memory pressure, causing:
+- Lost jobs
+- Failed queue processing
+- Data inconsistency
+
+**Docker Compose (already configured)**:
+```yaml
+redis:
+  command: redis-server --maxmemory-policy noeviction
+```
+
+**Managed Redis (AWS ElastiCache, Google Cloud Memorystore, etc.)**:
+Set the `maxmemory-policy` parameter to `noeviction` in your Redis instance configuration.
+
+**Verification**:
+```bash
+redis-cli CONFIG GET maxmemory-policy
+# Should return: 1) "maxmemory-policy" 2) "noeviction"
+```
+
 ### Scripts
 
 ```bash

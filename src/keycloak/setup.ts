@@ -6,11 +6,28 @@ import {createOutbox} from "../outbox";
 import {GeneralizedKeycloakOutboxAdapter, type KeycloakOutboxEvent} from "./generalized-outbox.adapter";
 import * as crypto from "node:crypto";
 import {KeycloakOutboxPublisher} from "./outbox.publisher";
+import {createKeycloakOutboxQueue} from "../queues/keycloak-outbox/queue";
+import type { Queue } from "bullmq";
+import type { KeycloakOutboxJobData } from "../queues/keycloak-outbox/types";
+
+/**
+ * Configuration options for setting up the Keycloak adapter
+ */
+export interface SetupKeycloakAdapterOptions {
+	db: RawDb;
+	config: KeycloakAdminConfig;
+	redisUrl?: string;
+}
 
 export function setupKeycloakAdapter(
 	db: RawDb,
-	config: KeycloakAdminConfig
-) {
+	config: KeycloakAdminConfig,
+	redisUrl?: string
+): {
+	adapter: GeneralizedKeycloakOutboxAdapter;
+	outbox: ReturnType<typeof createOutbox<KeycloakOutboxEvent>>;
+	queue?: Queue<KeycloakOutboxJobData>;
+} {
 
 	const adminClient = new KeycloakAdminClientImpl(config);
 	const resourceManager = new KeycloakResourceManagerImpl(adminClient);
@@ -29,5 +46,14 @@ export function setupKeycloakAdapter(
 		}
 	});
 
-	return {adapter: new GeneralizedKeycloakOutboxAdapter(outbox), outbox};
+	// Only create the queue if Redis is available
+	const queue = redisUrl ? createKeycloakOutboxQueue({
+		connection: { url: redisUrl }
+	}) : undefined;
+
+	return {
+		adapter: new GeneralizedKeycloakOutboxAdapter(outbox, queue),
+		outbox,
+		queue
+	};
 }

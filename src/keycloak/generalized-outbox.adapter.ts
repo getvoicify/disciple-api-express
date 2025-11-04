@@ -1,5 +1,10 @@
 import { type KeycloakResourcePermissions as BaseKeycloakResourcePermissions } from "./types";
 import { type Outbox } from "../outbox";
+import type { Queue } from "bullmq";
+import type { KeycloakOutboxJobData } from "../queues/keycloak-outbox/types";
+import { enqueueOutboxProcessing } from "../queues/keycloak-outbox/queue";
+import { safeExecute } from "../utils/handle-async";
+import { logger } from "../logging";
 
 // Extended permissions type that allows custom scopes
 export interface KeycloakResourcePermissions extends BaseKeycloakResourcePermissions {
@@ -112,6 +117,7 @@ export class GeneralizedKeycloakOutboxAdapter {
 
 	constructor(
 		private readonly outbox: Outbox<KeycloakOutboxEvent>,
+		private readonly queue?: Queue<KeycloakOutboxJobData>,
 		configs?: ResourceConfig[]
 	) {
 		// Register default configurations
@@ -120,6 +126,21 @@ export class GeneralizedKeycloakOutboxAdapter {
 		// Register custom configurations
 		if (configs) {
 			configs.forEach(config => this.registerResourceConfig(config));
+		}
+	}
+
+	/**
+	 * Trigger immediate processing of the outbox by enqueueing a job
+	 * This enables event-driven processing instead of polling
+	 */
+	private async triggerProcessing(): Promise<void> {
+		if (!this.queue) {
+			return;
+		}
+
+		const [error] = await safeExecute(enqueueOutboxProcessing(this.queue));
+		if (error) {
+			logger.error({ error: error.message }, 'Failed to trigger outbox processing');
 		}
 	}
 
@@ -252,6 +273,7 @@ export class GeneralizedKeycloakOutboxAdapter {
 		};
 
 		await this.outbox.enqueueCreate('keycloak_resource', transformedResource.id, event);
+		await this.triggerProcessing();
 	}
 
 	/**
@@ -281,6 +303,7 @@ export class GeneralizedKeycloakOutboxAdapter {
 		};
 
 		await this.outbox.enqueueUpdate('keycloak_resource', resourceId, event);
+		await this.triggerProcessing();
 	}
 
 	/**
@@ -310,6 +333,7 @@ export class GeneralizedKeycloakOutboxAdapter {
 		};
 
 		await this.outbox.enqueueUpdate('keycloak_resource', resourceId, event);
+		await this.triggerProcessing();
 	}
 
 	/**
@@ -334,6 +358,7 @@ export class GeneralizedKeycloakOutboxAdapter {
 		};
 
 		await this.outbox.enqueueUpdate('keycloak_resource', resourceId, event);
+		await this.triggerProcessing();
 	}
 
 	/**
@@ -360,6 +385,7 @@ export class GeneralizedKeycloakOutboxAdapter {
 		};
 
 		await this.outbox.enqueueUpdate('keycloak_resource', resourceId, event);
+		await this.triggerProcessing();
 	}
 
 	/**
@@ -382,6 +408,7 @@ export class GeneralizedKeycloakOutboxAdapter {
 		};
 
 		await this.outbox.enqueueDelete('keycloak_resource', resourceId, event);
+		await this.triggerProcessing();
 	}
 
 	/**
