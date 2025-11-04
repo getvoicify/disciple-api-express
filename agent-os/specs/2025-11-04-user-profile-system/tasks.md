@@ -58,21 +58,21 @@ Estimated Effort: 2 weeks (Large)
 #### Task Group 2: Profile Service and Business Logic
 **Dependencies:** Task Group 1
 
-- [ ] 2.0 Complete service layer
-  - [ ] 2.1 Write 5-8 focused tests for ProfileService
+- [x] 2.0 Complete service layer
+  - [x] 2.1 Write 5-8 focused tests for ProfileService
     - Test createProfile with Keycloak sync (auto-populate from Keycloak data)
     - Test updateProfile with cache invalidation
     - Test getProfile with privacy enforcement
     - Test getStatistics with metrics calculation and caching
     - Test getDashboard data aggregation from multiple sources
     - Verify the test using the coderabbit-reviewer agent and fix any critical issue
-  - [ ] 2.2 Create Zod validation schemas
+  - [x] 2.2 Create Zod validation schemas
     - `CreateProfileSchema`: bio, testimony, profile_photo_media_id, privacy_mode, field_visibility_settings
     - `UpdateProfileSchema`: partial updates for all profile fields
     - `PrivacyModeEnum`: 'public', 'church_only', 'private'
     - `FieldVisibilitySchema`: JSONB structure for per-field visibility
     - Follow pattern from: `src/notes/schemas.ts`
-  - [ ] 2.3 Implement ProfileService
+  - [x] 2.3 Implement ProfileService
     - Method: `createProfile(userId, data)` - Create profile with Keycloak sync
     - Method: `updateProfile(userId, data)` - Update profile and invalidate cache
     - Method: `getProfile(userId, requestingUserId)` - Fetch profile with privacy enforcement
@@ -82,13 +82,13 @@ Estimated Effort: 2 weeks (Large)
     - Redis caching: Cache profile data and statistics with 5-minute TTL
     - Follow pattern from: `src/notes/service.ts`
     - Verify the implementation using the coderabbit-reviewer agent and fix any critical issue
-  - [ ] 2.4 Implement dashboard aggregation logic
+  - [x] 2.4 Implement dashboard aggregation logic
     - Query recent notes (last 10) from notes table
     - Query active prayer requests and memberships from prayer_wall_memberships
     - Query devotional series progress from posts/series tables
     - Calculate spiritual health score or engagement summary
     - Combine data into unified dashboard response
-  - [ ] 2.5 Ensure service layer tests pass
+  - [x] 2.5 Ensure service layer tests pass
     - Run ONLY the 5-8 tests written in 2.1
     - Verify Keycloak sync works with mock admin client
     - Verify cache invalidation on profile update
@@ -100,6 +100,7 @@ Estimated Effort: 2 weeks (Large)
 - Statistics are calculated correctly and cached
 - Dashboard aggregates data from all sources (notes, prayers, devotionals)
 - Redis cache improves performance for repeated requests
+- Create custom error classes for service layer
 
 ### API Endpoints
 
