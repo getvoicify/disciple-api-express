@@ -11,15 +11,15 @@ Estimated Effort: 2 weeks (Large)
 #### Task Group 1: User Profiles Database and Repository
 **Dependencies:** None
 
-- [ ] 1.0 Complete database and repository layer
-  - [ ] 1.1 Write 5-8 focused tests for ProfileRepository
+- [x] 1.0 Complete database and repository layer
+  - [x] 1.1 Write 5-8 focused tests for ProfileRepository
     - Test profile CRUD operations (create, findById, update)
     - Test privacy filtering (respect privacy_mode when fetching profiles)
     - Test statistics aggregation queries (notes count, prayers count, devotionals count)
     - Test cached metrics storage and retrieval
     - Test Keycloak user ID foreign key relationship
     - Verify the test using the coderabbit-reviewer agent and fix any critical issue
-  - [ ] 1.2 Create database migration for user_profiles table
+  - [x] 1.2 Create database migration for user_profiles table
     - Table: `user_profiles` with UUID `user_id` as primary key (references Keycloak user)
     - Fields: `bio` (TEXT), `testimony` (TEXT), `profile_photo_media_id` (UUID FK to media)
     - Fields: `privacy_mode` (ENUM: 'public', 'church_only', 'private', default 'church_only')
@@ -28,19 +28,19 @@ Estimated Effort: 2 weeks (Large)
     - Timestamps: `created_at`, `updated_at` with auto-update trigger
     - Indexes: primary key on `user_id`, index on `privacy_mode`
     - Follow pattern from: `migrations/001_create_notes_table.sql`
-  - [ ] 1.3 Create ProfileRepository interface
+  - [x] 1.3 Create ProfileRepository interface
     - Methods: `create(profile)`, `findById(userId, requestingUserId)`, `update(userId, data)`
     - Methods: `getStatistics(userId)`, `getCachedMetrics(userId)`, `updateCachedMetrics(userId, metrics)`
     - Privacy filtering parameter in `findById` to enforce access control
     - Follow pattern from: `src/notes/repository.ts`
-  - [ ] 1.4 Implement PostgresProfileRepository
+  - [x] 1.4 Implement PostgresProfileRepository
     - CRUD operations with safeExecute error handling
     - Privacy enforcement: filter based on privacy_mode and requesting user's role
     - Aggregation queries for statistics (notes count, prayers count, devotionals count)
     - Keycloak integration: validate user_id exists in Keycloak
     - Follow pattern from: `src/notes/pg-repository.ts`
     - Verify the implementation using the coderabbit-reviewer agent and fix any critical issue
-  - [ ] 1.5 Ensure database layer tests pass
+  - [x] 1.5 Ensure database layer tests pass
     - Run ONLY the 5-8 tests written in 1.1
     - Verify migration runs successfully
     - Verify privacy filtering works correctly
