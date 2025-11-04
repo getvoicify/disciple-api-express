@@ -38,7 +38,8 @@ export const workerConfig: WorkerConfig<KeycloakOutboxWorkerDeps> = {
       );
     }
 
-    const keycloakUrl = IAM_ENDPOINT.replace('/realms', '');
+    // Extract base URL from IAM_ENDPOINT (e.g., https://auth.example.com/realms/myrealm -> https://auth.example.com/)
+    const keycloakUrl = IAM_ENDPOINT.replace(/\/realms\/.*/, '/');
     const keycloakConfig: KeycloakAdminConfig = {
       realm: IAM_REALM,
       keycloakUrl,

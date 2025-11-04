@@ -50,7 +50,7 @@ export function createKeycloakOutboxWorker(
 
       if (error) {
         logger.error(
-          { error: error.message, jobId: job.id },
+          { error, jobId: job.id },
           'Error processing Keycloak outbox events'
         );
         throw error; // Re-throw to trigger retry mechanism

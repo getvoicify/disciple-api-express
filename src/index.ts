@@ -33,7 +33,6 @@ import {errorHandler, notFoundHandler} from "./middleware/error-handler.middlewa
 import {usersRouter} from "./users/router";
 import {setupKeycloakAdapter} from "./keycloak/setup";
 import {type KeycloakAdminConfig} from "./keycloak/admin-client";
-import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository, CacheInvalidationService, type ICacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 import {wallsRouter} from "./prayer-walls/routes/walls.routes";

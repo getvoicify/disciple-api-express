@@ -264,7 +264,7 @@ describe('Keycloak Outbox Worker', () => {
 
   it('should handle graceful worker shutdown', async () => {
     const closePromise = worker.close();
-    await expect(closePromise).resolves.not.toThrow();
+    await expect(closePromise).resolves.toBeUndefined();
   });
 
   it('should handle errors from outbox.processDue()', async () => {
