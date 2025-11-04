@@ -89,7 +89,7 @@ const keycloakConfig = {
 	clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
 } satisfies KeycloakAdminConfig;
 
-const {adapter: keycloakAdapter, outbox, queue: keycloakOutboxQueue} = setupKeycloakAdapter(db, keycloakConfig, redisUrl);
+const {adapter: keycloakAdapter, queue: keycloakOutboxQueue} = setupKeycloakAdapter(db, keycloakConfig, redisUrl);
 const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
 
 const churchRepository = new PostgresChurchRepository(db);
