@@ -90,6 +90,14 @@ const keycloakConfig = {
 } satisfies KeycloakAdminConfig;
 
 const {adapter: keycloakAdapter, queue: keycloakOutboxQueue} = setupKeycloakAdapter(db, keycloakConfig, redisUrl);
+
+// Log Keycloak outbox queue initialization status
+if (keycloakOutboxQueue) {
+	logger.info('Keycloak outbox queue initialized');
+} else {
+	logger.warn('Redis URL not configured - Keycloak outbox queue will use fallback polling');
+}
+
 const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
 
 const churchRepository = new PostgresChurchRepository(db);

@@ -26,7 +26,7 @@ export function setupKeycloakAdapter(
 ): {
 	adapter: GeneralizedKeycloakOutboxAdapter;
 	outbox: ReturnType<typeof createOutbox<KeycloakOutboxEvent>>;
-	queue: Queue<KeycloakOutboxJobData>;
+	queue?: Queue<KeycloakOutboxJobData>;
 } {
 
 	const adminClient = new KeycloakAdminClientImpl(config);
@@ -46,10 +46,10 @@ export function setupKeycloakAdapter(
 		}
 	});
 
-	// Create the Keycloak outbox queue
-	const queue = createKeycloakOutboxQueue(
-		redisUrl ? { connection: { url: redisUrl } } : undefined
-	);
+	// Only create the queue if Redis is available
+	const queue = redisUrl ? createKeycloakOutboxQueue({
+		connection: { url: redisUrl }
+	}) : undefined;
 
 	return {
 		adapter: new GeneralizedKeycloakOutboxAdapter(outbox, queue),
