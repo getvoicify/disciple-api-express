@@ -27,7 +27,7 @@ services:
     image: redis:7-alpine
     container_name: disciple_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme} --maxmemory-policy noeviction
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
