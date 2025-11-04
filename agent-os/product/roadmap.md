@@ -17,7 +17,7 @@ These foundational features are already built and operational:
 
 These features transform Disciple API from a content platform into a vibrant community space:
 
-1. [ ] **Prayer Wall Foundation** — Create church-wide prayer walls where members submit prayer requests (with name or anonymously) and pastors/members respond with encouragement and intercession. Includes real-time updates, prayer threading, and moderation tools for church leadership. `L`
+1. [x] **Prayer Wall Foundation** — Create church-wide prayer walls where members submit prayer requests (with name or anonymously) and pastors/members respond with encouragement and intercession. Includes real-time updates, prayer threading, and moderation tools for church leadership. `L`
 
 2. [ ] **Private Prayer Rooms** — Enable members to create and manage private prayer walls, inviting specific members to share prayers in intimate small group settings. Includes invitation system, access control, and privacy settings. `M`
 
@@ -52,6 +52,8 @@ These features deepen engagement and create sticky, long-term platform value:
 15. [ ] **Member Milestones** — Celebrate spiritual growth with automatic milestone recognition (devotional streaks, notes created, prayers offered) and shareable achievements to encourage consistent engagement. `M`
 
 16. [ ] **Small Group Management** — Formal small group creation with dedicated spaces for group devotionals, shared prayer walls, group notes, and attendance tracking integrated with church management. `L`
+
+17. [ ] **Profile Engagement Visualization** — Visual charts and graphs showing spiritual engagement trends, devotional completion over time, and prayer activity patterns for user profiles. `S`
 
 ## Notes
 
