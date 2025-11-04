@@ -155,7 +155,20 @@ describe('ProfileService', () => {
   });
 
   describe('updateProfile', () => {
-    it('should update profile and invalidate cache', async () => {
+    it('should throw ProfileUnauthorizedError when requestingUserId !== userId', async () => {
+      const input: UpdateProfileInput = {
+        bio: 'Updated bio',
+        testimony: 'Updated testimony',
+      };
+
+      await expect(
+        service.updateProfile(TEST_USER_ID, TEST_REQUESTING_USER_ID, input)
+      ).rejects.toThrow(ProfileUnauthorizedError);
+
+      expect(mockRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should allow update when requestingUserId === userId', async () => {
       const input: UpdateProfileInput = {
         bio: 'Updated bio',
         testimony: 'Updated testimony',
@@ -177,7 +190,7 @@ describe('ProfileService', () => {
 
       mockRepository.update.mockResolvedValue(mockUpdatedProfile);
 
-      const result = await service.updateProfile(TEST_USER_ID, input);
+      const result = await service.updateProfile(TEST_USER_ID, TEST_USER_ID, input);
 
       expect(mockRepository.update).toHaveBeenCalledWith(
         TEST_USER_ID,
@@ -199,7 +212,7 @@ describe('ProfileService', () => {
 
       mockRepository.update.mockResolvedValue(null);
 
-      await expect(service.updateProfile(TEST_USER_ID, input)).rejects.toThrow(
+      await expect(service.updateProfile(TEST_USER_ID, TEST_USER_ID, input)).rejects.toThrow(
         ProfileNotFoundError
       );
     });
@@ -253,8 +266,7 @@ describe('ProfileService', () => {
       expect(mockCacheRepository.read).toHaveBeenCalledWith(`profile:${TEST_USER_ID}`);
       expect(mockRepository.findById).toHaveBeenCalledWith(
         TEST_USER_ID,
-        TEST_REQUESTING_USER_ID,
-        undefined
+        TEST_REQUESTING_USER_ID
       );
       expect(mockCacheRepository.write).toHaveBeenCalledWith(
         `profile:${TEST_USER_ID}`,
@@ -264,47 +276,20 @@ describe('ProfileService', () => {
       expect(result).toEqual(mockProfile);
     });
 
-    it('should enforce privacy settings through repository', async () => {
+    it('should throw ProfileNotFoundError when profile not found or access denied', async () => {
       mockCacheRepository.read.mockResolvedValue(null);
       mockRepository.findById.mockResolvedValue(null);
 
-      const result = await service.getProfile(TEST_USER_ID, TEST_REQUESTING_USER_ID);
+      await expect(
+        service.getProfile(TEST_USER_ID, TEST_REQUESTING_USER_ID)
+      ).rejects.toThrow(ProfileNotFoundError);
 
       expect(mockRepository.findById).toHaveBeenCalledWith(
         TEST_USER_ID,
-        TEST_REQUESTING_USER_ID,
-        undefined
+        TEST_REQUESTING_USER_ID
       );
-      expect(result).toBeNull();
     });
 
-    it('should pass user role to repository for pastor access', async () => {
-      const mockProfile: Profile = {
-        userId: TEST_USER_ID,
-        bio: 'Test bio',
-        testimony: 'Test testimony',
-        profilePhotoMediaId: null,
-        privacyMode: 'private',
-        fieldVisibilitySettings: {},
-        cachedMetrics: {},
-        notificationPreferences: {},
-        preferredDevotionalTime: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      mockCacheRepository.read.mockResolvedValue(null);
-      mockRepository.findById.mockResolvedValue(mockProfile);
-
-      const result = await service.getProfile(TEST_USER_ID, TEST_REQUESTING_USER_ID, 'pastor');
-
-      expect(mockRepository.findById).toHaveBeenCalledWith(
-        TEST_USER_ID,
-        TEST_REQUESTING_USER_ID,
-        'pastor'
-      );
-      expect(result).toEqual(mockProfile);
-    });
   });
 
   describe('getStatistics', () => {
@@ -386,6 +371,36 @@ describe('ProfileService', () => {
   });
 
   describe('getDashboard', () => {
+    it('should throw ProfileUnauthorizedError when requestingUserId !== userId', async () => {
+      await expect(
+        service.getDashboard(TEST_USER_ID, TEST_REQUESTING_USER_ID)
+      ).rejects.toThrow(ProfileUnauthorizedError);
+
+      expect(mockCacheRepository.read).not.toHaveBeenCalled();
+      expect(mockDb.begin).not.toHaveBeenCalled();
+    });
+
+    it('should allow access when requestingUserId === userId', async () => {
+      const mockDashboard = {
+        recentNotes: [],
+        activePrayerRequests: [],
+        devotionalProgress: [],
+        statistics: {
+          notesCount: 10,
+          prayersCount: 5,
+          devotionalsCount: 3,
+        },
+      };
+
+      mockCacheRepository.read.mockResolvedValue(mockDashboard);
+
+      const result = await service.getDashboard(TEST_USER_ID, TEST_USER_ID);
+
+      expect(mockCacheRepository.read).toHaveBeenCalledWith(`profile:dashboard:${TEST_USER_ID}`);
+      expect(mockDb.begin).not.toHaveBeenCalled();
+      expect(result).toEqual(mockDashboard);
+    });
+
     it('should return cached dashboard if available', async () => {
       const mockDashboard = {
         recentNotes: [],
@@ -400,7 +415,7 @@ describe('ProfileService', () => {
 
       mockCacheRepository.read.mockResolvedValue(mockDashboard);
 
-      const result = await service.getDashboard(TEST_USER_ID);
+      const result = await service.getDashboard(TEST_USER_ID, TEST_USER_ID);
 
       expect(mockCacheRepository.read).toHaveBeenCalledWith(`profile:dashboard:${TEST_USER_ID}`);
       expect(mockDb.begin).not.toHaveBeenCalled();
@@ -471,7 +486,7 @@ describe('ProfileService', () => {
 
       mockRepository.getStatistics.mockResolvedValue(mockStatistics);
 
-      const result = await service.getDashboard(TEST_USER_ID);
+      const result = await service.getDashboard(TEST_USER_ID, TEST_USER_ID);
 
       expect(mockDb.begin).toHaveBeenCalled();
       expect(mockRepository.getStatistics).toHaveBeenCalledWith(TEST_USER_ID);

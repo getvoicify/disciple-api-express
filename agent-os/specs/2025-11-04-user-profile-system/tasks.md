@@ -107,8 +107,8 @@ Estimated Effort: 2 weeks (Large)
 #### Task Group 3: Profile API Endpoints
 **Dependencies:** Task Group 2
 
-- [ ] 3.0 Complete API endpoints
-  - [ ] 3.1 Write 6-8 focused tests for profile endpoints
+- [x] 3.0 Complete API endpoints
+  - [x] 3.1 Write 6-8 focused tests for profile endpoints
     - Test POST /profiles (profile creation with Keycloak auto-population)
     - Test PUT /profiles/:userId (own profile update only, authorization check)
     - Test GET /profiles/:userId (privacy enforcement based on requesting user)
@@ -116,40 +116,40 @@ Estimated Effort: 2 weeks (Large)
     - Test GET /profiles/:userId/statistics (statistics retrieval)
     - Test profile photo upload integration with media system
     - Verify the test using the coderabbit-reviewer agent and fix any critical issue
-  - [ ] 3.2 Create profileCreate.endpoint.ts (POST /profiles)
+  - [x] 3.2 Create profileCreate.endpoint.ts (POST /profiles)
     - Auto-populate from Keycloak on first access
     - Validate request body with CreateProfileSchema
     - Use existing media upload for profile photo (reference media_id)
     - Return created profile with 201 status
     - Follow pattern from: `src/notes/routes/noteCreate.endpoint.ts`
-  - [ ] 3.3 Create profileUpdate.endpoint.ts (PUT /profiles/:userId)
+  - [x] 3.3 Create profileUpdate.endpoint.ts (PUT /profiles/:userId)
     - Authorization: only allow users to update their own profile
     - Validate request body with UpdateProfileSchema
     - Invalidate Redis cache on successful update
     - Return updated profile with 200 status
     - Follow pattern from: `src/notes/routes/noteUpdate.endpoint.ts`
-  - [ ] 3.4 Create profileFetch.endpoint.ts (GET /profiles/:userId)
+  - [x] 3.4 Create profileFetch.endpoint.ts (GET /profiles/:userId)
     - Extract requesting user from JWT: `req.user[1].payload.sub`
     - Enforce privacy settings based on privacy_mode
     - Pastors bypass privacy restrictions for church members
     - Return profile with 200 status or 403 if access denied
     - Follow pattern from: `src/notes/routes/noteFetch.endpoint.ts`
-  - [ ] 3.5 Create dashboardFetch.endpoint.ts (GET /profiles/:userId/dashboard)
+  - [x] 3.5 Create dashboardFetch.endpoint.ts (GET /profiles/:userId/dashboard)
     - Authorization: users can only view their own dashboard
     - Return aggregated dashboard data (notes, prayers, devotionals)
     - Include spiritual health score/engagement summary
     - Return dashboard with 200 status
-  - [ ] 3.6 Create profileStatistics.endpoint.ts (GET /profiles/:userId/statistics)
+  - [x] 3.6 Create profileStatistics.endpoint.ts (GET /profiles/:userId/statistics)
     - Enforce privacy settings (respect field_visibility_settings)
     - Return cached statistics or calculate if cache expired
     - Include: notes count, prayers count, devotionals count, days active
     - Return statistics with 200 status
-  - [ ] 3.7 Set up routes and register endpoints
+  - [x] 3.7 Set up routes and register endpoints
     - Create `src/profiles/routes/routes.ts`
     - Register all profile endpoints with Express router
     - Add JWT authentication middleware to all routes
     - Follow pattern from: `src/notes/routes/routes.ts`
-  - [ ] 3.8 Ensure API endpoint tests pass
+  - [x] 3.8 Ensure API endpoint tests pass
     - Run ONLY the 6-8 tests written in 3.1
     - Verify authentication and authorization work correctly
     - Verify privacy enforcement at API level

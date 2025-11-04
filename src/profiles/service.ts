@@ -1,9 +1,9 @@
 import type { ProfileRepository } from './repository';
 import type { CreateProfileInput, UpdateProfileInput, Profile, ProfileStatistics } from './schemas';
 import { CreateProfileInput as CreateProfileSchema, UpdateProfileInput as UpdateProfileSchema } from './schemas';
-import { ProfileNotFoundError } from './errors';
+import { ProfileNotFoundError, ProfileUnauthorizedError } from './errors';
 import type { KeycloakAdminClient } from '../keycloak/types';
-import type { CacheRepository } from '../cache/cache.repository';
+import type { CacheRepository } from '../cache';
 import type { RawDb } from '../utils/database';
 import { safeExecute } from '../utils/handle-async';
 import { logger } from '../logging';
@@ -52,19 +52,21 @@ export interface ProfileService {
   /**
    * Update an existing profile and invalidate cache
    * @param userId - The user ID
+   * @param requestingUserId - The user ID of the requester (must match userId)
    * @param input - Profile update data
    * @returns The updated profile
+   * @throws ProfileUnauthorizedError if requestingUserId !== userId
    */
-  updateProfile(userId: string, input: UpdateProfileInput): Promise<Profile>;
+  updateProfile(userId: string, requestingUserId: string, input: UpdateProfileInput): Promise<Profile>;
 
   /**
    * Get a profile with privacy enforcement and caching
    * @param userId - The user ID of the profile to fetch
    * @param requestingUserId - The user ID of the requester
-   * @param requestingUserRole - Optional role of the requesting user
-   * @returns The profile if accessible, null otherwise
+   * @returns The profile if accessible
+   * @throws ProfileNotFoundError if profile not found or access denied
    */
-  getProfile(userId: string, requestingUserId: string, requestingUserRole?: string): Promise<Profile | null>;
+  getProfile(userId: string, requestingUserId: string): Promise<Profile>;
 
   /**
    * Get user statistics with caching
@@ -76,9 +78,11 @@ export interface ProfileService {
   /**
    * Get user dashboard data aggregated from multiple sources
    * @param userId - The user ID
+   * @param requestingUserId - The user ID of the requester (must match userId)
    * @returns Dashboard data
+   * @throws ProfileUnauthorizedError if requestingUserId !== userId
    */
-  getDashboard(userId: string): Promise<DashboardData>;
+  getDashboard(userId: string, requestingUserId: string): Promise<DashboardData>;
 }
 
 /**
@@ -116,7 +120,13 @@ export class ProfileServiceImpl implements ProfileService {
     return profile;
   }
 
-  async updateProfile(userId: string, input: UpdateProfileInput): Promise<Profile> {
+  async updateProfile(userId: string, requestingUserId: string, input: UpdateProfileInput): Promise<Profile> {
+    // Authorization check: users can only update their own profile
+    if (userId !== requestingUserId) {
+      logger.warn({ userId, requestingUserId }, 'Unauthorized profile update attempt');
+      throw new ProfileUnauthorizedError('Unauthorized to update this profile');
+    }
+
     // Validate input
     const validated = UpdateProfileSchema.parse(input);
 
@@ -138,19 +148,20 @@ export class ProfileServiceImpl implements ProfileService {
     return profile;
   }
 
-  async getProfile(userId: string, requestingUserId: string, requestingUserRole?: string): Promise<Profile | null> {
+  async getProfile(userId: string, requestingUserId: string): Promise<Profile> {
     // Try to get from cache first
     const cacheKey = `profile:${userId}`;
     const [cacheError, cachedProfile] = await safeExecute(this.cacheRepository.read<Profile>(cacheKey));
 
     if (!cacheError && cachedProfile) {
       logger.debug({ userId, cacheKey }, 'Profile cache hit');
-      return cachedProfile;
+      // Cached profile is raw; apply field visibility when serving
+      return this.applyFieldVisibility(cachedProfile, userId, requestingUserId);
     }
 
     // Fetch from repository with privacy enforcement
     const [error, profile] = await safeExecute(
-      this.repository.findById(userId, requestingUserId, requestingUserRole)
+      this.repository.findById(userId, requestingUserId)
     );
 
     if (error) {
@@ -160,10 +171,10 @@ export class ProfileServiceImpl implements ProfileService {
 
     if (!profile) {
       logger.debug({ userId, requestingUserId }, 'Profile not found or access denied');
-      return null;
+      throw new ProfileNotFoundError(userId);
     }
 
-    // Cache the profile
+    // Cache the raw profile (without visibility filtering)
     const [writeError] = await safeExecute(
       this.cacheRepository.write(cacheKey, profile, this.CACHE_TTL)
     );
@@ -171,7 +182,45 @@ export class ProfileServiceImpl implements ProfileService {
       logger.warn({ error: writeError, userId }, 'Failed to cache profile');
     }
 
-    return profile;
+    // Apply field visibility when returning
+    return this.applyFieldVisibility(profile, userId, requestingUserId);
+  }
+
+  /**
+   * Apply field-level visibility settings to a profile
+   * @param profile - The profile to apply visibility to
+   * @param profileUserId - The user ID of the profile owner
+   * @param requestingUserId - The user ID of the requester
+   * @returns Profile with visibility settings applied
+   * @private
+   */
+  private applyFieldVisibility(profile: Profile, profileUserId: string, requestingUserId: string): Profile {
+    // Owner sees all fields regardless of visibility settings
+    if (profileUserId === requestingUserId) {
+      return profile;
+    }
+
+    // If no visibility settings, return profile as-is
+    if (!profile.fieldVisibilitySettings || Object.keys(profile.fieldVisibilitySettings).length === 0) {
+      return profile;
+    }
+
+    // Create a copy of the profile to avoid mutating the original
+    const visibleProfile = { ...profile };
+
+    // Apply visibility settings to each field
+    for (const [fieldName, isVisible] of Object.entries(profile.fieldVisibilitySettings)) {
+      // If field is explicitly set to false, hide it by setting to null
+      if (isVisible === false) {
+        // Type-safe field access
+        if (fieldName in visibleProfile) {
+          (visibleProfile as any)[fieldName] = null;
+        }
+      }
+      // If field is true or undefined, keep the original value (no action needed)
+    }
+
+    return visibleProfile;
   }
 
   async getStatistics(userId: string): Promise<ProfileStatistics> {
@@ -220,7 +269,13 @@ export class ProfileServiceImpl implements ProfileService {
     return statistics;
   }
 
-  async getDashboard(userId: string): Promise<DashboardData> {
+  async getDashboard(userId: string, requestingUserId: string): Promise<DashboardData> {
+    // Authorization check: users can only view their own dashboard
+    if (userId !== requestingUserId) {
+      logger.warn({ userId, requestingUserId }, 'Unauthorized dashboard access attempt');
+      throw new ProfileUnauthorizedError('Unauthorized to view this dashboard');
+    }
+
     // Try to get from cache first
     const cacheKey = `profile:dashboard:${userId}`;
     const [cacheError, cachedDashboard] = await safeExecute(

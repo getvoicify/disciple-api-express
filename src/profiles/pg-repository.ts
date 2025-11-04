@@ -63,12 +63,42 @@ export class PostgresProfileRepository implements ProfileRepository {
 
     const profile = result[0];
 
+    // Check church membership for 'church_only' privacy mode
+    let hasSharedChurch = false;
+    if (profile.privacy_mode === 'church_only' &&
+        userId !== requestingUserId &&
+        requestingUserRole !== 'pastor' &&
+        requestingUserRole !== 'admin') {
+      const [error, sharedChurches] = await safeExecute(
+        this.db<Array<{ church_id: string }>>`
+          SELECT cm1.church_id
+          FROM church_memberships cm1
+          INNER JOIN church_memberships cm2 ON cm1.church_id = cm2.church_id
+          WHERE cm1.user_id = ${userId}
+            AND cm2.user_id = ${requestingUserId}
+            AND cm1.left_at IS NULL
+            AND cm2.left_at IS NULL
+        `
+      );
+
+      if (error) {
+        logger.error(
+          { error, userId, requestingUserId },
+          'Error checking church membership'
+        );
+        return null;
+      }
+
+      hasSharedChurch = sharedChurches && sharedChurches.length > 0;
+    }
+
     // Privacy enforcement
     const canAccess = this.canAccessProfile(
       profile,
       userId,
       requestingUserId,
-      requestingUserRole
+      requestingUserRole,
+      hasSharedChurch
     );
 
     if (!canAccess) {
@@ -219,7 +249,8 @@ export class PostgresProfileRepository implements ProfileRepository {
     profile: any,
     profileUserId: string,
     requestingUserId: string,
-    requestingUserRole?: string
+    requestingUserRole?: string,
+    hasSharedChurch: boolean = false
   ): boolean {
     // User can always access their own profile
     if (profileUserId === requestingUserId) {
@@ -239,9 +270,8 @@ export class PostgresProfileRepository implements ProfileRepository {
     }
 
     if (privacyMode === 'church_only') {
-      // TODO: Add church membership check
-      // For now, allow access to church_only profiles
-      return true;
+      // Allow access only if users share a church
+      return hasSharedChurch;
     }
 
     if (privacyMode === 'private') {
