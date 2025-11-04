@@ -1,3 +1,10 @@
+## [2.5.0](https://github.com/getvoicify/disciple-api-express/compare/v2.4.2...v2.5.0) (2025-11-04)
+
+
+### ✨ Features
+
+* keycloak sync queue ([#35](https://github.com/getvoicify/disciple-api-express/issues/35)) ([eb9c866](https://github.com/getvoicify/disciple-api-express/commit/eb9c866ce4bbb8556c571f482822d0545740161d))
+
 ## [2.4.2](https://github.com/getvoicify/disciple-api-express/compare/v2.4.1...v2.4.2) (2025-11-03)
 
 
