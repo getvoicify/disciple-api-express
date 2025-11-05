@@ -4,13 +4,13 @@ import { z } from 'zod';
 export const PrivacyModeEnum = z.enum(['public', 'church_only', 'private']);
 
 // Field visibility settings schema
-export const FieldVisibilitySettings = z.record(z.boolean()).default({});
+export const FieldVisibilitySettings = z.record(z.string(), z.boolean()).default({});
 
 // Notification preferences schema
 export const NotificationPreferences = z.object({
   emailEnabled: z.boolean().optional(),
   pushEnabled: z.boolean().optional(),
-}).passthrough().default({});
+}).loose().default({});
 
 // Cached metrics schema
 export const CachedMetrics = z.object({
