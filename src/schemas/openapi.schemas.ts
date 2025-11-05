@@ -1009,6 +1009,370 @@ export const updateSeriesInputSchema = {
     }
 };
 
+export const privacyModeSchema = {
+    type: 'string',
+    enum: ['public', 'church_only', 'private'],
+    description: 'Privacy mode for profile visibility',
+    example: 'church_only'
+};
+
+export const fieldVisibilitySettingsSchema = {
+    type: 'object',
+    additionalProperties: {
+        type: 'boolean'
+    },
+    description: 'Field-level visibility settings mapping field names to visibility (true = visible, false = hidden)',
+    example: {
+        bio: true,
+        testimony: false,
+        profilePhotoMediaId: true
+    }
+};
+
+export const notificationPreferencesSchema = {
+    type: 'object',
+    properties: {
+        emailEnabled: {
+            type: 'boolean',
+            description: 'Enable email notifications',
+            example: true
+        },
+        pushEnabled: {
+            type: 'boolean',
+            description: 'Enable push notifications',
+            example: true
+        }
+    },
+    description: 'User notification preferences'
+};
+
+export const cachedMetricsSchema = {
+    type: 'object',
+    properties: {
+        notesCount: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Cached count of user notes',
+            example: 42
+        },
+        prayersCount: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Cached count of user prayers',
+            example: 18
+        },
+        devotionalsCount: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Cached count of user devotionals',
+            example: 7
+        },
+        daysActive: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Cached count of days user has been active',
+            example: 30
+        },
+        lastCalculated: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when metrics were last calculated',
+            example: '2024-01-15T10:30:00Z'
+        }
+    },
+    description: 'Cached user engagement metrics'
+};
+
+export const profileSchema = {
+    type: 'object',
+    required: ['userId', 'privacyMode', 'createdAt', 'updatedAt'],
+    properties: {
+        userId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the user',
+            example: '550e8400-e29b-41d4-a716-446655440000'
+        },
+        bio: {
+            type: 'string',
+            maxLength: 5000,
+            nullable: true,
+            description: 'User biography',
+            example: 'Member of the church since 2020'
+        },
+        testimony: {
+            type: 'string',
+            maxLength: 5000,
+            nullable: true,
+            description: 'User testimony',
+            example: 'God changed my life in amazing ways...'
+        },
+        profilePhotoMediaId: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'ID of the media record for profile photo',
+            example: '550e8400-e29b-41d4-a716-446655440001'
+        },
+        privacyMode: {
+            $ref: '#/components/schemas/PrivacyMode'
+        },
+        fieldVisibilitySettings: {
+            $ref: '#/components/schemas/FieldVisibilitySettings'
+        },
+        cachedMetrics: {
+            $ref: '#/components/schemas/CachedMetrics'
+        },
+        notificationPreferences: {
+            $ref: '#/components/schemas/NotificationPreferences'
+        },
+        preferredDevotionalTime: {
+            type: 'string',
+            pattern: '^\\d{2}:\\d{2}:\\d{2}$',
+            nullable: true,
+            description: 'Preferred devotional time in HH:MM:SS format',
+            example: '07:00:00'
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the profile was created'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the profile was last updated'
+        }
+    }
+};
+
+export const createProfileInputSchema = {
+    type: 'object',
+    properties: {
+        bio: {
+            type: 'string',
+            maxLength: 5000,
+            description: 'User biography',
+            example: 'Member of the church since 2020'
+        },
+        testimony: {
+            type: 'string',
+            maxLength: 5000,
+            description: 'User testimony',
+            example: 'God changed my life in amazing ways...'
+        },
+        profilePhotoMediaId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the media record for profile photo',
+            example: '550e8400-e29b-41d4-a716-446655440001'
+        },
+        privacyMode: {
+            $ref: '#/components/schemas/PrivacyMode'
+        },
+        fieldVisibilitySettings: {
+            $ref: '#/components/schemas/FieldVisibilitySettings'
+        },
+        notificationPreferences: {
+            $ref: '#/components/schemas/NotificationPreferences'
+        },
+        preferredDevotionalTime: {
+            type: 'string',
+            pattern: '^\\d{2}:\\d{2}:\\d{2}$',
+            description: 'Preferred devotional time in HH:MM:SS format',
+            example: '07:00:00'
+        }
+    }
+};
+
+export const updateProfileInputSchema = {
+    type: 'object',
+    properties: {
+        bio: {
+            type: 'string',
+            maxLength: 5000,
+            description: 'User biography',
+            example: 'Updated biography'
+        },
+        testimony: {
+            type: 'string',
+            maxLength: 5000,
+            description: 'User testimony',
+            example: 'Updated testimony'
+        },
+        profilePhotoMediaId: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'ID of the media record for profile photo (null to remove)',
+            example: '550e8400-e29b-41d4-a716-446655440001'
+        },
+        privacyMode: {
+            $ref: '#/components/schemas/PrivacyMode'
+        },
+        fieldVisibilitySettings: {
+            $ref: '#/components/schemas/FieldVisibilitySettings'
+        },
+        notificationPreferences: {
+            $ref: '#/components/schemas/NotificationPreferences'
+        },
+        preferredDevotionalTime: {
+            type: 'string',
+            pattern: '^\\d{2}:\\d{2}:\\d{2}$',
+            nullable: true,
+            description: 'Preferred devotional time in HH:MM:SS format (null to remove)',
+            example: '08:00:00'
+        }
+    }
+};
+
+export const profileStatisticsSchema = {
+    type: 'object',
+    required: ['notesCount', 'prayersCount', 'devotionalsCount'],
+    properties: {
+        notesCount: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Total count of user notes',
+            example: 42
+        },
+        prayersCount: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Total count of user prayers',
+            example: 18
+        },
+        devotionalsCount: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Total count of user devotionals',
+            example: 7
+        },
+        daysActive: {
+            type: 'integer',
+            minimum: 0,
+            description: 'Total days user has been active',
+            example: 30
+        }
+    }
+};
+
+export const dashboardDataSchema = {
+    type: 'object',
+    required: ['recentNotes', 'activePrayerRequests', 'devotionalProgress', 'statistics'],
+    properties: {
+        recentNotes: {
+            type: 'array',
+            items: {
+                type: 'object',
+                required: ['id', 'content', 'createdAt', 'updatedAt'],
+                properties: {
+                    id: {
+                        type: 'string',
+                        format: 'uuid',
+                        description: 'Note ID'
+                    },
+                    title: {
+                        type: 'string',
+                        nullable: true,
+                        description: 'Note title'
+                    },
+                    content: {
+                        type: 'string',
+                        description: 'Note content'
+                    },
+                    createdAt: {
+                        type: 'string',
+                        format: 'date-time',
+                        description: 'Note creation timestamp'
+                    },
+                    updatedAt: {
+                        type: 'string',
+                        format: 'date-time',
+                        description: 'Note last update timestamp'
+                    }
+                }
+            },
+            description: 'Recent notes (up to 10 most recent)'
+        },
+        activePrayerRequests: {
+            type: 'array',
+            items: {
+                type: 'object',
+                required: ['id', 'title', 'status', 'createdAt', 'updatedAt'],
+                properties: {
+                    id: {
+                        type: 'string',
+                        format: 'uuid',
+                        description: 'Prayer request ID'
+                    },
+                    title: {
+                        type: 'string',
+                        description: 'Prayer request title'
+                    },
+                    description: {
+                        type: 'string',
+                        nullable: true,
+                        description: 'Prayer request description'
+                    },
+                    status: {
+                        type: 'string',
+                        enum: ['active', 'ongoing'],
+                        description: 'Prayer request status'
+                    },
+                    createdAt: {
+                        type: 'string',
+                        format: 'date-time',
+                        description: 'Prayer request creation timestamp'
+                    },
+                    updatedAt: {
+                        type: 'string',
+                        format: 'date-time',
+                        description: 'Prayer request last update timestamp'
+                    }
+                }
+            },
+            description: 'Active prayer requests (up to 10 most recent)'
+        },
+        devotionalProgress: {
+            type: 'array',
+            items: {
+                type: 'object',
+                required: ['seriesId', 'seriesName', 'postId', 'postTitle', 'publishedAt'],
+                properties: {
+                    seriesId: {
+                        type: 'string',
+                        format: 'uuid',
+                        description: 'Devotional series ID'
+                    },
+                    seriesName: {
+                        type: 'string',
+                        description: 'Devotional series name'
+                    },
+                    postId: {
+                        type: 'string',
+                        format: 'uuid',
+                        description: 'Devotional post ID'
+                    },
+                    postTitle: {
+                        type: 'string',
+                        description: 'Devotional post title'
+                    },
+                    publishedAt: {
+                        type: 'string',
+                        format: 'date-time',
+                        description: 'Post publication timestamp'
+                    }
+                }
+            },
+            description: 'Recent devotional progress (up to 10 most recent published posts)'
+        },
+        statistics: {
+            $ref: '#/components/schemas/ProfileStatistics'
+        }
+    }
+};
+
 // Export all schemas as a combined object for easy import
 export const openApiSchemas = {
     ScriptureReference: scriptureReferenceSchema,
@@ -1031,5 +1395,14 @@ export const openApiSchemas = {
     UpdatePostInput: updatePostInputSchema,
     Series: seriesSchema,
     CreateSeriesInput: createSeriesInputSchema,
-    UpdateSeriesInput: updateSeriesInputSchema
+    UpdateSeriesInput: updateSeriesInputSchema,
+    PrivacyMode: privacyModeSchema,
+    FieldVisibilitySettings: fieldVisibilitySettingsSchema,
+    NotificationPreferences: notificationPreferencesSchema,
+    CachedMetrics: cachedMetricsSchema,
+    Profile: profileSchema,
+    CreateProfileInput: createProfileInputSchema,
+    UpdateProfileInput: updateProfileInputSchema,
+    ProfileStatistics: profileStatisticsSchema,
+    DashboardData: dashboardDataSchema
 };
