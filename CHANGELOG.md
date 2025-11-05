@@ -1,3 +1,10 @@
+## [2.6.0](https://github.com/getvoicify/disciple-api-express/compare/v2.5.0...v2.6.0) (2025-11-05)
+
+
+### ✨ Features
+
+* user profile ([#36](https://github.com/getvoicify/disciple-api-express/issues/36)) ([dc8b38e](https://github.com/getvoicify/disciple-api-express/commit/dc8b38ecb2fc4512f1f7196065999c82dfe08903))
+
 ## [2.5.0](https://github.com/getvoicify/disciple-api-express/compare/v2.4.2...v2.5.0) (2025-11-04)
 
 
