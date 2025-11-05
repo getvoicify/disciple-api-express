@@ -18,15 +18,15 @@ export const CachedMetrics = z.object({
   prayersCount: z.number().int().nonnegative().optional(),
   devotionalsCount: z.number().int().nonnegative().optional(),
   daysActive: z.number().int().nonnegative().optional(),
-  lastCalculated: z.string().datetime().optional(),
+  lastCalculated: z.iso.datetime().optional(),
 }).passthrough().default({});
 
 // Profile schema
 export const Profile = z.object({
-  userId: z.string().uuid(),
+  userId: z.uuid(),
   bio: z.string().nullable(),
   testimony: z.string().nullable(),
-  profilePhotoMediaId: z.string().uuid().nullable(),
+  profilePhotoMediaId: z.uuid().nullable(),
   privacyMode: PrivacyModeEnum,
   fieldVisibilitySettings: FieldVisibilitySettings,
   cachedMetrics: CachedMetrics,
@@ -40,7 +40,7 @@ export const Profile = z.object({
 export const CreateProfileInput = z.object({
   bio: z.string().max(5000).optional(),
   testimony: z.string().max(5000).optional(),
-  profilePhotoMediaId: z.string().uuid().optional(),
+  profilePhotoMediaId: z.uuid().optional(),
   privacyMode: PrivacyModeEnum.default('church_only'),
   fieldVisibilitySettings: FieldVisibilitySettings.optional(),
   notificationPreferences: NotificationPreferences.optional(),
@@ -51,7 +51,7 @@ export const CreateProfileInput = z.object({
 export const UpdateProfileInput = z.object({
   bio: z.string().max(5000).optional(),
   testimony: z.string().max(5000).optional(),
-  profilePhotoMediaId: z.string().uuid().nullable().optional(),
+  profilePhotoMediaId: z.uuid().nullable().optional(),
   privacyMode: PrivacyModeEnum.optional(),
   fieldVisibilitySettings: FieldVisibilitySettings.optional(),
   notificationPreferences: NotificationPreferences.optional(),
