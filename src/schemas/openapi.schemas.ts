@@ -1373,6 +1373,218 @@ export const dashboardDataSchema = {
     }
 };
 
+export const wallStatusSchema = {
+    type: 'string',
+    enum: ['active', 'archived'],
+    description: 'Prayer wall status',
+    example: 'active'
+};
+
+export const anonymityLevelSchema = {
+    type: 'string',
+    enum: ['identified', 'anonymous_to_members', 'fully_anonymous'],
+    description: 'Anonymity level for prayer requests',
+    example: 'identified'
+};
+
+export const prayerWallScheduleSchema = {
+    type: 'object',
+    properties: {
+        frequency: {
+            type: 'string',
+            enum: ['daily', 'weekly', 'monthly'],
+            description: 'Frequency of recurring prayer meetings',
+            example: 'weekly'
+        },
+        day: {
+            type: 'string',
+            description: 'Day of the week for meetings (e.g., "Saturday", "Monday")',
+            example: 'Saturday'
+        },
+        time: {
+            type: 'string',
+            pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$',
+            description: 'Time of day in HH:MM format',
+            example: '06:00'
+        },
+        timezone: {
+            type: 'string',
+            description: 'IANA timezone identifier',
+            example: 'Africa/Lagos'
+        },
+        duration_minutes: {
+            type: 'integer',
+            minimum: 1,
+            description: 'Duration of meeting in minutes',
+            example: 60
+        },
+        end_time: {
+            type: 'string',
+            pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$',
+            description: 'End time in HH:MM format',
+            example: '07:00'
+        }
+    },
+    required: ['frequency', 'time', 'timezone'],
+    description: 'Schedule configuration for recurring prayer meetings'
+};
+
+export const prayerWallSchema = {
+    type: 'object',
+    required: ['id', 'church_id', 'name', 'created_by', 'is_private', 'has_restricted_access', 'status', 'created_at', 'updated_at'],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the prayer wall',
+            example: '550e8400-e29b-41d4-a716-446655440000'
+        },
+        church_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the church this wall belongs to',
+            example: '550e8400-e29b-41d4-a716-446655440001'
+        },
+        name: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Name of the prayer wall',
+            example: 'Youth Prayer Circle'
+        },
+        description: {
+            type: 'string',
+            maxLength: 2000,
+            nullable: true,
+            description: 'Description of the prayer wall',
+            example: 'Weekly prayer gathering for youth'
+        },
+        created_by: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the user who created the wall',
+            example: '550e8400-e29b-41d4-a716-446655440002'
+        },
+        is_private: {
+            type: 'boolean',
+            description: 'Whether the wall is private (pastor-only creation)',
+            example: false
+        },
+        has_restricted_access: {
+            type: 'boolean',
+            description: 'Whether the wall requires invitation to join',
+            example: false
+        },
+        schedule: {
+            allOf: [{ $ref: '#/components/schemas/PrayerWallSchedule' }],
+            nullable: true
+        },
+        video_call_link: {
+            type: 'string',
+            format: 'uri',
+            maxLength: 500,
+            nullable: true,
+            description: 'Video call link for prayer meetings',
+            example: 'https://zoom.us/j/123456789'
+        },
+        status: {
+            $ref: '#/components/schemas/WallStatus'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the wall was created'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the wall was last updated'
+        },
+        deleted_at: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'Timestamp when the wall was deleted (soft delete)'
+        }
+    }
+};
+
+export const prayerRequestSchema = {
+    type: 'object',
+    required: ['id', 'wall_id', 'author_id', 'thread_depth', 'content', 'anonymity_level', 'has_attachment', 'created_at', 'updated_at'],
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Unique identifier for the prayer request',
+            example: '550e8400-e29b-41d4-a716-446655440000'
+        },
+        wall_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the prayer wall this request belongs to',
+            example: '550e8400-e29b-41d4-a716-446655440001'
+        },
+        author_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'ID of the user who created the request',
+            example: '550e8400-e29b-41d4-a716-446655440002'
+        },
+        parent_id: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'ID of parent prayer if this is a response (threaded reply)',
+            example: '550e8400-e29b-41d4-a716-446655440003'
+        },
+        thread_depth: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 3,
+            description: 'Depth of the thread (0 for root, max 3 for nested responses)',
+            example: 0
+        },
+        content: {
+            type: 'string',
+            minLength: 10,
+            maxLength: 5000,
+            description: 'Content of the prayer request',
+            example: 'Please pray for my family during this difficult time.'
+        },
+        anonymity_level: {
+            $ref: '#/components/schemas/AnonymityLevel'
+        },
+        has_attachment: {
+            type: 'boolean',
+            description: 'Whether the prayer has file attachments',
+            example: false
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the prayer was created'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Timestamp when the prayer was last updated'
+        },
+        deleted_at: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'Timestamp when the prayer was deleted (soft delete)'
+        },
+        deleted_by: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'ID of user who deleted the prayer'
+        }
+    }
+};
+
 // Export all schemas as a combined object for easy import
 export const openApiSchemas = {
     ScriptureReference: scriptureReferenceSchema,
@@ -1404,5 +1616,10 @@ export const openApiSchemas = {
     CreateProfileInput: createProfileInputSchema,
     UpdateProfileInput: updateProfileInputSchema,
     ProfileStatistics: profileStatisticsSchema,
-    DashboardData: dashboardDataSchema
+    DashboardData: dashboardDataSchema,
+    WallStatus: wallStatusSchema,
+    AnonymityLevel: anonymityLevelSchema,
+    PrayerWallSchedule: prayerWallScheduleSchema,
+    PrayerWall: prayerWallSchema,
+    PrayerRequest: prayerRequestSchema
 };
