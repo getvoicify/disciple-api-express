@@ -164,3 +164,4 @@ if (error) {
 - `safeExecute(service.createNote(data, ownerId))` - Service calls
 - `safeExecute(this.s3Client.send(command))` - Cloud operations
 - For unsafe executions, the proper way to use safeExecute is `safeExecute(() => unsafeFn())`
+- Services should always throw custom errors based on the AppError class or one of the other classes that extends it
