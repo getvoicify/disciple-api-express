@@ -1,3 +1,10 @@
+## [2.7.0](https://github.com/getvoicify/disciple-api-express/compare/v2.6.0...v2.7.0) (2025-11-05)
+
+
+### ✨ Features
+
+* **api:** add schemas for user profile, visibility settings, and dashboard data ([#37](https://github.com/getvoicify/disciple-api-express/issues/37)) ([9baabbe](https://github.com/getvoicify/disciple-api-express/commit/9baabbe22913c570e24a0cb3c604dec737637256))
+
 ## [2.6.0](https://github.com/getvoicify/disciple-api-express/compare/v2.5.0...v2.6.0) (2025-11-05)
 
 
