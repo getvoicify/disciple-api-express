@@ -21,6 +21,11 @@ export class PostgresProfileRepository implements ProfileRepository {
           field_visibility_settings,
           notification_preferences,
           preferred_devotional_time,
+          first_name,
+          last_name,
+          display_name,
+          avatar_url,
+          email,
           created_at,
           updated_at
         )
@@ -33,6 +38,11 @@ export class PostgresProfileRepository implements ProfileRepository {
           ${JSON.stringify(input.fieldVisibilitySettings || {})},
           ${JSON.stringify(input.notificationPreferences || {})},
           ${input.preferredDevotionalTime || null},
+          ${input.firstName || null},
+          ${input.lastName || null},
+          ${input.displayName || null},
+          ${input.avatarUrl || null},
+          ${input.email || null},
           ${now},
           ${now}
         )
@@ -140,6 +150,21 @@ export class PostgresProfileRepository implements ProfileRepository {
       }
       if (input.preferredDevotionalTime !== undefined) {
         updateFields.preferred_devotional_time = input.preferredDevotionalTime;
+      }
+      if (input.firstName !== undefined) {
+        updateFields.first_name = input.firstName;
+      }
+      if (input.lastName !== undefined) {
+        updateFields.last_name = input.lastName;
+      }
+      if (input.displayName !== undefined) {
+        updateFields.display_name = input.displayName;
+      }
+      if (input.avatarUrl !== undefined) {
+        updateFields.avatar_url = input.avatarUrl;
+      }
+      if (input.email !== undefined) {
+        updateFields.email = input.email;
       }
 
       updateFields.updated_at = new Date();
@@ -338,6 +363,11 @@ export class PostgresProfileRepository implements ProfileRepository {
       cachedMetrics,
       notificationPreferences,
       preferredDevotionalTime: row.preferred_devotional_time || null,
+      firstName: row.first_name || null,
+      lastName: row.last_name || null,
+      displayName: row.display_name || null,
+      avatarUrl: row.avatar_url || null,
+      email: row.email || null,
       createdAt: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
       updatedAt: row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
     };
