@@ -19,14 +19,14 @@ export const CachedMetrics = z.object({
   devotionalsCount: z.number().int().nonnegative().optional(),
   daysActive: z.number().int().nonnegative().optional(),
   lastCalculated: z.iso.datetime().optional(),
-}).passthrough().default({});
+}).loose().default({});
 
 // Keycloak claims schema (for profile creation)
 export const KeycloakClaims = z.object({
   given_name: z.string().optional(),
   family_name: z.string().optional(),
-  email: z.string().email().optional(),
-}).passthrough();
+  email: z.email().optional(),
+}).loose();
 
 // Profile schema
 export const Profile = z.object({
@@ -42,8 +42,8 @@ export const Profile = z.object({
   firstName: z.string().nullable().optional(),
   lastName: z.string().nullable().optional(),
   displayName: z.string().nullable().optional(),
-  avatarUrl: z.string().url().nullable().optional(),
-  email: z.string().email().nullable().optional(),
+  avatarUrl: z.url().nullable().optional(),
+  email: z.email().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -60,8 +60,8 @@ export const CreateProfileInput = z.object({
   firstName: z.string().max(255).optional(),
   lastName: z.string().max(255).optional(),
   displayName: z.string().max(511).optional(),
-  avatarUrl: z.string().url().optional(),
-  email: z.string().email().optional(),
+  avatarUrl: z.url().optional(),
+  email: z.email().optional(),
 });
 
 // Update profile input schema
@@ -76,8 +76,8 @@ export const UpdateProfileInput = z.object({
   firstName: z.string().max(255).optional(),
   lastName: z.string().max(255).optional(),
   displayName: z.string().max(511).optional(),
-  avatarUrl: z.string().url().nullable().optional(),
-  email: z.string().email().nullable().optional(),
+  avatarUrl: z.url().nullable().optional(),
+  email: z.email().nullable().optional(),
 });
 
 // Profile statistics schema
