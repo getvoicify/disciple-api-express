@@ -19,6 +19,13 @@ export interface ProfileRepository {
   findById(userId: string, requestingUserId: string, requestingUserRole?: string): Promise<Profile | null>;
 
   /**
+   * Find multiple profiles by user IDs (batch fetch)
+   * @param userIds - Array of user IDs to fetch
+   * @returns Array of profiles (only found profiles, missing ones excluded)
+   */
+  findByIds(userIds: string[]): Promise<Profile[]>;
+
+  /**
    * Update a profile
    * @param userId - The UUID of the profile to update
    * @param input - The profile data to update

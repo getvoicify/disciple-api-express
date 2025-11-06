@@ -122,6 +122,18 @@ export class PostgresProfileRepository implements ProfileRepository {
     return this.mapRowToProfile(profile);
   }
 
+  async findByIds(userIds: string[]): Promise<Profile[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const result = await this.db`
+      SELECT * FROM user_profiles WHERE user_id = ANY(${userIds})
+    `;
+
+    return result.map(row => this.mapRowToProfile(row));
+  }
+
   async update(userId: string, input: UpdateProfileInput): Promise<Profile | null> {
     return this.db.begin(async (tx) => {
       if (Object.keys(input).length === 0) {

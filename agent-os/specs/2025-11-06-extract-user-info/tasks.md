@@ -67,7 +67,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
 **Dependencies:** Task Group 1
 
 - [ ] 2.0 Complete user info service with batch fetching and caching
-  - [ ] 2.1 Write 2-8 focused tests for user info service
+  - [x] 2.1 Write 2-8 focused tests for user info service
     - Limit to 2-8 highly focused tests maximum
     - Test batch user info fetching returns correct data for multiple user IDs
     - Test cache hit returns data without database query
@@ -75,12 +75,12 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Test privacy filtering via applyFieldVisibility
     - Test missing user profiles handled gracefully
     - Skip exhaustive testing of all edge cases
-  - [ ] 2.2 Create user info service interface and types
+  - [x] 2.2 Create user info service interface and types
     - Create `src/user-info/types.ts` with UserInfo type (id, firstName, lastName, displayName, avatarUrl, email)
     - Create `src/user-info/service.ts` with UserInfoService interface
     - Define method: `getBatchUserInfo(userIds: string[], requestingUserId: string): Promise<Map<string, UserInfo>>`
     - Follow existing service patterns from `src/profiles/service.ts`
-  - [ ] 2.3 Implement batch user profile fetching
+  - [x] 2.3 Implement batch user profile fetching
     - Implement `getBatchUserInfo` method in UserInfoService
     - Extract unique user IDs from input array
     - Query profile repository for all user IDs in single batch query
@@ -88,7 +88,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Handle missing profiles gracefully (skip rather than throw)
     - Use safeExecute for database operations
     - Log batch fetch operations with structured logger
-  - [ ] 2.4 Implement cache-aside pattern for user profiles
+  - [x] 2.4 Implement cache-aside pattern for user profiles
     - Check Redis cache first for each userId with key pattern `user:profile:{userId}`
     - Collect cache misses for batch database fetch
     - Fetch missing profiles from database via ProfileRepository
@@ -114,7 +114,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Wire dependencies: ProfileRepository, CacheRepository
     - Export from `src/user-info/index.ts`
     - Follow existing DI patterns from profile module
-  - [ ] 2.8 Run user info service tests
+  - [x] 2.8 Run user info service tests
     - Run ONLY the 2-8 tests written in 2.1
     - Verify batch fetching works correctly
     - Verify caching reduces database queries

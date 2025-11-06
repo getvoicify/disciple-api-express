@@ -356,4 +356,109 @@ describe('PostgresProfileRepository', () => {
       expect(result?.cachedMetrics).toEqual(metrics);
     });
   });
+
+  describe('findByIds', () => {
+    it('should return empty array when no user IDs provided', async () => {
+      const result = await repository.findByIds([]);
+
+      expect(result).toEqual([]);
+      expect(mockDb).not.toHaveBeenCalled();
+    });
+
+    it('should fetch multiple profiles by user IDs', async () => {
+      const userId1 = crypto.randomUUID();
+      const userId2 = crypto.randomUUID();
+
+      const mockProfiles = [
+        {
+          user_id: userId1,
+          bio: 'Bio 1',
+          testimony: 'Testimony 1',
+          profile_photo_media_id: null,
+          privacy_mode: 'public',
+          field_visibility_settings: {},
+          cached_metrics: {},
+          notification_preferences: {},
+          preferred_devotional_time: null,
+          first_name: 'John',
+          last_name: 'Doe',
+          display_name: 'John Doe',
+          avatar_url: null,
+          email: 'john@example.com',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+        {
+          user_id: userId2,
+          bio: 'Bio 2',
+          testimony: 'Testimony 2',
+          profile_photo_media_id: null,
+          privacy_mode: 'church_only',
+          field_visibility_settings: {},
+          cached_metrics: {},
+          notification_preferences: {},
+          preferred_devotional_time: null,
+          first_name: 'Jane',
+          last_name: 'Smith',
+          display_name: 'Jane Smith',
+          avatar_url: 'https://example.com/avatar.jpg',
+          email: 'jane@example.com',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ];
+
+      mockDb.mockReturnValueOnce(Promise.resolve(mockProfiles));
+
+      const result = await repository.findByIds([userId1, userId2]);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].userId).toBe(userId1);
+      expect(result[0].firstName).toBe('John');
+      expect(result[1].userId).toBe(userId2);
+      expect(result[1].firstName).toBe('Jane');
+    });
+
+    it('should return only found profiles when some IDs do not exist', async () => {
+      const userId1 = crypto.randomUUID();
+      const userId2 = crypto.randomUUID();
+      const nonExistentUserId = crypto.randomUUID();
+
+      const mockProfiles = [
+        {
+          user_id: userId1,
+          bio: 'Bio 1',
+          testimony: 'Testimony 1',
+          profile_photo_media_id: null,
+          privacy_mode: 'public',
+          field_visibility_settings: {},
+          cached_metrics: {},
+          notification_preferences: {},
+          preferred_devotional_time: null,
+          first_name: 'John',
+          last_name: 'Doe',
+          display_name: 'John Doe',
+          avatar_url: null,
+          email: 'john@example.com',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ];
+
+      mockDb.mockReturnValueOnce(Promise.resolve(mockProfiles));
+
+      const result = await repository.findByIds([userId1, userId2, nonExistentUserId]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].userId).toBe(userId1);
+    });
+
+    it('should return empty array when no profiles found', async () => {
+      mockDb.mockReturnValueOnce(Promise.resolve([]));
+
+      const result = await repository.findByIds([crypto.randomUUID(), crypto.randomUUID()]);
+
+      expect(result).toEqual([]);
+    });
+  });
 });
