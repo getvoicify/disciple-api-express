@@ -1,17 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Response } from 'express';
-import type { EndpointRequest } from '../../types/endpoint-handler';
-import { profileCreateEndpoint } from '../../profiles/routes/profileCreate.endpoint';
-import { profileUpdateEndpoint } from '../../profiles/routes/profileUpdate.endpoint';
-import { profileFetchEndpoint } from '../../profiles/routes/profileFetch.endpoint';
-import { dashboardFetchEndpoint } from '../../profiles/routes/dashboardFetch.endpoint';
-import { profileStatisticsEndpoint } from '../../profiles/routes/profileStatistics.endpoint';
-import type { ProfileService } from '../../profiles/service';
-import type { Profile, ProfileStatistics } from '../../profiles/schemas';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type {Response} from 'express';
+import type {EndpointRequest} from '../../types/endpoint-handler';
+import {profileCreateEndpoint} from '../../profiles/routes/profileCreate.endpoint';
+import {profileUpdateEndpoint} from '../../profiles/routes/profileUpdate.endpoint';
+import {profileFetchEndpoint} from '../../profiles/routes/profileFetch.endpoint';
+import {dashboardFetchEndpoint} from '../../profiles/routes/dashboardFetch.endpoint';
+import {profileStatisticsEndpoint} from '../../profiles/routes/profileStatistics.endpoint';
+import type {ProfileService} from '../../profiles/service';
+import type {Profile, ProfileStatistics} from '../../profiles/schemas';
 import {
+  ProfileCreationError,
   ProfileNotFoundError,
   ProfileUnauthorizedError,
-  ProfileCreationError,
   ProfileUpdateError,
 } from '../../profiles/errors';
 
@@ -60,25 +60,29 @@ describe('Profile Endpoints', () => {
 
   describe('POST /profiles - Create Profile', () => {
     it('should create a profile successfully with Keycloak auto-population and return 201', async () => {
-      const input = {
+      req.body = {
         bio: 'My bio',
         testimony: 'My testimony',
         privacyMode: 'church_only' as const,
       };
-
-      req.body = input;
       mockService.createProfile = vi.fn().mockResolvedValue(mockProfile);
 
       const handler = profileCreateEndpoint(mockService);
       await handler(req as EndpointRequest, res as Response);
 
       // Zod schemas add defaults for fieldVisibilitySettings and notificationPreferences
+      // Third argument is keycloakClaims (object with undefined values if no claims in JWT)
       expect(mockService.createProfile).toHaveBeenCalledWith(
         mockUserId,
         expect.objectContaining({
           bio: 'My bio',
           testimony: 'My testimony',
           privacyMode: 'church_only',
+        }),
+        expect.objectContaining({
+          given_name: undefined,
+          family_name: undefined,
+          email: undefined,
         })
       );
       expect(res.status).toHaveBeenCalledWith(201);
