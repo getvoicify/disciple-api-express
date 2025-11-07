@@ -7,6 +7,8 @@ import {z} from "zod";
 import type {NoteRepository} from './repository';
 import type {CreateNoteInput, UpdateNoteInput, Note, NoteFilters} from './schemas';
 import type {ICacheInvalidationService} from '../cache/cache-invalidation.service';
+import type { UserInfoService } from '../user-info/service';
+import { extractUniqueUserIds, embedUserInfo } from '../user-info/embedding.util';
 
 export interface NoteService {
     createNote(input: CreateNoteInput, ownerId: string): Promise<Note>;
@@ -29,7 +31,8 @@ export interface NoteService {
 export class NoteServiceImpl implements NoteService {
     constructor(
         private readonly repository: NoteRepository,
-        private readonly cacheInvalidationService: ICacheInvalidationService
+        private readonly cacheInvalidationService: ICacheInvalidationService,
+        private readonly userInfoService?: UserInfoService
     ) {
     }
 
@@ -84,11 +87,34 @@ export class NoteServiceImpl implements NoteService {
     }
 
     async listNotes(filters?: NoteFilters): Promise<Note[]> {
+        let notes: Note[];
         if (filters) {
             const validated = NoteFiltersSchema.parse(filters);
-            return this.repository.findAll(validated);
+            notes = await this.repository.findAll(validated);
+        } else {
+            notes = await this.repository.findAll();
         }
-        return this.repository.findAll();
+
+        if (!this.userInfoService || notes.length === 0) {
+            return notes;
+        }
+
+        const ownerIds = extractUniqueUserIds(notes, (note) => note.ownerId ? [note.ownerId] : []);
+        if (ownerIds.length === 0) {
+            return notes;
+        }
+
+        const userInfoMap = await this.userInfoService.getBatchUserInfo(ownerIds);
+
+        return embedUserInfo(
+            notes,
+            (note) => note.ownerId ? [note.ownerId] : [],
+            userInfoMap,
+            (note, userMap) => ({
+                ...note,
+                owner: note.ownerId ? userMap.get(note.ownerId) : undefined,
+            })
+        );
     }
 
     async searchNotesByContent(query: string): Promise<Note[]> {

@@ -1,4 +1,5 @@
 // Prayer Wall types and enums for the Prayer Wall Foundation feature
+import type { UserInfo } from '../../user-info/types';
 
 /**
  * Wall status enum representing the lifecycle state of a prayer wall
@@ -119,6 +120,7 @@ export type PrayerRequest = {
   id: string;
   wall_id: string;
   author_id: string;
+  author?: UserInfo;
   parent_id: string | null;
   thread_depth: number;
   content: string;

@@ -9,6 +9,8 @@ import type { CreateSeriesInput, UpdateSeriesInput, Series, SeriesFilters } from
 import type { ChurchMembershipService } from '../churches/membership-service';
 import type { PostRepository } from '../posts/repository';
 import type { Post } from '../posts/schemas';
+import type { UserInfoService } from '../user-info/service';
+import { extractUniqueUserIds, embedUserInfo } from '../user-info/embedding.util';
 import {
   SeriesNotFoundError,
   SeriesUnauthorizedError,
@@ -38,7 +40,8 @@ export class SeriesServiceImpl implements SeriesService {
   constructor(
     private readonly repository: SeriesRepository,
     private readonly membershipService: ChurchMembershipService,
-    private readonly postRepository: PostRepository
+    private readonly postRepository: PostRepository,
+    private readonly userInfoService?: UserInfoService
   ) {
   }
 
@@ -121,11 +124,30 @@ export class SeriesServiceImpl implements SeriesService {
   }
 
   async listSeries(filters?: SeriesFilters): Promise<Series[]> {
+    let series: Series[];
     if (filters) {
       const validated = SeriesFiltersSchema.parse(filters);
-      return this.repository.findAll(validated);
+      series = await this.repository.findAll(validated);
+    } else {
+      series = await this.repository.findAll();
     }
-    return this.repository.findAll();
+
+    if (!this.userInfoService || series.length === 0) {
+      return series;
+    }
+
+    const authorIds = extractUniqueUserIds(series, (s) => [s.authorId]);
+    const userInfoMap = await this.userInfoService.getBatchUserInfo(authorIds);
+
+    return embedUserInfo(
+      series,
+      (s) => [s.authorId],
+      userInfoMap,
+      (s, userMap) => ({
+        ...s,
+        author: userMap.get(s.authorId),
+      })
+    );
   }
 
   async publishSeries(id: string, authorId: string): Promise<Series> {

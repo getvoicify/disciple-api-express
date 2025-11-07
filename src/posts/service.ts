@@ -8,6 +8,8 @@ import type { PostRepository } from './repository';
 import type { CreatePostInput, UpdatePostInput, Post, PostFilters } from './schemas';
 import type { ChurchMembershipService } from '../churches/membership-service';
 import type { ICacheInvalidationService } from '../cache/cache-invalidation.service';
+import type { UserInfoService } from '../user-info/service';
+import { extractUniqueUserIds, embedUserInfo } from '../user-info/embedding.util';
 import {
     PostNotFoundError,
     PostUnauthorizedError,
@@ -33,7 +35,8 @@ export class PostServiceImpl implements PostService {
     constructor(
         private readonly repository: PostRepository,
         private readonly membershipService: ChurchMembershipService,
-        private readonly cacheInvalidationService: ICacheInvalidationService
+        private readonly cacheInvalidationService: ICacheInvalidationService,
+        private readonly userInfoService?: UserInfoService
     ) {
     }
 
@@ -129,11 +132,30 @@ export class PostServiceImpl implements PostService {
     }
 
     async listPosts(filters?: PostFilters): Promise<Post[]> {
+        let posts: Post[];
         if (filters) {
             const validated = PostFiltersSchema.parse(filters);
-            return this.repository.findAll(validated);
+            posts = await this.repository.findAll(validated);
+        } else {
+            posts = await this.repository.findAll();
         }
-        return this.repository.findAll();
+
+        if (!this.userInfoService || posts.length === 0) {
+            return posts;
+        }
+
+        const authorIds = extractUniqueUserIds(posts, (post) => [post.authorId]);
+        const userInfoMap = await this.userInfoService.getBatchUserInfo(authorIds);
+
+        return embedUserInfo(
+            posts,
+            (post) => [post.authorId],
+            userInfoMap,
+            (post, userMap) => ({
+                ...post,
+                author: userMap.get(post.authorId),
+            })
+        );
     }
 
     async publishPost(id: string, authorId: string): Promise<Post> {

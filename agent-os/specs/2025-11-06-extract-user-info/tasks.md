@@ -194,8 +194,8 @@ Estimated Total Tasks: ~45 individual sub-tasks
 #### Task Group 4: Embed User Objects in Entity Services
 **Dependencies:** Task Groups 2, 3
 
-- [ ] 4.0 Complete user embedding in all entity services
-  - [ ] 4.1 Write 2-8 focused tests for entity service embedding
+- [x] 4.0 Complete user embedding in all entity services
+  - [x] 4.1 Write 2-8 focused tests for entity service embedding
     - Limit to 2-8 highly focused tests maximum
     - Test devotionals list endpoint returns embedded author objects
     - Test prayers list endpoint returns embedded author and responder objects
@@ -205,7 +205,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Test anonymous prayers hide user info entirely
     - Skip exhaustive integration testing
     - Run the tests and verify that the assertions are failing
-  - [ ] 4.2 Create user embedding utility helper
+  - [x] 4.2 Create user embedding utility helper
     - Create `src/user-info/embedding.util.ts`
     - Implement `embedUserInfo<T>(entities: T[], userIdExtractor: (entity: T) => string[], userInfoMap: Map<string, UserInfo>, embedder: (entity: T, users: Map<string, UserInfo>) => T): T[]`
     - Generic utility to attach user objects to any entity array
@@ -213,7 +213,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Reusable across all entity types
     - Run the tests and verify that the assertions are passing for this feature only
     - Do NOT run the entire test suite at this stage
-  - [ ] 4.3 Modify devotionals service to embed author info
+  - [x] 4.3 Modify devotionals service to embed author info
     - Modify `src/posts/service.ts` (or devotionals service equivalent)
     - In list/fetch methods, after retrieving devotionals, extract unique authorIds
     - Call `userInfoService.getBatchUserInfo(authorIds, requestingUserId)`
@@ -222,7 +222,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Use safeExecute and structured logging
     - Run the tests and verify that the assertions are passing for this feature only
     - Do NOT run the entire test suite at this stage
-  - [ ] 4.4 Modify prayers service to embed author and responder info
+  - [x] 4.4 Modify prayers service to embed author and responder info
     - Modify `src/prayer-walls/services/prayer-request.service.ts`
     - In list/fetch methods, extract unique authorIds and responderIds
     - Call `userInfoService.getBatchUserInfo([...authorIds, ...responderIds], requestingUserId)`
@@ -231,7 +231,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Ensure backward compatibility
     - Run the tests and verify that the assertions are passing for this feature only
     - Do NOT run the entire test suite at this stage
-  - [ ] 4.5 Modify notes service to embed owner info
+  - [x] 4.5 Modify notes service to embed owner info
     - Modify `src/notes/service.ts`
     - In list/fetch methods, extract unique ownerIds
     - Call `userInfoService.getBatchUserInfo(ownerIds, requestingUserId)`
@@ -239,7 +239,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Ensure backward compatibility
     - Run the tests and verify that the assertions are passing for this feature only
     - Do NOT run the entire test suite at this stage
-  - [ ] 4.6 Modify series service to embed author info
+  - [x] 4.6 Modify series service to embed author info
     - Modify `src/series/service.ts`
     - In list/fetch methods, extract unique authorIds
     - Call `userInfoService.getBatchUserInfo(authorIds, requestingUserId)`
@@ -247,13 +247,13 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Ensure backward compatibility
     - Run the tests and verify that the assertions are passing for this feature only
     - Do NOT run the entire test suite at this stage
-  - [ ] 4.7 Update entity endpoints to use modified services
+  - [x] 4.7 Update entity endpoints to use modified services
     - Verify `src/posts/routes/dailyDevotionals.endpoint.ts` uses updated service
     - Verify prayer endpoints use updated service
     - Verify note endpoints use updated service
     - Verify series endpoints use updated service
     - No endpoint code changes needed if service layer handles embedding
-  - [ ] 4.8 Run entity service embedding tests
+  - [x] 4.8 Run entity service embedding tests
     - Run ONLY the 2-8 tests written in 4.1
     - Verify all entities return embedded user objects
     - Verify privacy filtering works correctly

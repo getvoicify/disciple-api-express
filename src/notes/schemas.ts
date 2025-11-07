@@ -15,6 +15,7 @@ export const Note = z.object({
     date: z.date(),
     scriptureReferences: z.array(ScriptureReference),
     images: z.array(z.string()).optional(),
+    ownerId: z.string().optional(),
     owner: UserInfoSchema.optional(),
     createdAt: z.date(),
     updatedAt: z.date()

@@ -18,6 +18,8 @@ import {
   InvalidContentError,
   CannotReplyToDeletedPrayerError,
 } from '../errors';
+import type { UserInfoService } from '../../user-info/service';
+import { extractUniqueUserIds, embedUserInfo } from '../../user-info/embedding.util';
 
 /**
  * Service interface for managing prayer requests
@@ -64,7 +66,8 @@ export class PrayerRequestService implements IPrayerRequestService {
 
   constructor(
     private readonly prayerRequestRepository: IPrayerRequestRepository,
-    private readonly membershipRepository: IPrayerWallMembershipRepository
+    private readonly membershipRepository: IPrayerWallMembershipRepository,
+    private readonly userInfoService?: UserInfoService
   ) {}
 
   /**
@@ -225,7 +228,30 @@ export class PrayerRequestService implements IPrayerRequestService {
 
     const prayers = await this.prayerRequestRepository.findByWallId(wallId, pagination);
 
-    return prayers;
+    if (!this.userInfoService || prayers.length === 0) {
+      return prayers;
+    }
+
+    // Extract author IDs, skip anonymous prayers
+    const authorIds = extractUniqueUserIds(prayers, (prayer) =>
+      prayer.anonymity_level === 'full' ? [] : [prayer.author_id]
+    );
+
+    if (authorIds.length === 0) {
+      return prayers;
+    }
+
+    const userInfoMap = await this.userInfoService.getBatchUserInfo(authorIds);
+
+    return embedUserInfo(
+      prayers,
+      (prayer) => (prayer.anonymity_level === 'full' ? [] : [prayer.author_id]),
+      userInfoMap,
+      (prayer, userMap) => ({
+        ...prayer,
+        author: prayer.anonymity_level === 'full' ? undefined : userMap.get(prayer.author_id),
+      })
+    );
   }
 
   /**
