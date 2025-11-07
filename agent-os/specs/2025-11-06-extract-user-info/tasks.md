@@ -66,7 +66,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
 #### Task Group 2: User Info Service with Caching
 **Dependencies:** Task Group 1
 
-- [ ] 2.0 Complete user info service with batch fetching and caching
+- [x] 2.0 Complete user info service with batch fetching and caching
   - [x] 2.1 Write 2-8 focused tests for user info service
     - Limit to 2-8 highly focused tests maximum
     - Test batch user info fetching returns correct data for multiple user IDs
@@ -138,8 +138,8 @@ Estimated Total Tasks: ~45 individual sub-tasks
 #### Task Group 3: Response Schema Extensions
 **Dependencies:** Task Group 2
 
-- [ ] 3.0 Complete response schema updates for all entities
-  - [ ] 3.1 Write 2-8 focused tests for schema validation
+- [x] 3.0 Complete response schema updates for all entities
+  - [x] 3.1 Write 2-8 focused tests for schema validation
     - Limit to 2-8 highly focused tests maximum
     - Test devotional response schema validates with embedded author object
     - Test prayer response schema validates with embedded author and responder objects
@@ -147,34 +147,34 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Test series response schema validates with embedded author object
     - Test backward compatibility (schemas accept responses with or without embedded objects)
     - Skip exhaustive validation testing
-  - [ ] 3.2 Create shared UserInfo schema
+  - [x] 3.2 Create shared UserInfo schema
     - Create `src/user-info/schemas.ts`
     - Define Zod schema for embedded user object with fields: id, firstName, lastName, displayName, avatarUrl, email (all nullable except id)
     - Export UserInfoSchema for reuse across entity schemas
     - Follow Zod patterns from `src/profiles/schemas.ts`
-  - [ ] 3.3 Extend devotionals response schema
+  - [x] 3.3 Extend devotionals response schema
     - Locate devotionals response schema (in `src/posts/schemas.ts` or equivalent)
     - Add optional `author` field using UserInfoSchema
     - Keep existing `authorId` field for backward compatibility
     - Update TypeScript types to include embedded author
     - Validate schema with sample responses
-  - [ ] 3.4 Extend prayers response schema
+  - [x] 3.4 Extend prayers response schema
     - Modify `src/prayer-walls/schemas/prayer.schemas.ts`
     - Add optional `author` field using UserInfoSchema
     - Add optional `responder` field using UserInfoSchema (for prayer responses)
     - Keep existing `authorId` and `responderId` fields for backward compatibility
     - Update TypeScript types to include embedded user objects
-  - [ ] 3.5 Extend notes response schema
+  - [x] 3.5 Extend notes response schema
     - Modify `src/notes/schemas.ts`
     - Add optional `owner` field using UserInfoSchema
     - Keep existing `ownerId` field for backward compatibility
     - Update TypeScript types to include embedded owner
-  - [ ] 3.6 Extend series response schema
+  - [x] 3.6 Extend series response schema
     - Modify `src/series/schemas.ts` (or equivalent)
     - Add optional `author` field using UserInfoSchema
     - Keep existing `authorId` field for backward compatibility
     - Update TypeScript types to include embedded author
-  - [ ] 3.7 Run schema validation tests
+  - [x] 3.7 Run schema validation tests
     - Run ONLY the 2-8 tests written in 3.1
     - Verify all entity schemas validate with embedded user objects
     - Verify backward compatibility (old responses still valid)
