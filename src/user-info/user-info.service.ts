@@ -14,7 +14,7 @@ export class UserInfoServiceImpl implements UserInfoService {
     private readonly cacheRepository: CacheRepository
   ) {}
 
-  async getBatchUserInfo(userIds: string[], requestingUserId: string): Promise<Map<string, UserInfo>> {
+  async getBatchUserInfo(userIds: string[]): Promise<Map<string, UserInfo>> {
     const uniqueUserIds = Array.from(new Set(userIds));
     const { cacheHits, cacheMisses } = await this.checkCache(uniqueUserIds);
     const dbResults = await this.fetchFromDatabase(cacheMisses);

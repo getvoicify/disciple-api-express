@@ -88,7 +88,7 @@ describe('UserInfoService', () => {
     mockCacheRepository.read.mockResolvedValue(null);
     mockProfileRepository.findByIds.mockResolvedValue(mockProfiles);
 
-    const result = await service.getBatchUserInfo([TEST_USER_ID_1, TEST_USER_ID_2], REQUESTING_USER_ID);
+    const result = await service.getBatchUserInfo([TEST_USER_ID_1, TEST_USER_ID_2]);
 
     expect(result).toBeInstanceOf(Map);
     expect(result.size).toBe(2);
@@ -115,7 +115,7 @@ describe('UserInfoService', () => {
 
     mockCacheRepository.read.mockResolvedValue(cachedUserInfo);
 
-    const result = await service.getBatchUserInfo([TEST_USER_ID_1], REQUESTING_USER_ID);
+    const result = await service.getBatchUserInfo([TEST_USER_ID_1]);
 
     expect(result.size).toBe(1);
     expect(result.get(TEST_USER_ID_1)).toEqual(cachedUserInfo);
@@ -145,7 +145,7 @@ describe('UserInfoService', () => {
     mockCacheRepository.read.mockResolvedValue(null);
     mockProfileRepository.findByIds.mockResolvedValue([mockProfile]);
 
-    const result = await service.getBatchUserInfo([TEST_USER_ID_1], REQUESTING_USER_ID);
+    const result = await service.getBatchUserInfo([TEST_USER_ID_1]);
 
     expect(mockProfileRepository.findByIds).toHaveBeenCalledWith([TEST_USER_ID_1]);
     expect(mockCacheRepository.write).toHaveBeenCalledWith(

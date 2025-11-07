@@ -7,8 +7,7 @@ export interface UserInfoService {
   /**
    * Get batch user info with caching
    * @param userIds - Array of user IDs to fetch
-   * @param requestingUserId - User ID of the requester for privacy filtering
    * @returns Map of userId to UserInfo
    */
-  getBatchUserInfo(userIds: string[], requestingUserId: string): Promise<Map<string, UserInfo>>;
+  getBatchUserInfo(userIds: string[]): Promise<Map<string, UserInfo>>;
 }
