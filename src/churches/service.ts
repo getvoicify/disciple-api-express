@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { IChurchRepository } from './repository';
+import type { CacheRepository } from '../cache/cache.repository';
 import type {
   CreateChurchInput,
   UpdateChurchInput,
@@ -18,6 +19,8 @@ import {
   MissingRequiredFieldError,
   InvalidFormatError
 } from '../utils/errors';
+import { safeExecute } from '../utils/handle-async';
+import { logger } from '../logging';
 
 export interface ChurchService {
   createChurch(input: CreateChurchInput, ownerId: string): Promise<Church>;
@@ -32,7 +35,10 @@ export interface ChurchService {
 }
 
 export class ChurchServiceImpl implements ChurchService {
-  constructor(private readonly repository: IChurchRepository) {}
+  constructor(
+    private readonly repository: IChurchRepository,
+    private readonly cacheRepository?: CacheRepository
+  ) {}
 
   async createChurch(input: CreateChurchInput, ownerId: string): Promise<Church> {
     // Validate input
@@ -61,6 +67,8 @@ export class ChurchServiceImpl implements ChurchService {
       throw new ConflictError('Church not found or version conflict');
     }
 
+    await this.invalidateChurchCache(id);
+
     return church;
   }
 
@@ -71,6 +79,8 @@ export class ChurchServiceImpl implements ChurchService {
     if (!deleted) {
       throw new NotFoundError('Church', id);
     }
+
+    await this.invalidateChurchCache(id);
   }
 
   async getChurchById(id: string): Promise<Church> {
@@ -161,6 +171,21 @@ export class ChurchServiceImpl implements ChurchService {
       uuidSchema.parse(id);
     } catch {
       throw new InvalidFormatError('UUID', 'Valid UUID v4 format');
+    }
+  }
+
+  private async invalidateChurchCache(churchId: string): Promise<void> {
+    if (!this.cacheRepository) {
+      return;
+    }
+
+    const cacheKey = `church:info:${churchId}`;
+    const [error] = await safeExecute(this.cacheRepository.delete(cacheKey));
+
+    if (error) {
+      logger.warn({ error, churchId }, 'Failed to invalidate church cache');
+    } else {
+      logger.debug({ churchId, cacheKey }, 'Church cache invalidated');
     }
   }
 }
