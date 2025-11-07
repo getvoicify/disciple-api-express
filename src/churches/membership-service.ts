@@ -313,7 +313,24 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
   async getUserMemberships(userId: string): Promise<ChurchMember[]> {
     this.validateUUID(userId);
 
-    return this.memberRepository.findByUser(userId, { status: 'Active' });
+    const memberships = await this.memberRepository.findByUser(userId, { status: 'Active' });
+
+    // Embed user info if service is available
+    if (!this.userInfoService || memberships.length === 0) {
+      return memberships;
+    }
+
+    const userIds = extractUniqueUserIds(memberships, (member) => [member.userId]);
+    const userInfoMap = await this.userInfoService.getBatchUserInfo(userIds);
+
+    return embedUserInfo(
+      memberships,
+      userInfoMap,
+      (member, userMap) => ({
+        ...member,
+        user: userMap.get(member.userId),
+      })
+    );
   }
 
   async getMembershipByUserAndChurch(userId: string, churchId: string): Promise<ChurchMember | null> {

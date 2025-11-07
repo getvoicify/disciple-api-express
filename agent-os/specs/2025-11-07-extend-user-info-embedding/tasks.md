@@ -153,31 +153,31 @@ Estimated Effort: Medium (1 week)
 #### Task Group 4: OpenAPI Documentation and Test Coverage
 **Dependencies:** Task Groups 1-3
 
-- [ ] 4.0 Complete documentation and test coverage
-  - [ ] 4.1 Review existing tests from Task Groups 1-3
+- [x] 4.0 Complete documentation and test coverage
+  - [x] 4.1 Review existing tests from Task Groups 1-3
     - Review 5-8 tests from infrastructure layer (Task 1.1)
     - Review 4-6 tests from schema layer (Task 2.1)
     - Review 6-8 tests from service layer (Task 3.1)
     - Total existing tests: approximately 15-22 tests
-  - [ ] 4.2 Update OpenAPI schemas
+  - [x] 4.2 Update OpenAPI schemas
     - File: `src/schemas/openapi.schemas.ts`
     - Document embedded `user` field in ChurchMember response schemas
     - Document embedded `user` field in PrayerWallMembership response schemas
     - Document embedded `church` field in Post, PrayerWall, Series, Note response schemas
     - Verify Posts' `author` field is properly documented (from requirements: ⚠️ may be missing)
     - Document optional nature of all embedded fields for backward compatibility
-  - [ ] 4.3 Analyze test coverage gaps for THIS feature only
+  - [x] 4.3 Analyze test coverage gaps for THIS feature only
     - Identify critical workflows lacking coverage (e.g., end-to-end embedding flows)
     - Focus ONLY on embedding functionality, not entire application
     - Prioritize integration tests over unit tests
-  - [ ] 4.4 Write up to 10 additional strategic tests maximum
+  - [x] 4.4 Write up to 10 additional strategic tests maximum
     - Add maximum 10 new tests to fill critical embedding workflow gaps
     - Test end-to-end flows: fetch entities → verify embedded fields populated
     - Test privacy: verify email filtering, anonymous prayer handling
     - Test performance: verify batch fetching minimizes queries
     - Test cache: verify cache hit/miss scenarios
     - Do NOT write exhaustive coverage for all edge cases
-  - [ ] 4.5 Run feature-specific tests only
+  - [x] 4.5 Run feature-specific tests only
     - Run ONLY tests related to embedding functionality (tests from 1.1, 2.1, 3.1, and 4.4)
     - Expected total: approximately 25-32 tests maximum
     - Verify all embedding workflows pass
