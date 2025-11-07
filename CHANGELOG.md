@@ -1,3 +1,10 @@
+## [2.9.0](https://github.com/getvoicify/disciple-api-express/compare/v2.8.0...v2.9.0) (2025-11-07)
+
+
+### ✨ Features
+
+* extract user info ([#39](https://github.com/getvoicify/disciple-api-express/issues/39)) ([3fd4d4c](https://github.com/getvoicify/disciple-api-express/commit/3fd4d4c3d386919b3af9e03fed09a5bb6382239e))
+
 ## [2.8.0](https://github.com/getvoicify/disciple-api-express/compare/v2.7.0...v2.8.0) (2025-11-05)
 
 
