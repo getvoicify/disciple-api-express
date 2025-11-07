@@ -141,7 +141,6 @@ export class SeriesServiceImpl implements SeriesService {
 
     return embedUserInfo(
       series,
-      (s) => [s.authorId],
       userInfoMap,
       (s, userMap) => ({
         ...s,

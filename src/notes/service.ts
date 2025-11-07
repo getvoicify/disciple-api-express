@@ -108,7 +108,6 @@ export class NoteServiceImpl implements NoteService {
 
         return embedUserInfo(
             notes,
-            (note) => note.ownerId ? [note.ownerId] : [],
             userInfoMap,
             (note, userMap) => ({
                 ...note,

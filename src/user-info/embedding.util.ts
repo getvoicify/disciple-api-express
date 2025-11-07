@@ -1,4 +1,5 @@
 import type { UserInfo } from './types';
+import { extractUniqueIds, embedInfo } from '../utils/embedding.util';
 
 /**
  * Extract unique user IDs from an array of entities
@@ -15,8 +16,7 @@ export function extractUniqueUserIds<T>(
   entities: T[],
   extractor: (entity: T) => string[]
 ): string[] {
-  const allUserIds = entities.flatMap(extractor);
-  return Array.from(new Set(allUserIds));
+  return extractUniqueIds(entities, extractor);
 }
 
 /**
@@ -24,7 +24,6 @@ export function extractUniqueUserIds<T>(
  *
  * @template T - The entity type
  * @param entities - Array of entities to embed user info into
- * @param userIdExtractor - Function to extract user IDs from an entity
  * @param userInfoMap - Map of userId to UserInfo
  * @param embedder - Function to embed user info into an entity
  * @returns Array of entities with embedded user info
@@ -32,16 +31,14 @@ export function extractUniqueUserIds<T>(
  * @example
  * const posts = embedUserInfo(
  *   postList,
- *   (post) => [post.authorId],
  *   userInfoMap,
  *   (post, userMap) => ({ ...post, author: userMap.get(post.authorId) })
  * );
  */
 export function embedUserInfo<T>(
   entities: T[],
-  userIdExtractor: (entity: T) => string[],
   userInfoMap: Map<string, UserInfo>,
   embedder: (entity: T, users: Map<string, UserInfo>) => T
 ): T[] {
-  return entities.map((entity) => embedder(entity, userInfoMap));
+  return embedInfo(entities, userInfoMap, embedder);
 }

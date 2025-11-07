@@ -61,7 +61,6 @@ describe('Church Embedding Utilities', () => {
 
       const result = embedChurchInfo(
         posts,
-        (post) => [post.churchId],
         churchInfoMap,
         (post, churchMap) => ({
           ...post,
@@ -82,7 +81,6 @@ describe('Church Embedding Utilities', () => {
 
       const result = embedChurchInfo(
         posts,
-        (post) => [post.churchId],
         churchInfoMap,
         (post, churchMap) => ({
           ...post,

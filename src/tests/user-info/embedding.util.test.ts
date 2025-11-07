@@ -117,7 +117,6 @@ describe('User Info Embedding Utility', () => {
 
       const result = embedUserInfo(
         entities,
-        (entity) => [entity.authorId],
         userInfoMap,
         (entity, userMap) => ({
           ...entity,
@@ -149,7 +148,6 @@ describe('User Info Embedding Utility', () => {
 
       const result = embedUserInfo(
         entities,
-        (entity) => [entity.authorId],
         userInfoMap,
         (entity, userMap) => ({
           ...entity,
@@ -182,7 +180,6 @@ describe('User Info Embedding Utility', () => {
 
       const result = embedUserInfo(
         entities,
-        (entity) => [entity.authorId, entity.responderId],
         userInfoMap,
         (entity, userMap) => ({
           ...entity,
@@ -214,7 +211,6 @@ describe('User Info Embedding Utility', () => {
 
       const result = embedUserInfo(
         entities,
-        (entity) => [entity.authorId],
         userInfoMap,
         (entity, userMap) => ({
           ...entity,
@@ -233,7 +229,7 @@ describe('User Info Embedding Utility', () => {
       const entities: never[] = [];
       const userInfoMap = new Map<string, UserInfo>();
 
-      const result = embedUserInfo(entities, () => [], userInfoMap, (entity) => entity);
+      const result = embedUserInfo(entities, userInfoMap, (entity) => entity);
 
       expect(result).toHaveLength(0);
     });

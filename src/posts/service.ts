@@ -149,7 +149,6 @@ export class PostServiceImpl implements PostService {
 
         return embedUserInfo(
             posts,
-            (post) => [post.authorId],
             userInfoMap,
             (post, userMap) => ({
                 ...post,

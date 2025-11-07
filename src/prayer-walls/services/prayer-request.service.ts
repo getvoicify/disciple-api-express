@@ -245,7 +245,6 @@ export class PrayerRequestService implements IPrayerRequestService {
 
     return embedUserInfo(
       prayers,
-      (prayer) => (prayer.anonymity_level === AnonymityLevel.FULLY_ANONYMOUS ? [] : [prayer.author_id]),
       userInfoMap,
       (prayer, userMap) => ({
         ...prayer,
