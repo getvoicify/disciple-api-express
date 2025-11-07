@@ -11,19 +11,19 @@ Estimated Total Tasks: ~45 individual sub-tasks
 #### Task Group 1: Database Schema & Keycloak Sync
 **Dependencies:** None
 
-- [ ] 1.0 Complete database schema updates and Keycloak integration
-  - [ ] 1.1 Write 2-8 focused tests for database schema and Keycloak sync
+- [x] 1.0 Complete database schema updates and Keycloak integration
+  - [x] 1.1 Write 2-8 focused tests for database schema and Keycloak sync
     - Limit to 2-8 highly focused tests maximum
     - Test user profile table has required columns (firstName, lastName, displayName, avatarUrl, email)
     - Test Keycloak claims are extracted and stored correctly during profile creation
     - Test migration adds missing columns successfully
     - Skip exhaustive testing of all database operations
     - Use the Claude coderabbit-reviewer subagent to review the 2-8 tests written in 1.1 
-  - [ ] 1.2 Inspect user_profiles table schema
+  - [x] 1.2 Inspect user_profiles table schema
     - Verify existing columns: id, user_id, created_at, updated_at
     - Check if firstName, lastName, displayName, avatarUrl, email columns exist
     - Document missing columns for migration
-  - [ ] 1.3 Create database migration for missing columns
+  - [x] 1.3 Create database migration for missing columns
     - Add first_name VARCHAR(255) if missing
     - Add last_name VARCHAR(255) if missing
     - Add display_name VARCHAR(511) if missing (computed from first_name + last_name)
@@ -31,14 +31,14 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Add email VARCHAR(255) if missing (nullable)
     - Add index on user_id for efficient lookups
     - Use additive-only approach (no destructive changes)
-  - [ ] 1.4 Update profile creation service to sync Keycloak claims
+  - [x] 1.4 Update profile creation service to sync Keycloak claims
     - Modify `src/profiles/service.ts` `createProfile` method
     - Extract claims from JWT: `given_name`, `family_name`, `email` from `req.user[1].payload`
     - Map claims: `given_name` → `firstName`, `family_name` → `lastName`, `email` → `email`
     - Compute `displayName` from firstName + lastName
     - Store all fields in user profile table during creation
     - Throw custom error extending AppError if Keycloak claims missing
-  - [ ] 1.5 Update profile creation endpoint to pass Keycloak claims
+  - [x] 1.5 Update profile creation endpoint to pass Keycloak claims
     - Modify `src/profiles/routes/profileCreate.endpoint.ts`
     - Extract JWT payload from `req.user[1].payload`
     - Pass Keycloak claims to service's `createProfile` method
@@ -46,7 +46,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Use errorCodeFactory for custom error types
     - Log profile creation with structured logger
     - Update OpenAPI documentation and schema
-  - [ ] 1.6 Run database schema tests
+  - [x] 1.6 Run database schema tests
     - Run ONLY the 2-8 tests written in 1.1
     - Verify migration runs successfully
     - Verify Keycloak claims sync correctly
@@ -96,7 +96,7 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Merge cached and fetched profiles into final result Map
     - Use existing CacheRepository interface
     - Follow caching patterns from `src/profiles/service.ts`
-  - [ ] 2.5 Implement privacy filtering for embedded user data
+  - [x] 2.5 Implement privacy filtering for embedded user data
     - Extend `applyFieldVisibility` method in `src/profiles/service.ts` to handle embedded user objects
     - Create new method `applyFieldVisibilityToEmbedded(userInfo: UserInfo, requestingUserId: string): UserInfo`
     - Filter email field based on privacy settings
