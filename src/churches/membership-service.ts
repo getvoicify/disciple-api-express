@@ -2,8 +2,32 @@ import {z} from 'zod';
 import type {IChurchMemberRepository, IChurchRepository} from './repository';
 import type {ChurchMember, CreateChurchMemberInput, InvitationInput, MemberRole} from './schemas';
 import {InvitationInput as InvitationInputSchema} from './schemas';
-import type { UserInfoService } from '../user-info/service';
+import type { UserInfoService } from '../user-info';
 import { extractUniqueUserIds, embedUserInfo } from '../user-info/embedding.util';
+import type { ChurchInfoService } from '../church-info/service';
+import { extractUniqueChurchIds, embedChurchInfo } from '../church-info/embedding.util';
+import {
+  ChurchNotFoundError,
+  ChurchNotApprovedError,
+  MemberBannedError,
+  MemberAlreadyActiveError,
+  MemberInvitedError,
+  NotChurchMemberError,
+  InactiveMembershipError,
+  InsufficientChurchRoleError,
+  OwnerInviteError,
+  NoInvitationFoundError,
+  NoPendingInvitationError,
+  OwnerCannotLeaveError,
+  TargetNotChurchMemberError,
+  CannotRemoveOwnerError,
+  CannotBanOwnerError,
+  InvalidRoleError,
+  CannotChangeOwnerRoleError,
+  CannotPromoteToOwnerError,
+  MembershipUpdateFailedError,
+} from './errors';
+import { ValidationError } from '../utils/errors';
 
 export interface ChurchMembershipService {
   // Direct join operations
@@ -30,7 +54,8 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
   constructor(
     private readonly churchRepository: IChurchRepository,
     private readonly memberRepository: IChurchMemberRepository,
-    private readonly userInfoService?: UserInfoService
+    private readonly userInfoService?: UserInfoService,
+    private readonly churchInfoService?: ChurchInfoService
   ) {}
 
   async joinChurch(churchId: string, userId: string): Promise<ChurchMember> {
@@ -40,18 +65,18 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
     // Check if church exists and is approved
     const church = await this.churchRepository.findById(churchId);
     if (!church) {
-      throw new Error('Church not found');
+      throw new ChurchNotFoundError(churchId);
     }
 
     if (church.approvalStatus !== 'Approved') {
-      throw new Error('Cannot join church that is not approved');
+      throw new ChurchNotApprovedError(churchId, church.approvalStatus);
     }
 
     // Check existing membership
     const existingMembership = await this.memberRepository.findByChurchAndUser(churchId, userId);
     if (existingMembership) {
       if (existingMembership.status === 'Banned') {
-        throw new Error('You are banned from this church');
+        throw new MemberBannedError(churchId, userId);
       }
       if (existingMembership.status === 'Active') {
         return existingMembership; // Already a member
@@ -78,12 +103,12 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
 
     const membership = await this.memberRepository.findByChurchAndUser(churchId, userId);
     if (!membership) {
-      throw new Error('You are not a member of this church');
+      throw new NotChurchMemberError(churchId, userId);
     }
 
     // Owners cannot leave without transferring ownership
     if (membership.role === 'Owner') {
-      throw new Error('Owner cannot leave church without transferring ownership first');
+      throw new OwnerCannotLeaveError(churchId, userId);
     }
 
     await this.memberRepository.updateStatus(membership.id, 'Removed');
@@ -98,11 +123,11 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
     // Check if inviter has permission - any church member can invite users
     const inviterMembership = await this.memberRepository.findByChurchAndUser(churchId, inviterId);
     if (!inviterMembership) {
-      throw new Error('You are not a member of this church');
+      throw new NotChurchMemberError(churchId, inviterId);
     }
 
     if (inviterMembership.status !== 'Active') {
-      throw new Error('Only active church members can invite users');
+      throw new InactiveMembershipError(churchId, inviterId);
     }
 
     // Determine the role for the invitation
@@ -110,19 +135,28 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
 
     // Only owners can invite with Manager or Owner roles
     if (inviteRole !== 'Member' && inviterMembership.role !== 'Owner') {
-      throw new Error('Only church owners can invite users with Manager or Owner roles');
+      throw new InsufficientChurchRoleError(
+        'invite users with Manager or Owner roles',
+        'Owner',
+        inviterMembership.role,
+        churchId,
+        inviterId
+      );
     }
 
     // Cannot invite someone as Owner (would need ownership transfer)
     if (inviteRole === 'Owner') {
-      throw new Error('Cannot invite user as Owner. Use ownership transfer instead');
+      throw new OwnerInviteError(churchId);
     }
 
     // Check if user is already a member
     const existingMembership = await this.memberRepository.findByChurchAndUser(churchId, validated.userId);
     if (existingMembership) {
-      if (existingMembership.status === 'Active' || existingMembership.status === 'Invited') {
-        throw new Error('User is already a member of this church');
+      if (existingMembership.status === 'Active') {
+        throw new MemberAlreadyActiveError(churchId, validated.userId);
+      }
+      if (existingMembership.status === 'Invited') {
+        throw new MemberInvitedError(churchId, validated.userId);
       }
     }
 
@@ -142,18 +176,18 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
 
     const membership = await this.memberRepository.findByChurchAndUser(churchId, userId);
     if (!membership) {
-      throw new Error('No invitation found');
+      throw new NoInvitationFoundError(churchId, userId);
     }
 
     if (membership.status !== 'Invited') {
-      throw new Error('No pending invitation found');
+      throw new NoPendingInvitationError(churchId, userId);
     }
 
     await this.memberRepository.updateStatus(membership.id, 'Active');
 
     const updatedMembership = await this.memberRepository.findById(membership.id);
     if (!updatedMembership) {
-      throw new Error('Failed to update membership status');
+      throw new MembershipUpdateFailedError(membership.id, 'update membership status');
     }
 
     return updatedMembership;
@@ -165,11 +199,11 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
 
     const membership = await this.memberRepository.findByChurchAndUser(churchId, userId);
     if (!membership) {
-      throw new Error('No invitation found');
+      throw new NoInvitationFoundError(churchId, userId);
     }
 
     if (membership.status !== 'Invited') {
-      throw new Error('No pending invitation found');
+      throw new NoPendingInvitationError(churchId, userId);
     }
 
     await this.memberRepository.delete(membership.id);
@@ -183,22 +217,28 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
     // Check actor permissions
     const actorMembership = await this.memberRepository.findByChurchAndUser(churchId, actorId);
     if (!actorMembership) {
-      throw new Error('You are not a member of this church');
+      throw new NotChurchMemberError(churchId, actorId);
     }
 
     if (actorMembership.role !== 'Owner' && actorMembership.role !== 'Manager') {
-      throw new Error('Only owners and managers can remove members');
+      throw new InsufficientChurchRoleError(
+        'remove members',
+        'Owner or Manager',
+        actorMembership.role,
+        churchId,
+        actorId
+      );
     }
 
     // Check target member
     const targetMembership = await this.memberRepository.findByChurchAndUser(churchId, targetUserId);
     if (!targetMembership) {
-      throw new Error('Target user is not a member of this church');
+      throw new TargetNotChurchMemberError(churchId, targetUserId);
     }
 
     // Cannot remove owner
     if (targetMembership.role === 'Owner') {
-      throw new Error('Cannot remove church owner');
+      throw new CannotRemoveOwnerError(churchId, targetUserId);
     }
 
     await this.memberRepository.updateStatus(targetMembership.id, 'Removed');
@@ -212,22 +252,28 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
     // Check actor permissions
     const actorMembership = await this.memberRepository.findByChurchAndUser(churchId, actorId);
     if (!actorMembership) {
-      throw new Error('You are not a member of this church');
+      throw new NotChurchMemberError(churchId, actorId);
     }
 
     if (actorMembership.role !== 'Owner' && actorMembership.role !== 'Manager') {
-      throw new Error('Only owners and managers can ban members');
+      throw new InsufficientChurchRoleError(
+        'ban members',
+        'Owner or Manager',
+        actorMembership.role,
+        churchId,
+        actorId
+      );
     }
 
     // Check target member
     const targetMembership = await this.memberRepository.findByChurchAndUser(churchId, targetUserId);
     if (!targetMembership) {
-      throw new Error('Target user is not a member of this church');
+      throw new TargetNotChurchMemberError(churchId, targetUserId);
     }
 
     // Cannot ban owner
     if (targetMembership.role === 'Owner') {
-      throw new Error('Cannot ban church owner');
+      throw new CannotBanOwnerError(churchId, targetUserId);
     }
 
     await this.memberRepository.updateStatus(targetMembership.id, 'Banned');
@@ -240,40 +286,46 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
 
     // Validate role
     if (!['Owner', 'Manager', 'Member'].includes(newRole)) {
-      throw new Error('Invalid role');
+      throw new InvalidRoleError(newRole);
     }
 
     // Only owners can change roles
     const actorMembership = await this.memberRepository.findByChurchAndUser(churchId, actorId);
     if (!actorMembership) {
-      throw new Error('You are not a member of this church');
+      throw new NotChurchMemberError(churchId, actorId);
     }
 
     if (actorMembership.role !== 'Owner') {
-      throw new Error('Only church owner can change member roles');
+      throw new InsufficientChurchRoleError(
+        'change member roles',
+        'Owner',
+        actorMembership.role,
+        churchId,
+        actorId
+      );
     }
 
     // Check target member
     const targetMembership = await this.memberRepository.findByChurchAndUser(churchId, targetUserId);
     if (!targetMembership) {
-      throw new Error('Target user is not a member of this church');
+      throw new TargetNotChurchMemberError(churchId, targetUserId);
     }
 
     // Cannot change owner role
     if (targetMembership.role === 'Owner') {
-      throw new Error('Cannot change church owner role');
+      throw new CannotChangeOwnerRoleError(churchId, targetUserId);
     }
 
     // Cannot promote to owner (would need ownership transfer)
     if (newRole === 'Owner') {
-      throw new Error('Cannot promote to owner role. Use ownership transfer instead');
+      throw new CannotPromoteToOwnerError(churchId, targetUserId);
     }
 
     await this.memberRepository.updateRole(targetMembership.id, newRole);
 
     const updatedMembership = await this.memberRepository.findById(targetMembership.id);
     if (!updatedMembership) {
-      throw new Error('Failed to update member role');
+      throw new MembershipUpdateFailedError(targetMembership.id, 'update member role');
     }
 
     return updatedMembership;
@@ -286,51 +338,89 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
     // Check if user is a member of the church
     const membership = await this.memberRepository.findByChurchAndUser(churchId, userId);
     if (!membership) {
-      throw new Error('You are not a member of this church');
+      throw new NotChurchMemberError(churchId, userId);
     }
 
     // Get active members
-    const members = await this.memberRepository.findByChurch(churchId, { status: 'Active' });
+    let members = await this.memberRepository.findByChurch(churchId, { status: 'Active' });
 
-    // Embed user info if service is available
-    if (!this.userInfoService || members.length === 0) {
+    if (members.length === 0) {
       return members;
     }
 
-    const userIds = extractUniqueUserIds(members, (member) => [member.userId]);
-    const userInfoMap = await this.userInfoService.getBatchUserInfo(userIds);
+    // Embed user info if service is available
+    if (this.userInfoService) {
+      const userIds = extractUniqueUserIds(members, (member) => [member.userId]);
+      const userInfoMap = await this.userInfoService.getBatchUserInfo(userIds);
 
-    return embedUserInfo(
-      members,
-      userInfoMap,
-      (member, userMap) => ({
-        ...member,
-        user: userMap.get(member.userId),
-      })
-    );
+      members = embedUserInfo(
+        members,
+        userInfoMap,
+        (member, userMap) => ({
+          ...member,
+          user: userMap.get(member.userId),
+        })
+      );
+    }
+
+    // Embed church info if service is available
+    if (this.churchInfoService) {
+      const churchIds = extractUniqueChurchIds(members, (member) => [member.churchId]);
+      const churchInfoMap = await this.churchInfoService.getBatchChurchInfo(churchIds);
+
+      members = embedChurchInfo(
+        members,
+        churchInfoMap,
+        (member, churchMap) => ({
+          ...member,
+          church: churchMap.get(member.churchId),
+        })
+      );
+    }
+
+    return members;
   }
 
   async getUserMemberships(userId: string): Promise<ChurchMember[]> {
     this.validateUUID(userId);
 
-    const memberships = await this.memberRepository.findByUser(userId, { status: 'Active' });
+    let memberships = await this.memberRepository.findByUser(userId, { status: 'Active' });
 
-    // Embed user info if service is available
-    if (!this.userInfoService || memberships.length === 0) {
+    if (memberships.length === 0) {
       return memberships;
     }
 
-    const userIds = extractUniqueUserIds(memberships, (member) => [member.userId]);
-    const userInfoMap = await this.userInfoService.getBatchUserInfo(userIds);
+    // Embed user info if service is available
+    if (this.userInfoService) {
+      const userIds = extractUniqueUserIds(memberships, (member) => [member.userId]);
+      const userInfoMap = await this.userInfoService.getBatchUserInfo(userIds);
 
-    return embedUserInfo(
-      memberships,
-      userInfoMap,
-      (member, userMap) => ({
-        ...member,
-        user: userMap.get(member.userId),
-      })
-    );
+      memberships = embedUserInfo(
+        memberships,
+        userInfoMap,
+        (member, userMap) => ({
+          ...member,
+          user: userMap.get(member.userId),
+        })
+      );
+    }
+
+    // Embed church info if service is available
+    if (this.churchInfoService) {
+      const churchIds = extractUniqueChurchIds(memberships, (member) => [member.churchId]);
+      const churchInfoMap = await this.churchInfoService.getBatchChurchInfo(churchIds);
+
+      memberships = embedChurchInfo(
+        memberships,
+        churchInfoMap,
+        (member, churchMap) => ({
+          ...member,
+          church: churchMap.get(member.churchId),
+        })
+      );
+    }
+
+    return memberships;
   }
 
   async getMembershipByUserAndChurch(userId: string, churchId: string): Promise<ChurchMember | null> {
@@ -341,11 +431,11 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
   }
 
   private validateUUID(id: string): void {
-    const uuidSchema = z.string().uuid();
+    const uuidSchema = z.uuid();
     try {
       uuidSchema.parse(id);
     } catch {
-      throw new Error('Invalid UUID format');
+      throw new ValidationError('Invalid UUID format', { id: ['Invalid UUID format'] });
     }
   }
 }

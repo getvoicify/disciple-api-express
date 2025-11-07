@@ -1,7 +1,7 @@
 import type { ChurchInfoService } from './service';
 import type { ChurchInfo } from './types';
 import type { IChurchRepository } from '../churches/repository';
-import type { CacheRepository } from '../cache/cache.repository';
+import type { CacheRepository } from '../cache';
 import type { Church } from '../churches/schemas';
 import { safeExecute } from '../utils/handle-async';
 import { logger } from '../logging';

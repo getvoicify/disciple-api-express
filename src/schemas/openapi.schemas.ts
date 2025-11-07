@@ -658,7 +658,11 @@ export const churchMemberSchema = {
         churchId: {
             type: 'string',
             format: 'uuid',
-            description: 'Church ID'
+            description: 'Church ID (maintained for backward compatibility)'
+        },
+        church: {
+            $ref: '#/components/schemas/ChurchInfo',
+            description: 'Embedded church information (optional, improves performance by reducing API calls)'
         },
         userId: {
             type: 'string',
