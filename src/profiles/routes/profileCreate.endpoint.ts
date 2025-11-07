@@ -1,7 +1,7 @@
 import type { ProfileService } from '../service';
 import type { Response } from 'express';
 import type { EndpointRequest } from '../../types/endpoint-handler';
-import { CreateProfileInput } from '../schemas';
+import { CreateProfileInput, KeycloakClaims } from '../schemas';
 import { safeExecute } from '../../utils/handle-async';
 import errorCodeFactory from '../../utils/error-code.factory';
 
@@ -80,9 +80,28 @@ export const profileCreateEndpoint = (service: ProfileService) =>
       return;
     }
 
-    // Create profile
+    // Extract Keycloak claims from JWT payload for syncing user info
+    const jwtPayload = req.user?.[1]?.payload;
+    const [keycloakParseError, keycloakClaims] = await safeExecute(() =>
+      KeycloakClaims.parse({
+        given_name: jwtPayload?.given_name,
+        family_name: jwtPayload?.family_name,
+        email: jwtPayload?.email,
+      })
+    );
+
+    // Log if Keycloak claims parsing fails (non-blocking)
+    if (keycloakParseError) {
+      (req as any).log?.warn({ error: keycloakParseError, userId }, 'Failed to parse Keycloak claims');
+    }
+
+    // Create profile with Keycloak claims sync
     const [error, profile] = await safeExecute(
-      service.createProfile(userId as string, profileInput)
+      service.createProfile(
+        userId as string,
+        profileInput,
+        keycloakParseError ? undefined : keycloakClaims
+      )
     );
 
     if (error) {
@@ -92,6 +111,7 @@ export const profileCreateEndpoint = (service: ProfileService) =>
         success: false,
       });
     } else {
+      (req as any).log?.info({ userId, profileId: profile.userId }, 'Profile created successfully');
       res.status(201).json({
         profile,
         success: true,

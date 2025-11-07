@@ -19,7 +19,14 @@ export const CachedMetrics = z.object({
   devotionalsCount: z.number().int().nonnegative().optional(),
   daysActive: z.number().int().nonnegative().optional(),
   lastCalculated: z.iso.datetime().optional(),
-}).passthrough().default({});
+}).loose().default({});
+
+// Keycloak claims schema (for profile creation)
+export const KeycloakClaims = z.object({
+  given_name: z.string().optional(),
+  family_name: z.string().optional(),
+  email: z.email().optional(),
+}).loose();
 
 // Profile schema
 export const Profile = z.object({
@@ -32,6 +39,11 @@ export const Profile = z.object({
   cachedMetrics: CachedMetrics,
   notificationPreferences: NotificationPreferences,
   preferredDevotionalTime: z.string().nullable(),
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
+  displayName: z.string().nullable().optional(),
+  avatarUrl: z.url().nullable().optional(),
+  email: z.email().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -45,6 +57,11 @@ export const CreateProfileInput = z.object({
   fieldVisibilitySettings: FieldVisibilitySettings.optional(),
   notificationPreferences: NotificationPreferences.optional(),
   preferredDevotionalTime: z.string().regex(/^\d{2}:\d{2}:\d{2}$/, 'Must be in HH:MM:SS format').optional(),
+  firstName: z.string().max(255).optional(),
+  lastName: z.string().max(255).optional(),
+  displayName: z.string().max(511).optional(),
+  avatarUrl: z.url().optional(),
+  email: z.email().optional(),
 });
 
 // Update profile input schema
@@ -56,6 +73,11 @@ export const UpdateProfileInput = z.object({
   fieldVisibilitySettings: FieldVisibilitySettings.optional(),
   notificationPreferences: NotificationPreferences.optional(),
   preferredDevotionalTime: z.string().regex(/^\d{2}:\d{2}:\d{2}$/, 'Must be in HH:MM:SS format').nullable().optional(),
+  firstName: z.string().max(255).optional(),
+  lastName: z.string().max(255).optional(),
+  displayName: z.string().max(511).optional(),
+  avatarUrl: z.url().nullable().optional(),
+  email: z.email().nullable().optional(),
 });
 
 // Profile statistics schema
@@ -71,6 +93,7 @@ export type PrivacyMode = z.infer<typeof PrivacyModeEnum>;
 export type FieldVisibilitySettings = z.infer<typeof FieldVisibilitySettings>;
 export type NotificationPreferences = z.infer<typeof NotificationPreferences>;
 export type CachedMetrics = z.infer<typeof CachedMetrics>;
+export type KeycloakClaims = z.infer<typeof KeycloakClaims>;
 export type Profile = z.infer<typeof Profile>;
 export type CreateProfileInput = z.infer<typeof CreateProfileInput>;
 export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;

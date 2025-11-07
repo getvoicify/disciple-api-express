@@ -132,6 +132,18 @@ export class PostgresChurchRepository implements IChurchRepository {
     return this.mapRowToChurch(result[0]);
   }
 
+  async findByIds(ids: string[]): Promise<Church[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const result = await this.db`
+      SELECT * FROM churches WHERE id = ANY(${ids}) AND deleted_at IS NULL
+    `;
+
+    return result.map(row => this.mapRowToChurch(row));
+  }
+
   async findBySlug(slug: string): Promise<Church | null> {
     const result = await this.db`
       SELECT * FROM churches

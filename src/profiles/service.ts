@@ -1,5 +1,5 @@
 import type { ProfileRepository } from './repository';
-import type { CreateProfileInput, UpdateProfileInput, Profile, ProfileStatistics } from './schemas';
+import type { CreateProfileInput, UpdateProfileInput, Profile, ProfileStatistics, KeycloakClaims } from './schemas';
 import { CreateProfileInput as CreateProfileSchema, UpdateProfileInput as UpdateProfileSchema } from './schemas';
 import { ProfileNotFoundError, ProfileUnauthorizedError } from './errors';
 import type { KeycloakAdminClient } from '../keycloak/types';
@@ -45,9 +45,10 @@ export interface ProfileService {
    * Create a new profile with Keycloak data sync
    * @param userId - The user ID from Keycloak
    * @param input - Profile creation data
+   * @param keycloakClaims - Optional Keycloak claims to sync (given_name, family_name, email)
    * @returns The created profile
    */
-  createProfile(userId: string, input: CreateProfileInput): Promise<Profile>;
+  createProfile(userId: string, input: CreateProfileInput, keycloakClaims?: KeycloakClaims): Promise<Profile>;
 
   /**
    * Update an existing profile and invalidate cache
@@ -99,7 +100,7 @@ export class ProfileServiceImpl implements ProfileService {
     private readonly db: RawDb
   ) {}
 
-  async createProfile(userId: string, input: CreateProfileInput): Promise<Profile> {
+  async createProfile(userId: string, input: CreateProfileInput, keycloakClaims?: KeycloakClaims): Promise<Profile> {
     // Validate input
     const validated = CreateProfileSchema.parse(input);
 
@@ -109,10 +110,18 @@ export class ProfileServiceImpl implements ProfileService {
       logger.warn({ error: keycloakError, userId }, 'Failed to fetch Keycloak attributes during profile creation');
     }
 
+    // Extract and sync Keycloak claims if provided
+    let profileData = { ...validated };
+    if (keycloakClaims) {
+      const syncedData = this.syncKeycloakClaims(keycloakClaims);
+      profileData = { ...profileData, ...syncedData };
+      logger.info({ userId, syncedData }, 'Syncing Keycloak claims to profile');
+    }
+
     // Create profile in database
-    const [error, profile] = await safeExecute(this.repository.create(userId, validated));
+    const [error, profile] = await safeExecute(this.repository.create(userId, profileData));
     if (error) {
-      logger.error({ error, userId, input: validated }, 'Failed to create profile');
+      logger.error({ error, userId, input: profileData }, 'Failed to create profile');
       throw error;
     }
 
@@ -184,6 +193,34 @@ export class ProfileServiceImpl implements ProfileService {
 
     // Apply field visibility when returning
     return this.applyFieldVisibility(profile, userId, requestingUserId);
+  }
+
+  /**
+   * Sync Keycloak claims to profile data
+   * @param claims - Keycloak claims (given_name, family_name, email)
+   * @returns Profile data with synced Keycloak fields
+   * @private
+   */
+  private syncKeycloakClaims(claims: KeycloakClaims): Partial<CreateProfileInput> {
+    const firstName = (claims.given_name || '').trim();
+    const lastName = (claims.family_name || '').trim();
+
+    // Compute displayName: "firstName lastName" with proper spacing
+    let displayName = '';
+    if (firstName && lastName) {
+      displayName = `${firstName} ${lastName}`;
+    } else if (firstName) {
+      displayName = firstName;
+    } else if (lastName) {
+      displayName = lastName;
+    }
+
+    return {
+      firstName: firstName || '',
+      lastName: lastName || '',
+      displayName: displayName || '',
+      email: claims.email || null,
+    };
   }
 
   /**
@@ -395,6 +432,7 @@ export class ProfileServiceImpl implements ProfileService {
       `profile:${userId}`,
       `profile:statistics:${userId}`,
       `profile:dashboard:${userId}`,
+      `user:profile:${userId}`, // Also invalidate user info cache for future feature
     ];
 
     for (const key of cacheKeys) {

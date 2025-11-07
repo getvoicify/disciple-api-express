@@ -1,4 +1,6 @@
 // Prayer Wall types and enums for the Prayer Wall Foundation feature
+import type { UserInfo } from '../../user-info/types';
+import type { ChurchInfo } from '../../church-info/types';
 
 /**
  * Wall status enum representing the lifecycle state of a prayer wall
@@ -48,6 +50,7 @@ export type PrayerWallSchedule = {
 export type PrayerWall = {
   id: string;
   church_id: string;
+  church?: ChurchInfo;
   name: string;
   description: string | null;
   created_by: string;
@@ -119,6 +122,7 @@ export type PrayerRequest = {
   id: string;
   wall_id: string;
   author_id: string;
+  author?: UserInfo;
   parent_id: string | null;
   thread_depth: number;
   content: string;
@@ -166,6 +170,7 @@ export type PrayerWallMembership = {
   id: string;
   wall_id: string;
   user_id: string;
+  user?: UserInfo;
   joined_at: Date;
   invited_by: string | null;
   left_at: Date | null;

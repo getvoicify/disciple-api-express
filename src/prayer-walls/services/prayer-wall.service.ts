@@ -10,6 +10,10 @@ import type {
   PaginationParams,
 } from '../types/prayer-wall.types';
 import { logger } from '../../logging';
+import type { UserInfoService } from '../../user-info/service';
+import type { ChurchInfoService } from '../../church-info/service';
+import { extractUniqueUserIds, embedUserInfo } from '../../user-info/embedding.util';
+import { extractUniqueChurchIds, embedChurchInfo } from '../../church-info/embedding.util';
 import {
   PrayerWallNotFoundError,
   NotChurchMemberError,
@@ -52,7 +56,9 @@ export class PrayerWallService implements IPrayerWallService {
     private readonly wallRepository: IPrayerWallRepository,
     private readonly membershipRepository: IPrayerWallMembershipRepository,
     private readonly cacheRepository: CacheRepository,
-    private readonly churchMembershipService: ChurchMembershipService
+    private readonly churchMembershipService: ChurchMembershipService,
+    private readonly userInfoService?: UserInfoService,
+    private readonly churchInfoService?: ChurchInfoService
   ) {}
 
   /**
@@ -248,7 +254,22 @@ export class PrayerWallService implements IPrayerWallService {
     );
 
     // Remove null entries (private walls user is not member of)
-    const filteredWalls = accessibleWalls.filter((wall): wall is PrayerWall => wall !== null);
+    let filteredWalls = accessibleWalls.filter((wall): wall is PrayerWall => wall !== null);
+
+    // Embed church info if service is available
+    if (this.churchInfoService && filteredWalls.length > 0) {
+      const churchIds = extractUniqueChurchIds(filteredWalls, (wall) => [wall.church_id]);
+      const churchInfoMap = await this.churchInfoService.getBatchChurchInfo(churchIds);
+
+      filteredWalls = embedChurchInfo(
+        filteredWalls,
+        churchInfoMap,
+        (wall, churchMap) => ({
+          ...wall,
+          church: churchMap.get(wall.church_id),
+        })
+      );
+    }
 
     return filteredWalls;
   }
@@ -464,7 +485,22 @@ export class PrayerWallService implements IPrayerWallService {
 
     logger.debug({ wallId, memberCount: members.length }, 'Retrieved prayer wall members');
 
-    return members;
+    // Embed user info if service is available
+    if (!this.userInfoService || members.length === 0) {
+      return members;
+    }
+
+    const userIds = extractUniqueUserIds(members, (member) => [member.user_id]);
+    const userInfoMap = await this.userInfoService.getBatchUserInfo(userIds);
+
+    return embedUserInfo(
+      members,
+      userInfoMap,
+      (member, userMap) => ({
+        ...member,
+        user: userMap.get(member.user_id),
+      })
+    );
   }
 
   /**

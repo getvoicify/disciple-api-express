@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UserInfoSchema } from '../user-info/schemas';
 
 // Enums
 export const ApprovalStatus = z.enum(['Pending', 'Approved', 'Rejected']);
@@ -115,7 +116,8 @@ export const ChurchMember = z.object({
 	joinedAt: z.date(),
 	updatedAt: z.date(),
 	invitedBy: z.uuid().optional().nullable(),
-	invitedAt: z.date().optional().nullable()
+	invitedAt: z.date().optional().nullable(),
+	user: UserInfoSchema.optional()
 });
 
 // Create Church Member Input

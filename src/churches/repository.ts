@@ -17,6 +17,7 @@ export interface IChurchRepository {
 	update(id: string, input: UpdateChurchInput, version: number): Promise<Church | null>;
 	delete(id: string): Promise<boolean>;
 	findById(id: string): Promise<Church | null>;
+	findByIds(ids: string[]): Promise<Church[]>;
 	findBySlug(slug: string): Promise<Church | null>;
 	findAll(filters?: ChurchFilters): Promise<{ churches: Church[]; total: number }>;
 
