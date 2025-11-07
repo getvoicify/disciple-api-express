@@ -7,7 +7,10 @@ import { safeExecute } from '../utils/handle-async';
 import { logger } from '../logging';
 
 export class UserInfoServiceImpl implements UserInfoService {
-  private readonly CACHE_TTL = 900;
+  private readonly CACHE_TTL = parseInt(
+    process.env['USER_PROFILE_CACHE_TTL'] || '900',
+    10
+  );
 
   constructor(
     private readonly profileRepository: ProfileRepository,
