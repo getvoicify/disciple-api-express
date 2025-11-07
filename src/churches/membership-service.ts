@@ -2,6 +2,8 @@ import {z} from 'zod';
 import type {IChurchMemberRepository, IChurchRepository} from './repository';
 import type {ChurchMember, CreateChurchMemberInput, InvitationInput, MemberRole} from './schemas';
 import {InvitationInput as InvitationInputSchema} from './schemas';
+import type { UserInfoService } from '../user-info/service';
+import { extractUniqueUserIds, embedUserInfo } from '../user-info/embedding.util';
 
 export interface ChurchMembershipService {
   // Direct join operations
@@ -27,7 +29,8 @@ export interface ChurchMembershipService {
 export class ChurchMembershipServiceImpl implements ChurchMembershipService {
   constructor(
     private readonly churchRepository: IChurchRepository,
-    private readonly memberRepository: IChurchMemberRepository
+    private readonly memberRepository: IChurchMemberRepository,
+    private readonly userInfoService?: UserInfoService
   ) {}
 
   async joinChurch(churchId: string, userId: string): Promise<ChurchMember> {
@@ -286,8 +289,25 @@ export class ChurchMembershipServiceImpl implements ChurchMembershipService {
       throw new Error('You are not a member of this church');
     }
 
-    // Return active members
-    return this.memberRepository.findByChurch(churchId, { status: 'Active' });
+    // Get active members
+    const members = await this.memberRepository.findByChurch(churchId, { status: 'Active' });
+
+    // Embed user info if service is available
+    if (!this.userInfoService || members.length === 0) {
+      return members;
+    }
+
+    const userIds = extractUniqueUserIds(members, (member) => [member.userId]);
+    const userInfoMap = await this.userInfoService.getBatchUserInfo(userIds);
+
+    return embedUserInfo(
+      members,
+      userInfoMap,
+      (member, userMap) => ({
+        ...member,
+        user: userMap.get(member.userId),
+      })
+    );
   }
 
   async getUserMemberships(userId: string): Promise<ChurchMember[]> {

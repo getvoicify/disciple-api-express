@@ -9,7 +9,9 @@ import type { CreatePostInput, UpdatePostInput, Post, PostFilters } from './sche
 import type { ChurchMembershipService } from '../churches/membership-service';
 import type { ICacheInvalidationService } from '../cache/cache-invalidation.service';
 import type { UserInfoService } from '../user-info/service';
+import type { ChurchInfoService } from '../church-info/service';
 import { extractUniqueUserIds, embedUserInfo } from '../user-info/embedding.util';
+import { extractUniqueChurchIds, embedChurchInfo } from '../church-info/embedding.util';
 import {
     PostNotFoundError,
     PostUnauthorizedError,
@@ -36,7 +38,8 @@ export class PostServiceImpl implements PostService {
         private readonly repository: PostRepository,
         private readonly membershipService: ChurchMembershipService,
         private readonly cacheInvalidationService: ICacheInvalidationService,
-        private readonly userInfoService?: UserInfoService
+        private readonly userInfoService?: UserInfoService,
+        private readonly churchInfoService?: ChurchInfoService
     ) {
     }
 
@@ -140,21 +143,41 @@ export class PostServiceImpl implements PostService {
             posts = await this.repository.findAll();
         }
 
-        if (!this.userInfoService || posts.length === 0) {
+        if (posts.length === 0) {
             return posts;
         }
 
-        const authorIds = extractUniqueUserIds(posts, (post) => [post.authorId]);
-        const userInfoMap = await this.userInfoService.getBatchUserInfo(authorIds);
+        // Embed user info if service is available
+        if (this.userInfoService) {
+            const authorIds = extractUniqueUserIds(posts, (post) => [post.authorId]);
+            const userInfoMap = await this.userInfoService.getBatchUserInfo(authorIds);
 
-        return embedUserInfo(
-            posts,
-            userInfoMap,
-            (post, userMap) => ({
-                ...post,
-                author: userMap.get(post.authorId),
-            })
-        );
+            posts = embedUserInfo(
+                posts,
+                userInfoMap,
+                (post, userMap) => ({
+                    ...post,
+                    author: userMap.get(post.authorId),
+                })
+            );
+        }
+
+        // Embed church info if service is available
+        if (this.churchInfoService) {
+            const churchIds = extractUniqueChurchIds(posts, (post) => [post.churchId]);
+            const churchInfoMap = await this.churchInfoService.getBatchChurchInfo(churchIds);
+
+            posts = embedChurchInfo(
+                posts,
+                churchInfoMap,
+                (post, churchMap) => ({
+                    ...post,
+                    church: churchMap.get(post.churchId),
+                })
+            );
+        }
+
+        return posts;
     }
 
     async publishPost(id: string, authorId: string): Promise<Post> {

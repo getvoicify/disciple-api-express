@@ -97,44 +97,44 @@ Estimated Effort: Medium (1 week)
 #### Task Group 3: Embed User/Church Info in Services
 **Dependencies:** Task Groups 1, 2
 
-- [ ] 3.0 Complete service layer embedding
-  - [ ] 3.1 Write 2-8 focused tests for service embedding logic
+- [x] 3.0 Complete service layer embedding
+  - [x] 3.1 Write 2-8 focused tests for service embedding logic
     - Test church membership service embeds user info correctly
     - Test prayer wall membership service embeds user info correctly
     - Test posts service embeds church info (verify existing + new)
     - Test privacy filtering works for embedded user info
     - Test cache is utilized for batch fetching
     - Limit to 6-8 integration tests only
-  - [ ] 3.2 Add user embedding to church membership service
+  - [x] 3.2 Add user embedding to church membership service
     - File: `src/churches/membership-service.ts` or relevant endpoint
     - Modify list memberships endpoint to embed user info
     - Follow pattern from `src/posts/service.ts:134-159` (listPosts method)
     - Use `extractUniqueUserIds` → `UserInfoService.getBatchUserInfo` → `embedUserInfo`
     - Apply privacy filtering via `applyFieldVisibility` pattern
-  - [ ] 3.3 Add user embedding to prayer wall membership service
+  - [x] 3.3 Add user embedding to prayer wall membership service
     - File: `src/prayer-walls/services/prayer-wall.service.ts` or membership repository
     - Modify endpoints returning PrayerWallMembership arrays to embed user info
     - Follow same pattern as church membership (extract → fetch → embed)
     - Apply privacy settings for member visibility
     - Do NOT embed for `invited_by` and `banned_by` fields (out of scope)
-  - [ ] 3.4 Add church embedding to posts service
+  - [x] 3.4 Add church embedding to posts service
     - File: `src/posts/service.ts`
     - Modify `listPosts` method (already has user embedding at lines 134-159)
     - Add church embedding after user embedding
     - Use `extractUniqueChurchIds` → `ChurchInfoService.getBatchChurchInfo` → `embedChurchInfo`
-  - [ ] 3.5 Add church embedding to prayer walls service
+  - [x] 3.5 Add church embedding to prayer walls service
     - File: `src/prayer-walls/services/prayer-wall.service.ts`
     - Modify methods returning PrayerWall arrays to embed church info
     - Use same church embedding pattern as posts service
-  - [ ] 3.6 Add church embedding to series service
+  - [x] 3.6 Add church embedding to series service
     - File: `src/series/service.ts`
     - Modify list methods to embed church info
     - Use same church embedding pattern
-  - [ ] 3.7 Add church embedding to notes service
+  - [x] 3.7 Add church embedding to notes service
     - File: `src/notes/service.ts`
     - Modify list methods to embed church info
     - Use same church embedding pattern
-  - [ ] 3.8 Ensure service embedding tests pass
+  - [x] 3.8 Ensure service embedding tests pass
     - Run ONLY the 6-8 tests written in 3.1
     - Verify embedded fields populate correctly
     - Verify privacy filtering works
