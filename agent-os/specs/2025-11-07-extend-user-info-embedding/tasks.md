@@ -57,40 +57,40 @@ Estimated Effort: Medium (1 week)
 #### Task Group 2: Schema Extensions for Embedded Fields
 **Dependencies:** Task Group 1
 
-- [ ] 2.0 Complete schema extensions
-  - [ ] 2.1 Write 2-8 focused tests for schema validation
+- [x] 2.0 Complete schema extensions
+  - [x] 2.1 Write 2-8 focused tests for schema validation
     - Test ChurchMember schema validates with embedded user field
     - Test PrayerWallMembership type accepts user field
     - Test Post schema validates with embedded church field
     - Test backward compatibility (schemas work without embedded fields)
     - Limit to 4-6 schema validation tests only
-  - [ ] 2.2 Extend ChurchMember schema
+  - [x] 2.2 Extend ChurchMember schema
     - File: `src/churches/schemas.ts`
     - Add `user: UserInfoSchema.optional()` to ChurchMember schema
     - Follow pattern from `src/posts/schemas.ts:30` (author field)
     - Maintain backward compatibility with existing `userId` field
-  - [ ] 2.3 Extend PrayerWallMembership type
+  - [x] 2.3 Extend PrayerWallMembership type
     - File: `src/prayer-walls/types/prayer-wall.types.ts`
     - Add `user?: UserInfo` to PrayerWallMembership type (line 167-179)
     - Follow pattern from PrayerRequest type (line 123) which already has `author?: UserInfo`
     - Maintain backward compatibility with existing `user_id` field
-  - [ ] 2.4 Extend entity schemas with church field
+  - [x] 2.4 Extend entity schemas with church field
     - Update `src/posts/schemas.ts`: Add `church: ChurchInfoSchema.optional()` to Post schema
     - Update `src/prayer-walls/types/prayer-wall.types.ts`: Add `church?: ChurchInfo` to PrayerWall type
     - Update `src/series/schemas.ts`: Add `church: ChurchInfoSchema.optional()` to Series schema (if file exists)
     - Update `src/notes/schemas.ts`: Add `church: ChurchInfoSchema.optional()` to Note schema (if file exists)
     - Maintain backward compatibility with existing `churchId`/`church_id` fields
-  - [ ] 2.5 Ensure schema extension tests pass
+  - [x] 2.5 Ensure schema extension tests pass
     - Run ONLY the 4-6 tests written in 2.1
     - Verify all schemas validate correctly
     - Do NOT run entire test suite
 
 **Acceptance Criteria:**
-- The 4-6 tests written in 2.1 pass
-- ChurchMember schema includes optional user field
-- PrayerWallMembership type includes optional user field
-- Post, PrayerWall, Series, Note schemas include optional church field
-- Backward compatibility maintained (existing ID fields still work)
+- The 7 tests written in 2.1 pass ✅
+- ChurchMember schema includes optional user field ✅
+- PrayerWallMembership type includes optional user field ✅
+- Post, PrayerWall, Series schemas include optional church field ✅ (Note skipped - no churchId)
+- Backward compatibility maintained (existing ID fields still work) ✅
 
 ### Service Layer Integration
 
