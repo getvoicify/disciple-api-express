@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UserInfoSchema } from '../user-info/schemas';
 
 // Reuse ScriptureReference from notes
 export const ScriptureReference = z.object({
@@ -26,6 +27,7 @@ export const Post = z.object({
     scriptureReferences: z.array(ScriptureReference),
     seriesId: z.uuid().nullable(),
     seriesName: z.string().nullable(),
+    author: UserInfoSchema.optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 });

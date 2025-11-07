@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AnonymityLevel } from '../types/prayer-wall.types';
+import { UserInfoSchema } from '../../user-info/schemas';
 
 /**
  * Schema for creating a new prayer request
@@ -10,9 +11,9 @@ export const CreatePrayerInput = z.object({
     .min(10, 'Prayer content must be at least 10 characters')
     .max(5000, 'Prayer content cannot exceed 5000 characters')
     .trim(),
-  anonymity_level: z.nativeEnum(AnonymityLevel).optional().default(AnonymityLevel.IDENTIFIED),
-  parent_id: z.string().uuid().optional().nullable(),
-  category_ids: z.array(z.string().uuid()).optional().default([]),
+  anonymity_level: z.enum(AnonymityLevel).optional().default(AnonymityLevel.IDENTIFIED),
+  parent_id: z.uuid().optional().nullable(),
+  category_ids: z.array(z.uuid()).optional().default([]),
   has_attachment: z.boolean().optional().default(false),
 });
 
@@ -36,22 +37,22 @@ export const PrayerResponseInput = z.object({
     .min(10, 'Response content must be at least 10 characters')
     .max(5000, 'Response content cannot exceed 5000 characters')
     .trim(),
-  anonymity_level: z.nativeEnum(AnonymityLevel).optional().default(AnonymityLevel.IDENTIFIED),
+  anonymity_level: z.enum(AnonymityLevel).optional().default(AnonymityLevel.IDENTIFIED),
 });
 
 /**
  * Schema for prayer ID parameter
  */
 export const PrayerIdParams = z.object({
-  wallId: z.string().uuid(),
-  prayerId: z.string().uuid(),
+  wallId: z.uuid(),
+  prayerId: z.uuid(),
 });
 
 /**
  * Schema for wall ID parameter (used in list prayers)
  */
 export const WallIdParams = z.object({
-  wallId: z.string().uuid(),
+  wallId: z.uuid(),
 });
 
 /**
@@ -66,26 +67,28 @@ export const CursorPaginationQuery = z.object({
  * Schema for attachment ID parameter
  */
 export const AttachmentIdParams = z.object({
-  wallId: z.string().uuid(),
-  attachmentId: z.string().uuid(),
+  wallId: z.uuid(),
+  attachmentId: z.uuid(),
 });
 
 /**
  * Prayer request response schema
  */
 export const PrayerResponse = z.object({
-  id: z.string().uuid(),
-  wall_id: z.string().uuid(),
-  author_id: z.string().uuid(),
-  parent_id: z.string().uuid().nullable(),
+  id: z.uuid(),
+  wall_id: z.uuid(),
+  author_id: z.uuid(),
+  parent_id: z.uuid().nullable(),
   thread_depth: z.number().int().min(0).max(3),
   content: z.string(),
-  anonymity_level: z.nativeEnum(AnonymityLevel),
+  anonymity_level: z.enum(AnonymityLevel),
   has_attachment: z.boolean(),
+  author: UserInfoSchema.optional(),
+  responder: UserInfoSchema.optional(),
   created_at: z.date(),
   updated_at: z.date(),
   deleted_at: z.date().nullable(),
-  deleted_by: z.string().uuid().nullable(),
+  deleted_by: z.uuid().nullable(),
 });
 
 // Export TypeScript types

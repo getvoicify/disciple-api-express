@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UserInfoSchema } from '../user-info/schemas';
 
 export const ScriptureReference = z.object({
     book: z.string().min(1),
@@ -14,6 +15,7 @@ export const Note = z.object({
     date: z.date(),
     scriptureReferences: z.array(ScriptureReference),
     images: z.array(z.string()).optional(),
+    owner: UserInfoSchema.optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 });

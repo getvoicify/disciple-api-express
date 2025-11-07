@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UserInfoSchema } from '../user-info/schemas';
 
 // Series status enum (same as Post status)
 export const SeriesStatus = z.enum(['draft', 'published']);
@@ -13,6 +14,7 @@ export const Series = z.object({
   churchId: z.uuid(),
   status: SeriesStatus,
   publishedAt: z.date().nullable(),
+  author: UserInfoSchema.optional(),
   createdAt: z.date(),
   updatedAt: z.date()
 });
