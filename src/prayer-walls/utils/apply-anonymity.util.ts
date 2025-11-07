@@ -8,7 +8,7 @@ import { safeExecute } from '../../utils/handle-async';
 /**
  * Anonymized prayer response type with author info instead of author_id
  */
-export type AnonymizedPrayerResponse = Omit<PrayerRequest, 'author_id'> & {
+export type AnonymizedPrayerResponse = Omit<PrayerRequest, 'author_id' | 'author'> & {
   author: AuthorInfo;
 };
 

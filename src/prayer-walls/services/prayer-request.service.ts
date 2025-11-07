@@ -5,8 +5,8 @@ import type {
   CreatePrayerRequestData,
   UpdatePrayerRequestData,
   CursorPaginationParams,
-  AnonymityLevel,
 } from '../types/prayer-wall.types';
+import { AnonymityLevel } from '../types/prayer-wall.types';
 import { logger } from '../../logging';
 import {
   PrayerRequestNotFoundError,
@@ -234,7 +234,7 @@ export class PrayerRequestService implements IPrayerRequestService {
 
     // Extract author IDs, skip anonymous prayers
     const authorIds = extractUniqueUserIds(prayers, (prayer) =>
-      prayer.anonymity_level === 'full' ? [] : [prayer.author_id]
+      prayer.anonymity_level === AnonymityLevel.FULLY_ANONYMOUS ? [] : [prayer.author_id]
     );
 
     if (authorIds.length === 0) {
@@ -245,11 +245,11 @@ export class PrayerRequestService implements IPrayerRequestService {
 
     return embedUserInfo(
       prayers,
-      (prayer) => (prayer.anonymity_level === 'full' ? [] : [prayer.author_id]),
+      (prayer) => (prayer.anonymity_level === AnonymityLevel.FULLY_ANONYMOUS ? [] : [prayer.author_id]),
       userInfoMap,
       (prayer, userMap) => ({
         ...prayer,
-        author: prayer.anonymity_level === 'full' ? undefined : userMap.get(prayer.author_id),
+        author: prayer.anonymity_level === AnonymityLevel.FULLY_ANONYMOUS ? undefined : userMap.get(prayer.author_id),
       })
     );
   }
