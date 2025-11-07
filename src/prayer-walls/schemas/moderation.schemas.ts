@@ -30,35 +30,35 @@ export const banUserSchema = z.object({
  * Schema for prayer ID parameter
  */
 export const PrayerIdParam = z.object({
-  prayerId: z.string().uuid(),
+  prayerId: z.uuid(),
 });
 
 /**
  * Schema for wall ID parameter
  */
 export const WallIdParam = z.object({
-  wallId: z.string().uuid(),
+  wallId: z.uuid(),
 });
 
 /**
  * Schema for church ID parameter
  */
 export const ChurchIdParam = z.object({
-  churchId: z.string().uuid(),
+  churchId: z.uuid(),
 });
 
 /**
  * Schema for flag ID parameter
  */
 export const FlagIdParam = z.object({
-  flagId: z.string().uuid(),
+  flagId: z.uuid(),
 });
 
 /**
  * Schema for user ID parameter
  */
 export const UserIdParam = z.object({
-  userId: z.string().uuid(),
+  userId: z.uuid(),
 });
 
 /**

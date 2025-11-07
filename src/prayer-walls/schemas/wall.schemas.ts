@@ -46,51 +46,51 @@ export const UpdateWallInput = z.object({
   description: z.string().max(2000).optional(),
   schedule: WallSchedule.optional(),
   video_call_link: z.string().url().max(500).optional(),
-  status: z.nativeEnum(WallStatus).optional(),
+  status: z.enum(WallStatus).optional(),
 });
 
 /**
  * Schema for wall ID parameter
  */
 export const WallIdParams = z.object({
-  wallId: z.string().uuid(),
+  wallId: z.uuid(),
 });
 
 /**
  * Schema for church ID and wall ID parameters
  */
 export const ChurchWallParams = z.object({
-  churchId: z.string().uuid(),
-  wallId: z.string().uuid(),
+  churchId: z.uuid(),
+  wallId: z.uuid(),
 });
 
 /**
  * Schema for church ID parameter
  */
 export const ChurchIdParams = z.object({
-  churchId: z.string().uuid(),
+  churchId: z.uuid(),
 });
 
 /**
  * Schema for user ID parameter (for member actions)
  */
 export const UserIdParams = z.object({
-  userId: z.string().uuid(),
+  userId: z.uuid(),
 });
 
 /**
  * Schema for combined wall and user ID parameters
  */
 export const WallUserParams = z.object({
-  wallId: z.string().uuid(),
-  userId: z.string().uuid(),
+  wallId: z.uuid(),
+  userId: z.uuid(),
 });
 
 /**
  * Schema for invite member request
  */
 export const InviteMemberInput = z.object({
-  userId: z.string().uuid(),
+  userId: z.uuid(),
 });
 
 /**
@@ -105,16 +105,16 @@ export const PaginationQuery = z.object({
  * Prayer wall response schema
  */
 export const WallResponse = z.object({
-  id: z.string().uuid(),
-  church_id: z.string().uuid(),
+  id: z.uuid(),
+  church_id: z.uuid(),
   name: z.string(),
   description: z.string().nullable(),
-  created_by: z.string().uuid(),
+  created_by: z.uuid(),
   is_private: z.boolean(),
   has_restricted_access: z.boolean(),
   schedule: WallSchedule.nullable(),
   video_call_link: z.string().nullable(),
-  status: z.nativeEnum(WallStatus),
+  status: z.enum(WallStatus),
   created_at: z.date(),
   updated_at: z.date(),
   deleted_at: z.date().nullable(),
