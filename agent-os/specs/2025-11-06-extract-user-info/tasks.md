@@ -103,13 +103,15 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Return null for anonymous prayer authors (when applicable)
     - Respect existing profile visibility settings
     - Reuse privacy logic from existing profile service
-  - [ ] 2.6 Implement cache invalidation on profile updates
+    - NOTE: This will be implemented in Task Group 4 when integrating with entities
+  - [x] 2.6 Implement cache invalidation on profile updates
     - Modify `updateProfile` method in `src/profiles/service.ts`
     - After successful profile update, delete cache key: `user:profile:{userId}`
     - Use `cacheRepository.delete()` method
     - Follow existing cache invalidation patterns
     - Log cache invalidation with structured logger
-  - [ ] 2.7 Add user info service to dependency injection
+    - NOTE: Already implemented in src/profiles/service.ts line 435
+  - [x] 2.7 Add user info service to dependency injection
     - Create factory for UserInfoService
     - Wire dependencies: ProfileRepository, CacheRepository
     - Export from `src/user-info/index.ts`
