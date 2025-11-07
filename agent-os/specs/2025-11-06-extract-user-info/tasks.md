@@ -204,12 +204,15 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Test privacy filtering hides email when appropriate
     - Test anonymous prayers hide user info entirely
     - Skip exhaustive integration testing
+    - Run the tests and verify that the assertions are failing
   - [ ] 4.2 Create user embedding utility helper
     - Create `src/user-info/embedding.util.ts`
     - Implement `embedUserInfo<T>(entities: T[], userIdExtractor: (entity: T) => string[], userInfoMap: Map<string, UserInfo>, embedder: (entity: T, users: Map<string, UserInfo>) => T): T[]`
     - Generic utility to attach user objects to any entity array
     - Handles missing user profiles gracefully (leave field undefined)
     - Reusable across all entity types
+    - Run the tests and verify that the assertions are passing for this feature only
+    - Do NOT run the entire test suite at this stage
   - [ ] 4.3 Modify devotionals service to embed author info
     - Modify `src/posts/service.ts` (or devotionals service equivalent)
     - In list/fetch methods, after retrieving devotionals, extract unique authorIds
@@ -217,6 +220,8 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Use embedding utility to merge author objects into devotional responses
     - Ensure backward compatibility (authorId field still present)
     - Use safeExecute and structured logging
+    - Run the tests and verify that the assertions are passing for this feature only
+    - Do NOT run the entire test suite at this stage
   - [ ] 4.4 Modify prayers service to embed author and responder info
     - Modify `src/prayer-walls/services/prayer-request.service.ts`
     - In list/fetch methods, extract unique authorIds and responderIds
@@ -224,18 +229,24 @@ Estimated Total Tasks: ~45 individual sub-tasks
     - Use embedding utility to merge author and responder objects
     - Handle anonymous prayers (skip embedding if prayer is anonymous)
     - Ensure backward compatibility
+    - Run the tests and verify that the assertions are passing for this feature only
+    - Do NOT run the entire test suite at this stage
   - [ ] 4.5 Modify notes service to embed owner info
     - Modify `src/notes/service.ts`
     - In list/fetch methods, extract unique ownerIds
     - Call `userInfoService.getBatchUserInfo(ownerIds, requestingUserId)`
     - Use embedding utility to merge owner objects into note responses
     - Ensure backward compatibility
+    - Run the tests and verify that the assertions are passing for this feature only
+    - Do NOT run the entire test suite at this stage
   - [ ] 4.6 Modify series service to embed author info
     - Modify `src/series/service.ts`
     - In list/fetch methods, extract unique authorIds
     - Call `userInfoService.getBatchUserInfo(authorIds, requestingUserId)`
     - Use embedding utility to merge author objects into series responses
     - Ensure backward compatibility
+    - Run the tests and verify that the assertions are passing for this feature only
+    - Do NOT run the entire test suite at this stage
   - [ ] 4.7 Update entity endpoints to use modified services
     - Verify `src/posts/routes/dailyDevotionals.endpoint.ts` uses updated service
     - Verify prayer endpoints use updated service
