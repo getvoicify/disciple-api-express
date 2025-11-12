@@ -1,3 +1,15 @@
+## [2.10.0](https://github.com/getvoicify/disciple-api-express/compare/v2.9.0...v2.10.0) (2025-11-12)
+
+
+### ✨ Features
+
+* **docs:** add WebSocket API documentation for real-time prayer wall features ([#40](https://github.com/getvoicify/disciple-api-express/issues/40)) ([4c3564b](https://github.com/getvoicify/disciple-api-express/commit/4c3564baaa00d6527cbfdd46750be89e36d70abb))
+
+
+### 🔧 Chores
+
+* **deps:** bump validator from 13.15.15 to 13.15.20 ([#29](https://github.com/getvoicify/disciple-api-express/issues/29)) ([5666cc1](https://github.com/getvoicify/disciple-api-express/commit/5666cc1c4009a4750d24a38a6c14cc5a28ef1ec7))
+
 ## [2.9.0](https://github.com/getvoicify/disciple-api-express/compare/v2.8.0...v2.9.0) (2025-11-07)
 
 
