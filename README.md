@@ -171,6 +171,340 @@ The `/api/health` endpoint provides comprehensive health monitoring:
 - Production/Staging: Uses Redis for distributed caching
 - Development: Uses in-memory cache (shows as `"in-memory"`)
 
+## 🔌 WebSocket API
+
+This API provides real-time communication for prayer walls using Socket.io with JWT authentication.
+
+### Quick Start
+
+**What's Real-Time?**
+- Live prayer updates (create, edit, delete)
+- User presence (online/offline status)
+- Typing indicators
+- Read receipts
+- Moderation notifications
+- Membership changes
+
+### Connection & Authentication
+
+Connect to the WebSocket server using Socket.io client with your JWT token:
+
+**TypeScript/JavaScript (Web)**
+```typescript
+import { io, Socket } from 'socket.io-client';
+
+// Recommended: Use auth object
+const socket: Socket = io('wss://api.example.com', {
+  auth: {
+    token: 'your-jwt-token'
+  },
+  transports: ['websocket', 'polling']
+});
+
+// Connection events
+socket.on('connect', () => {
+  console.log('Connected:', socket.id);
+});
+
+socket.on('connect_error', (error) => {
+  console.error('Connection failed:', error.message);
+});
+```
+
+**Flutter (Mobile)**
+```dart
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+
+// Create socket connection
+IO.Socket socket = IO.io('wss://api.example.com', <String, dynamic>{
+  'auth': {'token': 'your-jwt-token'},
+  'transports': ['websocket', 'polling'],
+  'autoConnect': false,
+});
+
+// Connection handlers
+socket.on('connect', (_) {
+  print('Connected: ${socket.id}');
+});
+
+socket.on('connect_error', (error) {
+  print('Connection failed: $error');
+});
+
+// Connect manually
+socket.connect();
+```
+
+**Alternative Authentication Methods:**
+```typescript
+// Option 2: Query parameter
+io('wss://api.example.com?token=your-jwt-token');
+
+// Option 3: Authorization header
+io('wss://api.example.com', {
+  extraHeaders: {
+    Authorization: 'Bearer your-jwt-token'
+  }
+});
+```
+
+### Rooms & Walls
+
+Prayer walls use **room-based communication**. Each prayer wall has a unique ID that serves as its room:
+
+```typescript
+// Join a prayer wall room
+socket.emit('join-room', { roomId: 'wall-id-123' });
+
+// Listen for confirmation
+socket.on('room-joined', (data) => {
+  console.log('Joined wall:', data.roomId);
+});
+
+// Leave a room
+socket.emit('leave-room', { roomId: 'wall-id-123' });
+
+socket.on('room-left', (data) => {
+  console.log('Left wall:', data.roomId);
+});
+```
+
+### Key Events Reference
+
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| **Room Management** |
+| `join-room` | Client → Server | Join a prayer wall room |
+| `leave-room` | Client → Server | Leave a prayer wall room |
+| `room-joined` | Server → Client | Confirmation of joining |
+| `room-left` | Server → Client | Confirmation of leaving |
+| **Prayers** |
+| `prayer:created` | Server → Clients | New prayer posted |
+| `prayer:updated` | Server → Clients | Prayer content edited |
+| `prayer:deleted` | Server → Clients | Prayer removed |
+| `prayer:response` | Server → Clients | Response added to prayer |
+| `prayer:reply` | Server → Clients | Reply added to response |
+| `prayer:read` | Server → Clients | Prayer read receipt |
+| **Presence** |
+| `user:online` | Server → Clients | User joined wall |
+| `user:offline` | Server → Clients | User left wall |
+| `typing:start` | Server → Clients | User started typing |
+| `typing:stop` | Server → Clients | User stopped typing |
+| **Moderation** |
+| `content:flagged` | Server → Pastors | Content flagged for review |
+| `content:hidden` | Server → Clients | Content hidden from view |
+| `content:restored` | Server → Clients | Content unhidden |
+| `user:banned` | Server → Clients | User banned from wall |
+| **Membership** |
+| `member:joined` | Server → Clients | New member joined wall |
+| `member:left` | Server → Clients | Member left wall |
+| `member:invited` | Server → Clients | Member invited to wall |
+
+### Event Payload Types
+
+**TypeScript Interfaces:**
+```typescript
+// Prayer created event
+interface PrayerCreatedPayload {
+  prayerId: string;
+  wallId: string;
+  content: string;
+  authorId?: string;       // undefined if anonymous
+  authorName?: string;     // undefined if anonymous
+  isAnonymous: boolean;
+  createdAt: string;       // ISO 8601 timestamp
+}
+
+// User presence event
+interface UserOnlinePayload {
+  userId: string;
+  userName?: string;
+  wallId: string;
+  timestamp: string;
+}
+
+// Typing indicator events
+interface TypingStartPayload {
+  wallId: string;
+  userId: string;
+  userName?: string;
+  prayerId?: string;       // Optional: typing on specific prayer
+}
+
+interface TypingStopPayload {
+  wallId: string;
+  userId: string;
+  prayerId?: string;       // Optional: typing on specific prayer
+}
+
+// Read receipt event
+interface PrayerReadPayload {
+  prayerId: string;
+  wallId: string;
+  userId: string;
+  readAt: string;
+  readCount: number;       // Total readers
+}
+
+// Content moderation event
+interface ContentHiddenPayload {
+  contentId: string;
+  contentType: 'prayer' | 'response' | 'reply';
+  wallId: string;
+  hiddenBy: string;
+  reason: string;
+  timestamp: string;
+}
+```
+
+**Flutter/Dart Types:**
+```dart
+class PrayerCreatedPayload {
+  final String prayerId;
+  final String wallId;
+  final String content;
+  final String? authorId;
+  final String? authorName;
+  final bool isAnonymous;
+  final String createdAt;
+
+  PrayerCreatedPayload.fromJson(Map<String, dynamic> json)
+    : prayerId = json['prayerId'],
+      wallId = json['wallId'],
+      content = json['content'],
+      authorId = json['authorId'],
+      authorName = json['authorName'],
+      isAnonymous = json['isAnonymous'],
+      createdAt = json['createdAt'];
+}
+```
+
+### Usage Examples
+
+**TypeScript - Listening to Prayer Events:**
+```typescript
+// Listen for new prayers
+socket.on('prayer:created', (payload: PrayerCreatedPayload) => {
+  console.log('New prayer:', payload.content);
+  if (payload.isAnonymous) {
+    console.log('Posted anonymously');
+  } else {
+    console.log('By:', payload.authorName);
+  }
+});
+
+// Listen for presence changes
+socket.on('user:online', (payload: UserOnlinePayload) => {
+  console.log(`${payload.userName} joined the wall`);
+});
+
+// Track typing indicators
+socket.on('typing:start', (payload: TypingStartPayload) => {
+  console.log(`${payload.userName} is typing...`);
+});
+
+socket.on('typing:stop', (payload: TypingStopPayload) => {
+  console.log(`${payload.userId} stopped typing`);
+});
+```
+
+**Flutter - Complete Integration:**
+```dart
+// Setup event listeners
+void setupSocketListeners(IO.Socket socket) {
+  // Prayer events
+  socket.on('prayer:created', (data) {
+    final payload = PrayerCreatedPayload.fromJson(data);
+    print('New prayer: ${payload.content}');
+    // Update your UI
+  });
+
+  socket.on('prayer:updated', (data) {
+    print('Prayer updated: ${data['prayerId']}');
+  });
+
+  // Presence events
+  socket.on('user:online', (data) {
+    print('User online: ${data['userName']}');
+  });
+
+  socket.on('user:offline', (data) {
+    print('User offline: ${data['userId']}');
+  });
+
+  // Typing indicators
+  socket.on('typing:start', (data) {
+    print('${data['userName']} is typing...');
+  });
+}
+
+// Join a prayer wall
+void joinWall(IO.Socket socket, String wallId) {
+  socket.emit('join-room', {'roomId': wallId});
+
+  socket.once('room-joined', (data) {
+    print('Successfully joined wall: ${data['roomId']}');
+  });
+}
+
+// Clean up on dispose
+@override
+void dispose() {
+  socket.emit('leave-room', {'roomId': currentWallId});
+  socket.disconnect();
+  super.dispose();
+}
+```
+
+### Privacy & Anonymity
+
+Prayer anonymity settings are automatically enforced in broadcasts:
+- **`identified`** - Full name and user ID visible
+- **`anonymous_to_members`** - Shows "Anonymous Member"
+- **`fully_anonymous`** - Shows "Anonymous"
+
+### Error Handling
+
+**Connection Errors:**
+```typescript
+socket.on('connect_error', (error) => {
+  if (error.message.includes('Authentication failed')) {
+    // Token is invalid or expired - refresh and reconnect
+  } else if (error.message.includes('timeout')) {
+    // Network issue - retry connection
+    socket.connect();
+  }
+});
+```
+
+**Common Issues:**
+- **401 Unauthorized** - Missing or invalid JWT token
+- **Connection timeout** - Check network or server status
+- **Auto-disconnect** - Idle for >60 seconds (ping timeout)
+
+### Configuration
+
+**Server Settings:**
+- **Ping timeout**: 60 seconds (auto-disconnect after idle)
+- **Ping interval**: 25 seconds (keep-alive check)
+- **Transports**: WebSocket with polling fallback
+- **Scaling**: Redis adapter for multi-server deployments
+
+### Testing
+
+**Browser Console:**
+```javascript
+// Quick test connection
+const socket = io('wss://localhost:3000', {
+  auth: { token: 'your-token' }
+});
+
+socket.on('connect', () => console.log('✓ Connected'));
+socket.emit('join-room', { roomId: 'test-wall-123' });
+```
+
+**Full event type definitions:** See `src/websocket/events.ts` for complete TypeScript types.
+
 ## 🏗️ Architecture
 
 ```

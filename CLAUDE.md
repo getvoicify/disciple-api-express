@@ -165,3 +165,305 @@ if (error) {
 - `safeExecute(this.s3Client.send(command))` - Cloud operations
 - For unsafe executions, the proper way to use safeExecute is `safeExecute(() => unsafeFn())`
 - Services should always throw custom errors based on the AppError class or one of the other classes that extends it
+
+## WebSocket Guidelines
+
+This project uses Socket.io for real-time prayer wall communication. Follow these patterns when working with WebSocket features.
+
+### Core Principles
+- **Use helper functions** - Import and use broadcasting helpers from `src/websocket/handlers`
+- **Respect anonymity** - Check prayer anonymity settings before broadcasting author info
+- **Event naming** - Follow the `resource:action` pattern (e.g., `prayer:created`, `user:online`)
+- **Room-based** - All events are broadcast to specific prayer wall rooms (wallId)
+- **Structured logging** - Use the logger for WebSocket events, never console.*
+
+### Broadcasting from Endpoints
+
+When REST endpoints create/update/delete resources that need real-time updates, broadcast the event to connected clients.
+
+**Pattern:**
+```typescript
+import { broadcastPrayerCreated } from '../../websocket/handlers/prayer.handler';
+import type { Server } from 'socket.io';
+
+export const createPrayer = (service: PrayerService, io: Server) => {
+  return async (req: EndpointRequest, res: Response) => {
+    const [error, prayer] = await safeExecute(service.create(data, userId));
+    if (error) {
+      // handle error...
+    }
+
+    // Broadcast to all connected clients in the prayer wall room
+    broadcastPrayerCreated(io, prayer, authorName);
+
+    res.status(201).json({ success: true, data: prayer });
+  };
+};
+```
+
+**Key Points:**
+- The Socket.io server instance (`io`) is passed to route handlers via dependency injection
+- Use the appropriate broadcasting helper function (never call `io.to().emit()` directly)
+- Broadcasting happens AFTER successful database operations
+- Extract author name from JWT payload before broadcasting
+
+### Available Broadcasting Helpers
+
+Import these from `src/websocket/handlers`:
+
+**Prayer Events:**
+```typescript
+import {
+  broadcastPrayerCreated,
+  broadcastPrayerUpdated,
+  broadcastPrayerDeleted,
+  broadcastPrayerResponse,
+  broadcastPrayerReply,
+} from '../websocket/handlers/prayer.handler';
+
+// Usage:
+broadcastPrayerCreated(io, prayer, authorName);
+broadcastPrayerUpdated(io, wallId, prayerId, updatedContent);
+broadcastPrayerDeleted(io, wallId, prayerId);
+```
+
+**Moderation Events:**
+```typescript
+import {
+  broadcastContentFlagged,
+  broadcastContentHidden,
+  broadcastContentRestored,
+  broadcastUserBanned,
+} from '../websocket/handlers/moderation.handler';
+
+// Usage (to pastors only):
+broadcastContentFlagged(io, wallId, contentId, contentType, flaggedBy, reason);
+
+// Usage (to all members):
+broadcastContentHidden(io, wallId, contentId, contentType, hiddenBy, reason);
+```
+
+**Presence Events:**
+```typescript
+import {
+  broadcastUserOnline,
+  broadcastUserOffline,
+  broadcastTypingStart,
+  broadcastTypingStop,
+} from '../websocket/handlers/presence.handler';
+
+// Usage:
+broadcastUserOnline(io, wallId, userId, userName);
+broadcastUserOffline(io, wallId, userId);
+```
+
+**Generic Broadcasting:**
+```typescript
+import { broadcastToWall } from '../websocket/handlers/prayer.handler';
+
+// For custom events:
+broadcastToWall(io, wallId, 'custom:event', { data: 'value' });
+```
+
+### Anonymity Enforcement
+
+ALWAYS check prayer anonymity settings before including author information in broadcasts:
+
+```typescript
+// From src/websocket/handlers/prayer.handler.ts
+export function broadcastPrayerCreated(
+  io: Server,
+  prayer: Prayer,
+  authorName?: string
+): void {
+  const payload: PrayerCreatedPayload = {
+    prayerId: prayer.id,
+    wallId: prayer.wallId,
+    content: prayer.content,
+    authorId: prayer.anonymity === 'identified' ? prayer.authorId : undefined,
+    authorName: prayer.anonymity === 'identified' ? authorName :
+                prayer.anonymity === 'anonymous_to_members' ? 'Anonymous Member' :
+                'Anonymous',
+    isAnonymous: prayer.anonymity !== 'identified',
+    createdAt: prayer.createdAt.toISOString(),
+  };
+
+  io.to(prayer.wallId).emit('prayer:created', payload);
+}
+```
+
+**Anonymity Settings:**
+- `identified` - Include full author ID and name
+- `anonymous_to_members` - Show "Anonymous Member" (no ID)
+- `fully_anonymous` - Show "Anonymous" (no ID)
+
+### Integrating Socket.io with Routes
+
+Routes receive the Socket.io server instance and pass it to endpoints:
+
+**Example from src/prayer-walls/routes/prayers.routes.ts:**
+```typescript
+import { Server } from 'socket.io';
+
+export default function prayersRouter(
+  service: PrayerRequestService,
+  io: Server  // Socket.io instance
+): Router {
+  const router = Router();
+
+  router.post(
+    '/prayer-walls/:wallId/prayers',
+    requireAuth,
+    createPrayer(service, io)  // Pass io to endpoint
+  );
+
+  return router;
+}
+```
+
+**In src/index.ts:**
+```typescript
+// Initialize Socket.io server
+const io = initializeSocketServer(httpServer, {
+  redisUrl: process.env.REDIS_URL,
+  iamEndpoint: IAM_ENDPOINT,
+  iamRealm: IAM_REALM,
+});
+
+// Pass io to routes that need real-time features
+app.use('/api', prayersRouter(prayerRequestService, io));
+app.use('/api', moderationRouter(moderationService, prayerRequestRepository, io));
+```
+
+### Event Naming Conventions
+
+Follow these patterns for event names (defined in `src/websocket/events.ts`):
+
+| Pattern | Examples | Usage |
+|---------|----------|-------|
+| `resource:action` | `prayer:created`, `prayer:updated` | CRUD operations |
+| `entity:state` | `user:online`, `user:offline` | Status changes |
+| `action:verb` | `typing:start`, `typing:stop` | Transient actions |
+| `subject:verb` | `content:flagged`, `content:hidden` | Moderation |
+| `noun-noun` | `join-room`, `leave-room` | Client commands |
+
+**NEVER create custom event names without adding them to `src/websocket/events.ts` first.**
+
+### Testing WebSocket Handlers
+
+Mock the Socket.io server in tests:
+
+```typescript
+import { Server } from 'socket.io';
+import { broadcastPrayerCreated } from '../handlers/prayer.handler';
+
+describe('Prayer Broadcasting', () => {
+  let mockIo: jest.Mocked<Server>;
+
+  beforeEach(() => {
+    mockIo = {
+      to: jest.fn().mockReturnThis(),
+      emit: jest.fn(),
+    } as any;
+  });
+
+  it('should broadcast prayer created event', () => {
+    const prayer = {
+      id: 'prayer-123',
+      wallId: 'wall-456',
+      content: 'Test prayer',
+      anonymity: 'identified',
+      authorId: 'user-789',
+      createdAt: new Date(),
+    };
+
+    broadcastPrayerCreated(mockIo, prayer, 'John Doe');
+
+    expect(mockIo.to).toHaveBeenCalledWith('wall-456');
+    expect(mockIo.emit).toHaveBeenCalledWith('prayer:created', {
+      prayerId: 'prayer-123',
+      wallId: 'wall-456',
+      content: 'Test prayer',
+      authorId: 'user-789',
+      authorName: 'John Doe',
+      isAnonymous: false,
+      createdAt: expect.any(String),
+    });
+  });
+});
+```
+
+### Logging WebSocket Events
+
+Use the structured logger for WebSocket operations:
+
+```typescript
+import { logger } from '../logging';
+
+// In WebSocket handlers
+socket.on('join-room', async (payload: RoomJoinPayload) => {
+  const { roomId } = payload;
+  const userId = socket.data.userId;
+
+  logger.info({ userId, roomId }, 'User joining prayer wall room');
+
+  await socket.join(roomId);
+
+  logger.info({ userId, roomId }, 'User successfully joined room');
+});
+
+// Error handling
+socket.on('error', (error: Error) => {
+  logger.error({ error, socketId: socket.id }, 'WebSocket error occurred');
+});
+```
+
+### Common Patterns
+
+**Pattern 1: Broadcast after database operation**
+```typescript
+// 1. Perform database operation with safeExecute
+const [error, prayer] = await safeExecute(service.createPrayer(data));
+if (error) return handleError(error);
+
+// 2. Extract any required context (author name, etc.)
+const authorName = extractUserName(req.user);
+
+// 3. Broadcast to connected clients
+broadcastPrayerCreated(io, prayer, authorName);
+
+// 4. Return HTTP response
+res.status(201).json({ success: true, data: prayer });
+```
+
+**Pattern 2: Conditional broadcasting based on anonymity**
+```typescript
+// Broadcasting respects anonymity settings automatically
+broadcastPrayerCreated(io, prayer, authorName);
+// Helper function handles:
+// - identified: sends full author info
+// - anonymous_to_members: sends "Anonymous Member"
+// - fully_anonymous: sends "Anonymous"
+```
+
+**Pattern 3: Multiple broadcasts for related actions**
+```typescript
+// Example: Hiding content broadcasts to all, flagging to pastors only
+await service.hideContent(contentId, reason);
+
+// Broadcast to all members that content is hidden
+broadcastContentHidden(io, wallId, contentId, contentType, moderatorId, reason);
+
+// If it was flagged, pastors were already notified via broadcastContentFlagged
+```
+
+### Files Reference
+
+Key WebSocket implementation files:
+- `src/websocket/socket.server.ts` - Server initialization (lines 351-355 in src/index.ts)
+- `src/websocket/events.ts` - Event type definitions and payloads
+- `src/websocket/middleware/auth.middleware.ts` - JWT authentication for connections
+- `src/websocket/handlers/prayer.handler.ts` - Prayer broadcasting helpers
+- `src/websocket/handlers/presence.handler.ts` - Presence/typing handlers
+- `src/websocket/handlers/moderation.handler.ts` - Moderation broadcasting
+- `src/websocket/services/user-info-extractor.service.ts` - Extract user names from JWT
