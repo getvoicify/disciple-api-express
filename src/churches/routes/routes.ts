@@ -46,7 +46,6 @@ import {cacheResponseMiddleware} from "../../middleware/cache-response.middlewar
 import {keyGenerator} from "../../middleware/key-generator.middleware";
 import {extractFiltersMiddleware} from "../../middleware/extract-filters.middleware";
 import type {ChurchMembershipOutboxAdapter} from "../church-membership-outbox.adapter";
-import {canAccessMiddleware} from "../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
 
 
 export const churchesRouter = (
@@ -83,19 +82,11 @@ export const churchesRouter = (
 
 	router.post('/:churchId/approve', [
 		tokenVerifier(true),
-		canAccessMiddleware({
-			scope: 'update',
-			resource: 'churchApproval',
-		}),
 		validate(ChurchIdInput, 'params'),
 	], churchApproveEndpoint(approvalService));
 
 	router.post('/:churchId/reject', [
 		tokenVerifier(true),
-		canAccessMiddleware({
-			scope: 'update',
-			resource: 'churchApproval',
-		}),
 		validate(ChurchIdInput, 'params'),
 		validate(RejectionInput, 'body'),
 	], churchRejectEndpoint(approvalService));
