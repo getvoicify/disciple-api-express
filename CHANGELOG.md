@@ -6,6 +6,24 @@
 * **k8s:** update encrypted secrets in `sealedsecret.yaml` and restructure labels in `kustomization.yaml` ([1a20a8b](https://github.com/getvoicify/disciple-api-express/commit/1a20a8bee797472d92a31a06437ad3fecd705808))
 
 
+### 🐛 Bug Fixes
+
+* **k8s:** revert probe paths to /api/health for backward compatibility ([bfdc602](https://github.com/getvoicify/disciple-api-express/commit/bfdc6020bb1d274f66c89308221946f3ea1d5525))
+
+
+### 🔧 Chores
+
+* **argocd:** switch `repoURL` to SSH format in `applicationset.yaml` ([2ba6457](https://github.com/getvoicify/disciple-api-express/commit/2ba6457813e531118a524dfb1c27d954dabd5303))
+* **release:** 2.12.0 [skip ci] ([a6d1ea3](https://github.com/getvoicify/disciple-api-express/commit/a6d1ea371e9d6abc7e7c4d557ac9f349a5a95b70))
+
+## [2.12.0](https://github.com/getvoicify/disciple-api-express/compare/v2.11.0...v2.12.0) (2026-02-24)
+
+
+### ✨ Features
+
+* **k8s:** update encrypted secrets in `sealedsecret.yaml` and restructure labels in `kustomization.yaml` ([1a20a8b](https://github.com/getvoicify/disciple-api-express/commit/1a20a8bee797472d92a31a06437ad3fecd705808))
+
+
 ### 🔧 Chores
 
 * **argocd:** switch `repoURL` to SSH format in `applicationset.yaml` ([2ba6457](https://github.com/getvoicify/disciple-api-express/commit/2ba6457813e531118a524dfb1c27d954dabd5303))
