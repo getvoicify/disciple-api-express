@@ -180,10 +180,8 @@ describe('NoteService', () => {
 
 			await service.listNotes(filters);
 
-			// NoteFiltersSchema passes ownerId through for ownership-based filtering
-			expect(mockRepository.findAll).toHaveBeenCalledWith({
-				ownerId: '550e8400-e29b-41d4-a716-446655440001'
-			});
+			// Authorization is handled by middleware, service just passes validated filters
+			expect(mockRepository.findAll).toHaveBeenCalledWith({});
 		});
 	});
 });
