@@ -1,3 +1,7 @@
+// Authorization: Prayer wall routes use service-level authorization (membership checks,
+// role verification, creator-only operations) rather than the centralized authorize() middleware.
+// See: prayer-wall.service.ts, prayer-request.service.ts, moderation.service.ts
+
 import { Router } from 'express';
 import { jwtVerify } from 'jose';
 import type { IPrayerWallService } from '../services/prayer-wall.service';

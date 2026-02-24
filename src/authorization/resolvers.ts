@@ -17,6 +17,8 @@ export function createResolvers(db: RawDb): Record<ResourceType, ResourceResolve
       return { authorId: result[0].author_id, churchId: result[0].church_id };
     },
 
+    // Note: The galleries table has no author/created_by column.
+    // Gallery policies use role-based checks (Owner, Manager) rather than author checks.
     gallery: async (id: string) => {
       const result = await db`SELECT church_id FROM galleries WHERE id = ${id}`;
       if (result.length === 0) return null;

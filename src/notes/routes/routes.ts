@@ -17,7 +17,7 @@ import {extractFiltersMiddleware} from "../../middleware/extract-filters.middlew
 import type {AuthorizeOptions} from '../../authorization';
 
 
-export const notesRouter = (service: NoteService, authorize?: (options: AuthorizeOptions) => any) => {
+export const notesRouter = (service: NoteService, authorize: (options: AuthorizeOptions) => any) => {
 	const router = Router();
 	const cacheRepo = createCacheRepository();
 	const {
@@ -29,20 +29,20 @@ export const notesRouter = (service: NoteService, authorize?: (options: Authoriz
 	router.get('/:noteId', [
 		tokenVerifier(),
 		validate(NoteFetchParamsInput, 'params'),
-		...(authorize ? [authorize({ resource: 'note', action: 'read' })] : []),
+		authorize({ resource: 'note', action: 'read' }),
 	], noteFetchEndpoint(service));
 
 	router.put('/:noteId', [
 		tokenVerifier(),
 		validate(NoteUpdateParamsInput, 'params'),
 		validate(UpdateNoteInput, 'body'),
-		...(authorize ? [authorize({ resource: 'note', action: 'update' })] : []),
+		authorize({ resource: 'note', action: 'update' }),
 	], noteUpdateEndpoint(service));
 
 	router.delete('/:noteId', [
 		tokenVerifier(),
 		validate(NoteDeleteParamsInput, 'params'),
-		...(authorize ? [authorize({ resource: 'note', action: 'delete' })] : []),
+		authorize({ resource: 'note', action: 'delete' }),
 	], noteDeleteEndpoint(service));
 
 	router.get('/', [

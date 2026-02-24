@@ -12,6 +12,9 @@ import type {
   MemberStatus
 } from './schemas';
 
+const ALLOWED_SORT_FIELDS = ['created_at', 'name', 'slug', 'approval_status'] as const;
+const ALLOWED_SORT_ORDERS = ['asc', 'desc'] as const;
+
 export class PostgresChurchRepository implements IChurchRepository {
   constructor(
     private readonly db: RawDb,
@@ -202,14 +205,14 @@ export class PostgresChurchRepository implements IChurchRepository {
     const pageSize = filters?.pageSize || 20;
     const offset = (page - 1) * pageSize;
 
-    // Get paginated results
-    const sortBy = filters?.sortBy || 'created_at';
-    const sortOrder = filters?.sortOrder || 'desc';
+    // Get paginated results - whitelist sortBy/sortOrder to prevent SQL injection
+    const safeSortBy = ALLOWED_SORT_FIELDS.includes(filters?.sortBy as any) ? filters!.sortBy : 'created_at';
+    const safeSortOrder = ALLOWED_SORT_ORDERS.includes(filters?.sortOrder?.toLowerCase() as any) ? filters!.sortOrder!.toLowerCase() : 'desc';
 
     const query = `
       SELECT * FROM churches
       WHERE ${whereClause}
-      ORDER BY ${sortBy} ${sortOrder}
+      ORDER BY ${safeSortBy} ${safeSortOrder}
       LIMIT $${values.length + 1} OFFSET $${values.length + 2}
     `;
 

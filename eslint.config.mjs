@@ -34,6 +34,7 @@ export default defineConfig([
       '**/*.mjs',
       '**/*.cjs',
       'vitest.config.ts',
+      'vitest.integration.config.ts',
       '**/*.test.ts',
       '**/*.spec.ts',
     ],

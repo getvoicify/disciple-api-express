@@ -1,3 +1,7 @@
+// Authorization: Moderation routes use service-level authorization (membership checks,
+// role verification, pastor-only operations) rather than the centralized authorize() middleware.
+// See: moderation.service.ts
+
 import { Router } from 'express';
 import { jwtVerify } from 'jose';
 import type { Server as SocketServer } from 'socket.io';

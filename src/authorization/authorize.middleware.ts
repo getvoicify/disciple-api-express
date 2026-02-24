@@ -4,10 +4,12 @@ import type { ResourceResolver } from './resolvers';
 import { isActionAllowed } from './policies';
 import { safeExecute } from '../utils/handle-async';
 import { logger } from '../logging';
+import { InternalServerError } from '../utils/errors';
 
 export interface AuthorizeOptions {
   resource: ResourceType;
   action: Action;
+  paramName?: string;
 }
 
 type MemberRoleLookup = (churchId: string, userId: string) => Promise<Role | null>;
@@ -45,7 +47,7 @@ export function createAuthorizeMiddleware(
         const [roleErr, role] = await safeExecute(memberRoleLookup(churchId, userId));
         if (roleErr) {
           logger.error({ error: roleErr, userId, churchId }, 'Failed to look up member role');
-          res.status(500).json({ error: 'Authorization check failed', success: false });
+          next(new InternalServerError('Authorization check failed'));
           return;
         }
 
@@ -59,7 +61,9 @@ export function createAuthorizeMiddleware(
       }
 
       // For read/update/delete, resolve the resource first
-      const resourceId = req.params?.id || req.params?.noteId || req.params?.churchId;
+      const resourceId = options.paramName
+        ? req.params?.[options.paramName]
+        : req.params?.id || req.params?.noteId || req.params?.churchId;
       if (!resourceId) {
         res.status(400).json({ error: 'Resource identifier required', success: false });
         return;
@@ -70,7 +74,7 @@ export function createAuthorizeMiddleware(
 
       if (resolveErr) {
         logger.error({ error: resolveErr, resourceId, resource }, 'Failed to resolve resource');
-        res.status(500).json({ error: 'Authorization check failed', success: false });
+        next(new InternalServerError('Authorization check failed'));
         return;
       }
 
@@ -89,7 +93,7 @@ export function createAuthorizeMiddleware(
         const [roleErr, memberRole] = await safeExecute(memberRoleLookup(churchId, userId));
         if (roleErr) {
           logger.error({ error: roleErr, userId, churchId }, 'Failed to look up member role');
-          res.status(500).json({ error: 'Authorization check failed', success: false });
+          next(new InternalServerError('Authorization check failed'));
           return;
         }
         role = memberRole ?? undefined;

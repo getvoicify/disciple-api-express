@@ -13,6 +13,7 @@
     "worker": "node dist/worker.js",
     "worker:dev": "tsx watch src/worker.ts",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "lint": "eslint .",

@@ -7,7 +7,7 @@ import type { SeriesService } from '../service';
 import { CreateSeriesInput } from '../schemas';
 import { devotionalCreateEndpoint } from './devotionalCreate.endpoint';
 
-export const devotionalRouter = (service: SeriesService, authorize?: (options: AuthorizeOptions) => any) => {
+export const devotionalRouter = (service: SeriesService, authorize: (options: AuthorizeOptions) => any) => {
 	const router = Router();
 	const {
 		IAM_ENDPOINT,
@@ -20,7 +20,7 @@ export const devotionalRouter = (service: SeriesService, authorize?: (options: A
 		[
 			tokenVerifier(),
 			validate(CreateSeriesInput),
-			...(authorize ? [authorize({ resource: 'series', action: 'create' })] : [])
+			authorize({ resource: 'series', action: 'create' }),
 		],
 		devotionalCreateEndpoint(service),
 	);

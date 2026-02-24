@@ -32,6 +32,7 @@ import {devotionalRouter} from "./series/routes/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
 import {createCacheRepository, CacheInvalidationService, type ICacheInvalidationService} from "./cache";
+import {RedisCacheRepository} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 import {wallsRouter} from "./prayer-walls/routes/walls.routes";
 import {prayersRouter} from "./prayer-walls/routes/prayers.routes";
@@ -47,8 +48,36 @@ import {initializeSocketServer} from "./websocket/socket.server";
 import {getUserIdFromRequest} from "./utils/get-user-id";
 import {createAuthorizeMiddleware} from './authorization';
 import {createResolvers} from './authorization/resolvers';
+import {safeExecute} from './utils/handle-async';
 
 dotenv.config();
+
+// Validate required environment variables before any initialization
+const REQUIRED_ENV_VARS = [
+	'PORT',
+	'IAM_ENDPOINT',
+	'IAM_REALM',
+	'POSTGRES_DB',
+	'POSTGRES_USER',
+	'POSTGRES_PASSWORD',
+	'DB_HOST',
+];
+
+const missingVars = REQUIRED_ENV_VARS.filter((varName) => !process.env[varName]);
+if (missingVars.length > 0) {
+	logger.error({ missingVars }, 'Missing required environment variables');
+	process.exit(1);
+}
+
+// Global handlers for unhandled errors - must be registered early
+process.on('unhandledRejection', (reason: unknown) => {
+	logger.error({ reason }, 'Unhandled promise rejection');
+});
+
+process.on('uncaughtException', (error: Error) => {
+	logger.error({ error }, 'Uncaught exception - process will exit');
+	process.exit(1);
+});
 
 const {
 	PORT,
@@ -60,7 +89,7 @@ const {
 	GB_API_HOST: apiHost,
 	GB_CLIENT_KEY: clientKey,
 	NODE_ENV: env,
-	REDIS_URL: redisUrl,
+	REDIS_URL: _redisUrl,
 	IAM_ENDPOINT,
 	IAM_REALM,
 } = process.env;
@@ -159,18 +188,107 @@ app.use((req, _, next) => {
 });
 
 // Add request logging middleware - logs all incoming requests and responses
-// Excludes health check endpoint to reduce noise
+// Excludes health check endpoints to reduce noise
 const requestLogger = createRequestLoggingMiddleware(loggerFactory, {
-	excludePaths: ['/api/health']
+	excludePaths: ['/api/health', '/api/livez', '/api/readyz']
 });
 app.use(requestLogger);
+
+/**
+ * @openapi
+ * /livez:
+ *   get:
+ *     summary: Liveness probe
+ *     description: Kubernetes liveness probe - returns 200 if the process is alive. No I/O checks performed.
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Process is alive
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: alive
+ */
+app.get('/api/livez', (_req, res) => {
+	res.status(200).json({ status: 'alive' });
+});
+
+/**
+ * @openapi
+ * /readyz:
+ *   get:
+ *     summary: Readiness probe
+ *     description: Kubernetes readiness probe - returns 200 if the application is ready to serve traffic (DB reachable). Cache status is informational only.
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Application is ready to serve traffic
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ready
+ *                 database:
+ *                   type: boolean
+ *                   example: true
+ *                 cache:
+ *                   type: boolean
+ *                   example: true
+ *       503:
+ *         description: Application is not ready (database unreachable)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: not_ready
+ *                 database:
+ *                   type: boolean
+ *                   example: false
+ *                 cache:
+ *                   type: boolean
+ *                   example: false
+ */
+app.get('/api/readyz', async (_req, res) => {
+	const [dbError] = await safeExecute(db`SELECT 1 as ping`);
+	const dbHealthy = !dbError;
+
+	if (dbError) {
+		logger.error({ error: dbError }, 'Database readiness check failed');
+	}
+
+	const [cacheError, cacheResult] = await safeExecute(cacheRepository.ping());
+	const cacheHealthy = !cacheError && !!cacheResult;
+
+	if (cacheError) {
+		logger.warn({ error: cacheError }, 'Cache readiness check failed');
+	}
+
+	const statusCode = dbHealthy ? 200 : 503;
+	const status = dbHealthy ? 'ready' : 'not_ready';
+
+	res.status(statusCode).json({
+		status,
+		database: dbHealthy,
+		cache: cacheHealthy,
+	});
+});
 
 /**
  * @openapi
  * /health:
  *   get:
  *     summary: Health check
- *     description: Check if the API, database, and Redis cache are running and healthy
+ *     description: Check if the API, database, and Redis cache are running and healthy. For monitoring dashboards - do NOT use as a Kubernetes probe.
  *     tags: [Health]
  *     responses:
  *       200:
@@ -215,35 +333,37 @@ app.use(requestLogger);
  *               uptime: 3600.5
  *               environment: "production"
  */
-app.get('/api/health', async (req, res) => {
+app.get('/api/health', async (_req, res) => {
 	const timestamp = new Date().toISOString();
 	let dbStatus: string;
 	let redisStatus: string;
 
-	try {
-		// Ping the database with a simple query
-		await db`SELECT 1 as ping`;
-		dbStatus = 'connected';
-	} catch (error) {
-		logger.error({error}, 'Database health check failed');
+	const [dbError] = await safeExecute(db`SELECT 1 as ping`);
+	if (dbError) {
+		logger.error({ error: dbError }, 'Database health check failed');
 		dbStatus = 'disconnected';
+	} else {
+		dbStatus = 'connected';
 	}
 
 	// Check Redis/Cache health
-	try {
-		const isRedisHealthy = await cacheRepository.ping();
+	const [cacheError, isRedisHealthy] = await safeExecute(cacheRepository.ping());
+	if (cacheError) {
+		logger.error({ error: cacheError }, 'Redis health check failed');
+		redisStatus = 'disconnected';
+	} else {
 		const nodeEnv = process.env.NODE_ENV || 'development';
 		if (nodeEnv === 'development') {
 			redisStatus = 'in-memory';
 		} else {
 			redisStatus = isRedisHealthy ? 'connected' : 'disconnected';
 		}
-	} catch (error) {
-		logger.error({error}, 'Redis health check failed');
-		redisStatus = 'disconnected';
 	}
 
 	// Determine overall health status
+	// DB healthy + Cache healthy → 200 "healthy"
+	// DB healthy + Cache down  → 200 "degraded" (acceptable)
+	// DB down (regardless of cache) → 503 "unhealthy"
 	const isDbHealthy = dbStatus === 'connected';
 	const isCacheHealthy = redisStatus === 'connected' || redisStatus === 'in-memory';
 
@@ -253,7 +373,7 @@ app.get('/api/health', async (req, res) => {
 	if (isDbHealthy && isCacheHealthy) {
 		status = 'healthy';
 		statusCode = 200;
-	} else if (isDbHealthy || isCacheHealthy) {
+	} else if (isDbHealthy && !isCacheHealthy) {
 		status = 'degraded';
 		statusCode = 200;
 	} else {
@@ -341,3 +461,53 @@ app.use(errorHandler);
 httpServer.listen(PORT, () => {
 	logger.info({port: PORT}, 'Server started with WebSocket support');
 });
+
+// Graceful shutdown handler
+const SHUTDOWN_TIMEOUT_MS = 30_000;
+
+const shutdown = async (signal: string): Promise<void> => {
+	logger.info({ signal }, 'Shutdown signal received - starting graceful shutdown');
+
+	// Force-kill timeout in case graceful shutdown hangs
+	const forceKillTimer = setTimeout(() => {
+		logger.error({ signal, timeoutMs: SHUTDOWN_TIMEOUT_MS }, 'Graceful shutdown timed out - forcing exit');
+		process.exit(1);
+	}, SHUTDOWN_TIMEOUT_MS);
+
+	// Ensure the timeout doesn't prevent the process from exiting naturally
+	forceKillTimer.unref();
+
+	try {
+		// Stop accepting new connections
+		await new Promise<void>((resolve, reject) => {
+			httpServer.close((err) => {
+				if (err) {
+					reject(err);
+				} else {
+					resolve();
+				}
+			});
+		});
+		logger.info('HTTP server closed');
+
+		// Close database connection pool
+		await db.end();
+		logger.info('Database connections closed');
+
+		// Close Redis/cache connections if using Redis
+		if (cacheRepository instanceof RedisCacheRepository) {
+			await cacheRepository.disconnect();
+			logger.info('Redis connections closed');
+		}
+
+		clearTimeout(forceKillTimer);
+		logger.info('Graceful shutdown complete');
+		process.exit(0);
+	} catch (error) {
+		logger.error({ error }, 'Error during graceful shutdown');
+		process.exit(1);
+	}
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
