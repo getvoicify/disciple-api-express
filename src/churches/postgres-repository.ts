@@ -188,16 +188,6 @@ export class PostgresChurchRepository implements IChurchRepository {
       values.push(filters.createdBy);
     }
 
-    // Authorization filter
-    if (filters?.authorizedIds) {
-      if (filters.authorizedIds.length === 0) {
-        return { churches: [], total: 0 };
-      }
-      const placeholders = filters.authorizedIds.map((_, i) => `$${values.length + i + 1}`).join(', ');
-      conditions.push(`id IN (${placeholders})`);
-      values.push(...filters.authorizedIds);
-    }
-
     const whereClause = conditions.join(' AND ');
 
     // Get total count
