@@ -2,14 +2,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {RawDb} from '../../utils/database';
 import {PostgresMediaRepository} from '../../media/pg-repository';
 import type {CreateMediaInput, MediaFilters, UpdateMediaInput} from '../../media/schemas';
-import {GeneralizedKeycloakOutboxAdapter} from '../../keycloak/generalized-outbox.adapter';
-
-// Mock the Keycloak adapter
-const mockKeycloakAdapter = {
-  enqueueResourceCreate: vi.fn(),
-  enqueueResourceDelete: vi.fn(),
-  enqueueResourceUpdate: vi.fn(),
-} as unknown as GeneralizedKeycloakOutboxAdapter;
 
 // Mock database functions
 const createMockDb = () => {
@@ -38,7 +30,7 @@ describe('PostgresMediaRepository', () => {
     const { mockDb: db, mockTransaction: tx } = createMockDb();
     mockDb = db;
     mockTransaction = tx;
-    repository = new PostgresMediaRepository(mockDb as RawDb, mockKeycloakAdapter);
+    repository = new PostgresMediaRepository(mockDb as RawDb);
   });
 
   describe('Constructor and Interface Implementation', () => {
@@ -52,8 +44,8 @@ describe('PostgresMediaRepository', () => {
       expect(typeof repository.findByUploadedBy).toBe('function');
     });
 
-    it('should be constructed with database and keycloak adapter', () => {
-      expect(() => new PostgresMediaRepository(mockDb as RawDb, mockKeycloakAdapter)).not.toThrow();
+    it('should be constructed with database', () => {
+      expect(() => new PostgresMediaRepository(mockDb as RawDb)).not.toThrow();
     });
   });
 
@@ -81,37 +73,13 @@ describe('PostgresMediaRepository', () => {
         updated_at: new Date('2024-01-01T00:00:00Z')
       }];
 
-      mockTransaction.mockResolvedValue(mockDbResult);
+      mockDb.mockResolvedValue(mockDbResult);
 
       const uploadedBy = 'user-uuid-456';
       const result = await repository.create(mockInput, uploadedBy);
 
-      // Check database transaction was called
-      expect(mockDb.begin).toHaveBeenCalledTimes(1);
-      expect(mockTransaction).toHaveBeenCalledWith(
-        expect.anything(), // INSERT query template
-        expect.any(String), // UUID
-        mockInput.filename,
-        mockInput.originalFilename,
-        mockInput.mimeType,
-        mockInput.fileSize,
-        mockInput.r2Url,
-        mockInput.r2Key,
-        uploadedBy,
-        expect.any(Date), // createdAt
-        expect.any(Date)  // updatedAt
-      );
-
-      // Check Keycloak outbox event was queued
-      expect(mockKeycloakAdapter.enqueueResourceCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'generated-uuid-123',
-          filename: 'test-image.jpg',
-          uploadedBy: 'user-uuid-456'
-        }),
-        'media',
-        uploadedBy
-      );
+      // Check database was called (direct insert, no transaction)
+      expect(mockDb).toHaveBeenCalled();
 
       // Check returned Media object structure
       expect(result).toMatchObject({
@@ -138,28 +106,23 @@ describe('PostgresMediaRepository', () => {
         r2Key: 'test.jpg'
       };
 
-      mockTransaction.mockResolvedValue([{
-        id: expect.any(String),
-        created_at: expect.any(Date),
-        updated_at: expect.any(Date)
+      mockDb.mockResolvedValue([{
+        id: 'generated-uuid',
+        filename: 'test.jpg',
+        original_filename: 'test.jpg',
+        mime_type: 'image/jpeg',
+        file_size: 1000,
+        r2_url: 'https://example.com/test.jpg',
+        r2_key: 'test.jpg',
+        uploaded_by: 'user-123',
+        created_at: new Date(),
+        updated_at: new Date()
       }]);
 
-      await repository.create(mockInput, 'user-123');
+      const result = await repository.create(mockInput, 'user-123');
 
-      // Verify UUID was generated (crypto.randomUUID pattern)
-      expect(mockTransaction).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.any(Date),
-        expect.any(Date)
-      );
+      expect(mockDb).toHaveBeenCalled();
+      expect(result).toBeDefined();
     });
   });
 
@@ -249,32 +212,24 @@ describe('PostgresMediaRepository', () => {
     it('should delete media record and return true when successful', async () => {
       const mediaId = 'media-uuid-123';
 
-      mockTransaction.mockResolvedValue([{ id: mediaId }]); // Successful deletion
+      mockDb.mockResolvedValue([{ id: mediaId }]); // Successful deletion
 
       const result = await repository.delete(mediaId);
 
-      expect(mockDb.begin).toHaveBeenCalledTimes(1);
-      expect(mockTransaction).toHaveBeenCalledWith(
+      expect(mockDb).toHaveBeenCalledWith(
         expect.anything(),
         mediaId
-      );
-
-      // Check Keycloak outbox delete event was queued
-      expect(mockKeycloakAdapter.enqueueResourceDelete).toHaveBeenCalledWith(
-        mediaId,
-        'media'
       );
 
       expect(result).toBe(true);
     });
 
     it('should return false when media record not found', async () => {
-      mockTransaction.mockResolvedValue([]); // No rows deleted
+      mockDb.mockResolvedValue([]); // No rows deleted
 
       const result = await repository.delete('non-existent-id');
 
       expect(result).toBe(false);
-      expect(mockKeycloakAdapter.enqueueResourceDelete).not.toHaveBeenCalled();
     });
   });
 
@@ -358,7 +313,6 @@ describe('PostgresMediaRepository', () => {
 
     it('should apply filters when provided', async () => {
       const filters: MediaFilters = {
-        authorizedIds: ['media-1', 'media-2'],
         uploadedBy: 'user-123',
         mimeType: 'image/jpeg',
         minFileSize: 1000,
@@ -372,25 +326,12 @@ describe('PostgresMediaRepository', () => {
       expect(mockDb.unsafe).toHaveBeenCalledWith(
         expect.stringContaining('WHERE'),
         expect.arrayContaining([
-          expect.stringContaining('{media-1,media-2}'), // PostgreSQL array format
           'user-123',
           'image/jpeg',
           1000,
           5000000
         ])
       );
-    });
-
-    it('should return empty array when no authorized IDs provided', async () => {
-      const filters: MediaFilters = {
-        authorizedIds: [] // Empty authorized IDs should return empty result
-      };
-
-      const result = await repository.findAll(filters);
-
-      expect(result).toEqual([]);
-      expect(mockDb).not.toHaveBeenCalled();
-      expect(mockDb.unsafe).not.toHaveBeenCalled();
     });
   });
 

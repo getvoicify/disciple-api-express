@@ -127,13 +127,6 @@ export class DuplicateError extends AppError {
   }
 }
 
-export class KeycloakAuthError extends AppError {
-	constructor(message: string, statusCode: number) {
-		super(message, statusCode);
-		this.name = 'KeycloakAuthError';
-	}
-}
-
 /**
  * Error thrown when required data is missing
  */
