@@ -2,14 +2,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {RawDb} from '../../utils/database';
 import {PostgresPostRepository} from '../../posts/pg-repository';
 import type {CreatePostInput, PostFilters, UpdatePostInput} from '../../posts/schemas';
-import {GeneralizedKeycloakOutboxAdapter} from '../../keycloak/generalized-outbox.adapter';
-
-// Mock the Keycloak adapter
-const mockKeycloakAdapter = {
-  enqueueResourceCreate: vi.fn(),
-  enqueueResourceDelete: vi.fn(),
-  enqueueResourceUpdate: vi.fn(),
-} as unknown as GeneralizedKeycloakOutboxAdapter;
 
 // Mock database functions
 const createMockDb = () => {
@@ -38,7 +30,7 @@ describe('PostgresPostRepository', () => {
     const { mockDb: db, mockTransaction: tx } = createMockDb();
     mockDb = db;
     mockTransaction = tx;
-    repository = new PostgresPostRepository(mockDb as RawDb, mockKeycloakAdapter);
+    repository = new PostgresPostRepository(mockDb as RawDb);
   });
 
   describe('Constructor and Interface Implementation', () => {
@@ -54,8 +46,8 @@ describe('PostgresPostRepository', () => {
       expect(typeof repository.getLatestPostInSeries).toBe('function');
     });
 
-    it('should be constructed with database and keycloak adapter', () => {
-      expect(() => new PostgresPostRepository(mockDb as RawDb, mockKeycloakAdapter)).not.toThrow();
+    it('should be constructed with database', () => {
+      expect(() => new PostgresPostRepository(mockDb as RawDb)).not.toThrow();
     });
   });
 
@@ -100,18 +92,6 @@ describe('PostgresPostRepository', () => {
       expect(callArgs).toContain(mockInput.content);
       expect(callArgs).toContain(authorId);
       expect(callArgs).toContain(mockInput.churchId);
-
-      // Check Keycloak outbox event was queued
-      expect(mockKeycloakAdapter.enqueueResourceCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'generated-uuid-123',
-          title: 'Test Post',
-          authorId: 'author-uuid-456',
-          churchId: 'church-uuid-123'
-        }),
-        'posts',
-        authorId
-      );
 
       // Check returned Post object structure
       expect(result).toMatchObject({
@@ -307,32 +287,24 @@ describe('PostgresPostRepository', () => {
     it('should delete post record and return true when successful', async () => {
       const postId = 'post-uuid-123';
 
-      mockTransaction.mockResolvedValue([{ id: postId }]); // Successful deletion
+      mockDb.mockResolvedValue([{ id: postId }]); // Successful deletion
 
       const result = await repository.delete(postId);
 
-      expect(mockDb.begin).toHaveBeenCalledTimes(1);
-      expect(mockTransaction).toHaveBeenCalledWith(
+      expect(mockDb).toHaveBeenCalledWith(
         expect.anything(),
         postId
-      );
-
-      // Check Keycloak outbox delete event was queued
-      expect(mockKeycloakAdapter.enqueueResourceDelete).toHaveBeenCalledWith(
-        postId,
-        'posts'
       );
 
       expect(result).toBe(true);
     });
 
     it('should return false when post record not found', async () => {
-      mockTransaction.mockResolvedValue([]); // No rows deleted
+      mockDb.mockResolvedValue([]); // No rows deleted
 
       const result = await repository.delete('non-existent-id');
 
       expect(result).toBe(false);
-      expect(mockKeycloakAdapter.enqueueResourceDelete).not.toHaveBeenCalled();
     });
   });
 
@@ -428,7 +400,6 @@ describe('PostgresPostRepository', () => {
 
     it('should apply filters when provided', async () => {
       const filters: PostFilters = {
-        authorizedIds: ['post-1', 'post-2'],
         churchId: 'church-uuid-123',
         status: 'published',
         tags: ['faith']
@@ -442,18 +413,6 @@ describe('PostgresPostRepository', () => {
         expect.stringContaining('WHERE'),
         expect.any(Array)
       );
-    });
-
-    it('should return empty array when no authorized IDs provided', async () => {
-      const filters: PostFilters = {
-        authorizedIds: [] // Empty authorized IDs should return empty result
-      };
-
-      const result = await repository.findAll(filters);
-
-      expect(result).toEqual([]);
-      expect(mockDb).not.toHaveBeenCalled();
-      expect(mockDb.unsafe).not.toHaveBeenCalled();
     });
   });
 
