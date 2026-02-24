@@ -2,7 +2,6 @@ import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'js-yaml';
 import dotenv from 'dotenv';
-import {concatMap, defer, interval, Subject, takeUntil, tap} from 'rxjs';
 import {getRawDb} from "./utils/database";
 import {notesRouter} from "./notes/routes/routes";
 import {PostgresNoteRepository} from "./notes/pg-repository";
@@ -30,11 +29,11 @@ import {SeriesServiceImpl} from "./series/service";
 import {devotionalRouter} from "./series/routes/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
-import {setupKeycloakAdapter} from "./keycloak/setup";
-import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {safeExecute} from "./utils/handle-async";
 import {createCacheRepository, CacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
+import {createAuthorizeMiddleware} from './authorization';
+import {createResolvers} from './authorization/resolvers';
 
 dotenv.config();
 
@@ -49,20 +48,17 @@ const {
 
 const db = getRawDb({DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT});
 
-const {
-	IAM_ENDPOINT,
-	IAM_REALM,
-} = process.env;
+const resolvers = createResolvers(db);
+const memberRoleLookup = async (churchId: string, userId: string) => {
+	const result = await db`
+		SELECT role FROM church_members
+		WHERE church_id = ${churchId} AND user_id = ${userId} AND status = 'Active'
+	`;
+	return result.length > 0 ? result[0].role : null;
+};
+const authorize = createAuthorizeMiddleware(resolvers, memberRoleLookup);
 
-const keycloakConfig = {
-	realm: IAM_REALM,
-	keycloakUrl: IAM_ENDPOINT.replace('realms', ''),
-	clientId: process.env.KEYCLOAK_CLIENT_ID,
-	clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
-} satisfies KeycloakAdminConfig;
-
-const {adapter: keycloakAdapter, outbox} = setupKeycloakAdapter(db, keycloakConfig);
-const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
+const notesPgRepo = new PostgresNoteRepository(db);
 
 const churchRepository = new PostgresChurchRepository(db);
 const churchMemberRepository = new PostgresChurchMemberRepository(db);
@@ -71,7 +67,7 @@ const churchService = new ChurchServiceImpl(churchRepository);
 const churchMemberService = new ChurchMembershipServiceImpl(churchRepository, churchMemberRepository);
 const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
 
-const mediaRepository = new PostgresMediaRepository(db, keycloakAdapter);
+const mediaRepository = new PostgresMediaRepository(db);
 const r2Service = new CloudflareR2ServiceImpl();
 const mediaUploadService = new MediaUploadService(mediaRepository, r2Service);
 
@@ -87,7 +83,7 @@ const cacheInvalidationService = new CacheInvalidationService(cacheRepository, p
 
 const noteService = new NoteServiceImpl(notesPgRepo, cacheInvalidationService);
 
-const postRepository = new PostgresPostRepository(db, keycloakAdapter);
+const postRepository = new PostgresPostRepository(db);
 const postService = new PostServiceImpl(postRepository, churchMemberService, cacheInvalidationService);
 
 const seriesRepository = new PostgresSeriesRepository(db);
@@ -256,11 +252,11 @@ app.get('/api/openapi.yaml', (req, res) => {
 });
 
 app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService));
-app.use('/api/notes', notesRouter(noteService));
+app.use('/api/notes', notesRouter(noteService, authorize));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
-app.use('/api/posts', postsRouter(postService, seriesService));
-app.use('/api/devotional', devotionalRouter(seriesService));
+app.use('/api/posts', postsRouter(postService, seriesService, authorize));
+app.use('/api/devotional', devotionalRouter(seriesService, authorize));
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -268,25 +264,3 @@ app.use(errorHandler);
 app.listen(PORT, () => {
 	logger.info({ port: PORT }, 'Server started');
 });
-
-const sigEndSub = new Subject<void>();
-
-interval(1000 * 15).pipe(
-	concatMap(
-		() => defer(() => safeExecute(outbox.processDue())).pipe(
-			tap(([err]) => {
-				if (err) {
-					logger.error({ error: err }, 'Error processing due events');
-				}
-			})
-		)
-	),
-	takeUntil(sigEndSub)
-).subscribe();
-
-const clearIntervalFn = () => {
-	sigEndSub.next();
-}
-
-process.on('SIGINT', clearIntervalFn);
-process.on('SIGTERM', clearIntervalFn);

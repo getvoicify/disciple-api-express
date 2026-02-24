@@ -1,32 +1,25 @@
 import type {RawDb} from "../utils/database";
 import type {MediaRepository} from './repository';
 import type {CreateMediaInput, Media, MediaFilters, UpdateMediaInput} from './schemas';
-import {type GeneralizedKeycloakOutboxAdapter} from "../keycloak/generalized-outbox.adapter";
 
 export class PostgresMediaRepository implements MediaRepository {
-	private static ResourceType = 'media' as const;
 	constructor(
 		private readonly db: RawDb,
-		private readonly keycloakAdapter: GeneralizedKeycloakOutboxAdapter,
 	) {
 	}
 
 	async create(input: CreateMediaInput, uploadedBy: string): Promise<Media> {
-		return this.db.begin(async (tx) => {
-			const id = crypto.randomUUID();
-			const now = new Date();
+		const id = crypto.randomUUID();
+		const now = new Date();
 
-			const result = await tx`
+		const result = await this.db`
           INSERT INTO media (id, filename, original_filename, mime_type, file_size,
                              r2_url, r2_key, uploaded_by, created_at, updated_at)
           VALUES (${id}, ${input.filename}, ${input.originalFilename}, ${input.mimeType}, ${input.fileSize},
                   ${input.r2Url}, ${input.r2Key}, ${uploadedBy}, ${now}, ${now})
           RETURNING *
-			`;
-			const media = this.mapRowToMedia(result[0]);
-			await this.keycloakAdapter.enqueueResourceCreate(media, PostgresMediaRepository.ResourceType, uploadedBy);
-			return media;
-		});
+		`;
+		return this.mapRowToMedia(result[0]);
 	}
 
 	async update(id: string, input: UpdateMediaInput): Promise<Media | null> {
@@ -78,21 +71,12 @@ export class PostgresMediaRepository implements MediaRepository {
 	}
 
 	async delete(id: string): Promise<boolean> {
-		return this.db.begin(async (tx) => {
-			const result = await tx`DELETE
-                              FROM media
-                              WHERE id = ${id}
-                              RETURNING id`;
+		const result = await this.db`DELETE
+                                  FROM media
+                                  WHERE id = ${id}
+                                  RETURNING id`;
 
-			if (result.length === 0) {
-				return false;
-			}
-
-			// Queue Keycloak resource deletion event
-			await this.keycloakAdapter.enqueueResourceDelete(id, PostgresMediaRepository.ResourceType);
-
-			return true;
-		});
+		return result.length > 0;
 	}
 
 	async findById(id: string): Promise<Media | null> {
@@ -120,18 +104,6 @@ export class PostgresMediaRepository implements MediaRepository {
 			// Build dynamic query based on filters
 			const conditions = [];
 			const values: any[] = [];
-
-			// Authorization filter - always apply if provided
-			if (filters.authorizedIds) {
-				if (filters.authorizedIds.length === 0) {
-					// User has no authorized resources, return empty result
-					return [];
-				}
-				// Convert JavaScript array to PostgreSQL array format for unsafe query
-				const pgArray = `{${filters.authorizedIds.join(',')}}`;
-				conditions.push(`id = ANY($${values.length + 1}::uuid[])`);
-				values.push(pgArray);
-			}
 
 			if (filters.uploadedBy) {
 				conditions.push(`uploaded_by = $${values.length + 1}`);

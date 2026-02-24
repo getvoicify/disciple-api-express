@@ -14,6 +14,7 @@ export const Note = z.object({
     date: z.date(),
     scriptureReferences: z.array(ScriptureReference),
     images: z.array(z.string()).optional(),
+    ownerId: z.string().uuid().optional().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
 });
@@ -33,7 +34,7 @@ export const UpdateNoteInput = z.object({
 });
 
 export const NoteFilters = z.object({
-		authorizedIds: z.array(z.string()).default([]).optional(),
+		ownerId: z.string().optional(),
     title: z.string().optional(),
     content: z.string().optional(),
     startDate: z.date().optional(),
