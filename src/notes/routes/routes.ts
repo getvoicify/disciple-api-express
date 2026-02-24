@@ -10,14 +10,14 @@ import {noteUpdateEndpoint, NoteUpdateParamsInput} from "./noteUpdate.endpoint";
 import {noteDeleteEndpoint, NoteDeleteParamsInput} from "./noteDelete.endpoint";
 import {jwtVerify} from 'jose'
 import {validateToken} from "../../utils/validate-token.middleware";
-import {canAccessMiddleware} from "../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
 import {createCacheRepository} from "../../cache";
 import {cacheResponseMiddleware} from "../../middleware/cache-response.middleware/cache-response.middleware";
 import {keyGenerator} from "../../middleware/key-generator.middleware";
 import {extractFiltersMiddleware} from "../../middleware/extract-filters.middleware";
+import type {AuthorizeOptions} from '../../authorization';
 
 
-export const notesRouter = (service: NoteService) => {
+export const notesRouter = (service: NoteService, authorize?: (options: AuthorizeOptions) => any) => {
 	const router = Router();
 	const cacheRepo = createCacheRepository();
 	const {
@@ -29,27 +29,25 @@ export const notesRouter = (service: NoteService) => {
 	router.get('/:noteId', [
 		tokenVerifier(),
 		validate(NoteFetchParamsInput, 'params'),
+		...(authorize ? [authorize({ resource: 'note', action: 'read' })] : []),
 	], noteFetchEndpoint(service));
 
 	router.put('/:noteId', [
 		tokenVerifier(),
 		validate(NoteUpdateParamsInput, 'params'),
-		validate(UpdateNoteInput, 'body')
+		validate(UpdateNoteInput, 'body'),
+		...(authorize ? [authorize({ resource: 'note', action: 'update' })] : []),
 	], noteUpdateEndpoint(service));
 
 	router.delete('/:noteId', [
 		tokenVerifier(),
 		validate(NoteDeleteParamsInput, 'params'),
+		...(authorize ? [authorize({ resource: 'note', action: 'delete' })] : []),
 	], noteDeleteEndpoint(service));
 
 	router.get('/', [
 		tokenVerifier(),
 		validate(ListFilterSchema, 'query'),
-		canAccessMiddleware({
-			scope: 'read',
-			resource: 'notes',
-			queryUri: '/notes',
-		}),
 		extractFiltersMiddleware(ListFilterSchema, 'query'),
 		keyGenerator('note', true),
 		cacheResponseMiddleware(cacheRepo),
@@ -60,10 +58,6 @@ export const notesRouter = (service: NoteService) => {
 		[
 			tokenVerifier(),
 			validate(CreateNoteInput),
-			canAccessMiddleware({
-				scope: 'create',
-				resource: 'note',
-			})
 		],
 		noteCreateEndpoint(service),
 	);

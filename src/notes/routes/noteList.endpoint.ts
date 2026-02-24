@@ -106,11 +106,11 @@ export const noteListEndpoint = (service: NoteService, cacheRepo: CacheRepositor
 	async (req: express.Request, res: express.Response) => {
 		const {title, content, startDate, endDate, book, chapter, verse} = InputSchema.parse(req.query);
 
-		const authorizedIds = req['ids'] ?? [];
+		const userId = (req as any)['user']?.[1]?.payload?.sub || '';
 
-		// Build filters with authorization constraint
+		// Build filters with owner constraint
 		const filters: NoteFilters = {
-			authorizedIds,
+			ownerId: userId,
 			title,
 			content,
 			startDate,

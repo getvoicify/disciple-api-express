@@ -33,7 +33,6 @@ export const UpdateMediaInput = z.object({
 });
 
 export const MediaFilters = z.object({
-    authorizedIds: z.array(z.string()).default([]).optional(),
     uploadedBy: z.string().min(1).optional(),
     mimeType: z.string().optional(),
     filename: z.string().optional(),

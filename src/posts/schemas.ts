@@ -58,7 +58,6 @@ export const UpdatePostInput = z.object({
 
 // Post Filters
 export const PostFilters = z.object({
-    authorizedIds: z.array(z.uuid()).default([]).optional(),
     churchId: z.uuid().optional(),
     authorId: z.uuid().optional(),
     status: PostStatus.optional(),
