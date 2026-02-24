@@ -1,3 +1,15 @@
+## [2.11.0](https://github.com/getvoicify/disciple-api-express/compare/v2.10.0...v2.11.0) (2026-02-24)
+
+
+### ✨ Features
+
+* migrate role management from Keycloak to database ([#54](https://github.com/getvoicify/disciple-api-express/issues/54)) ([214f9db](https://github.com/getvoicify/disciple-api-express/commit/214f9dbee2e524b6f0bfb51747f05ae749e02ad6))
+
+
+### 🐛 Bug Fixes
+
+* address production gap analysis issues across security, infrastructure, and authorization ([#55](https://github.com/getvoicify/disciple-api-express/issues/55)) ([a520746](https://github.com/getvoicify/disciple-api-express/commit/a52074630212b8000414e6c952c2861f0ce79bba))
+
 ## [2.10.0](https://github.com/getvoicify/disciple-api-express/compare/v2.9.0...v2.10.0) (2025-11-12)
 
 
