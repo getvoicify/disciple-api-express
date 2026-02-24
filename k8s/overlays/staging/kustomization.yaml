@@ -6,9 +6,10 @@ namespace: disciple-api-staging
 resources:
 - ../../base
 
-commonLabels:
-  app.kubernetes.io/environment: staging
-  app.kubernetes.io/instance: staging
+labels:
+  - pairs:
+      app.kubernetes.io/environment: staging
+      app.kubernetes.io/instance: staging
 
 patches:
 - target:

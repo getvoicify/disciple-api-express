@@ -6,9 +6,10 @@ namespace: disciple-api-production
 resources:
 - ../../base
 
-commonLabels:
-  app.kubernetes.io/environment: production
-  app.kubernetes.io/instance: production
+labels:
+  - pairs:
+      app.kubernetes.io/environment: production
+      app.kubernetes.io/instance: production
 
 patches:
 - target:
