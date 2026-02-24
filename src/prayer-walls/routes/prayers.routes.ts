@@ -1,3 +1,7 @@
+// Authorization: Prayer request routes use service-level authorization (membership checks,
+// role verification, creator-only operations) rather than the centralized authorize() middleware.
+// See: prayer-request.service.ts
+
 import { Router } from 'express';
 import { jwtVerify } from 'jose';
 import type { Server as SocketServer } from 'socket.io';

@@ -3,6 +3,7 @@ import type { Router } from 'express';
 import { postsRouter } from '../../posts/routes/routes';
 import type { PostService } from '../../posts/service';
 import type { SeriesService } from '../../series/service';
+import type { AuthorizeOptions } from '../../authorization';
 
 // Mock Express router
 const mockRouter = {
@@ -19,6 +20,9 @@ const mockSeriesService = {
   getDailyDevotionals: vi.fn()
 } as unknown as SeriesService;
 
+// Mock authorize middleware
+const mockAuthorize = vi.fn((_options: AuthorizeOptions) => vi.fn());
+
 vi.mock('express', () => ({
   Router: () => mockRouter
 }));
@@ -32,7 +36,7 @@ describe('Post Routes', () => {
   });
 
   it('should register all routes with correct paths and methods', () => {
-    const router = postsRouter(mockService, mockSeriesService);
+    const router = postsRouter(mockService, mockSeriesService, mockAuthorize);
 
     // Should return the router
     expect(router).toBe(mockRouter);
@@ -81,7 +85,7 @@ describe('Post Routes', () => {
   });
 
   it('should use optional authentication for fetch endpoint', () => {
-    postsRouter(mockService, mockSeriesService);
+    postsRouter(mockService, mockSeriesService, mockAuthorize);
 
     // The GET /posts/:id endpoint should use middleware array with optional auth
     const fetchCall = (mockRouter.get as Mock).mock.calls.find(
@@ -95,7 +99,7 @@ describe('Post Routes', () => {
   });
 
   it('should protect modification endpoints with auth middleware', () => {
-    postsRouter(mockService, mockSeriesService);
+    postsRouter(mockService, mockSeriesService, mockAuthorize);
 
     // POST /posts should have auth middleware
     const createCall = (mockRouter.post as Mock).mock.calls[0];
@@ -122,8 +126,17 @@ describe('Post Routes', () => {
     expect(publishCall![1].length).toBeGreaterThan(0);
   });
 
+  it('should apply authorize middleware to update, delete, and publish routes', () => {
+    postsRouter(mockService, mockSeriesService, mockAuthorize);
+
+    // authorize should be called for update, delete, publish, and create
+    expect(mockAuthorize).toHaveBeenCalledWith({ resource: 'post', action: 'update', paramName: 'id' });
+    expect(mockAuthorize).toHaveBeenCalledWith({ resource: 'post', action: 'delete', paramName: 'id' });
+    expect(mockAuthorize).toHaveBeenCalledWith({ resource: 'post', action: 'create' });
+  });
+
   it('should register /daily-devotionals BEFORE /:id to prevent routing conflicts', () => {
-    postsRouter(mockService, mockSeriesService);
+    postsRouter(mockService, mockSeriesService, mockAuthorize);
 
     // Get all GET route calls
     const getCalls = (mockRouter.get as Mock).mock.calls;

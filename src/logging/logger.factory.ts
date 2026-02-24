@@ -114,8 +114,8 @@ export class PinoLoggerFactory implements ILoggerFactory {
     const correlationId = (req as any).id || req.headers?.['x-request-id'] || randomUUID();
 
     // Extract user ID if authenticated
-    const user = (req as any).user?.[0];
-    const userId = user?.sub;
+    const user = (req as any).user?.[1];
+    const userId = user?.payload?.sub;
 
     // Create child logger with request context
     const bindings: Record<string, unknown> = {

@@ -23,7 +23,7 @@ export const PublishActionInput = z.object({
 	action: z.enum(['publish', 'unpublish'])
 });
 
-export const postsRouter = (service: PostService, seriesService: SeriesService, authorize?: (options: AuthorizeOptions) => any) => {
+export const postsRouter = (service: PostService, seriesService: SeriesService, authorize: (options: AuthorizeOptions) => any) => {
 	const router = Router();
 	const {
 		IAM_ENDPOINT,
@@ -51,13 +51,15 @@ export const postsRouter = (service: PostService, seriesService: SeriesService, 
 	router.patch('/:id', [
 		tokenVerifier(),
 		validate(PostIdParamsInput, 'params'),
-		validate(UpdatePostInput, 'body')
+		validate(UpdatePostInput, 'body'),
+		authorize({ resource: 'post', action: 'update', paramName: 'id' }),
 	], postUpdateEndpoint(service));
 
 	// Protected endpoint - delete post
 	router.delete('/:id', [
 		tokenVerifier(),
 		validate(PostIdParamsInput, 'params'),
+		authorize({ resource: 'post', action: 'delete', paramName: 'id' }),
 	], postDeleteEndpoint(service));
 
 	// Protected endpoint - publish/unpublish post
@@ -65,6 +67,7 @@ export const postsRouter = (service: PostService, seriesService: SeriesService, 
 		tokenVerifier(),
 		validate(PostIdParamsInput, 'params'),
 		validate(PublishActionInput, 'body'),
+		authorize({ resource: 'post', action: 'update', paramName: 'id' }),
 	], postPublishEndpoint(service));
 
 	// Protected endpoint - create post
@@ -72,7 +75,7 @@ export const postsRouter = (service: PostService, seriesService: SeriesService, 
 	router.post('/', [
 		tokenVerifier(),
 		validate(CreatePostInput),
-		...(authorize ? [authorize({ resource: 'post', action: 'create' })] : [])
+		authorize({ resource: 'post', action: 'create' }),
 	], postCreateEndpoint(service));
 
 	return router;

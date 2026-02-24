@@ -13,3 +13,4 @@ data:
   R2_PUBLIC_URL_BASE: "https://storage.pottersville.church"
   GB_CLIENT_KEY: "sdk-yxwRsYUrYoKP9daI"
   GB_API_HOST: "https://proxy.growthbook.getvoicify.com"
+  CORS_ORIGIN: "https://app.pottersville.church"

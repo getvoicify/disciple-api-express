@@ -101,7 +101,7 @@ export const ChurchFilters = z.object({
 	createdBy: z.uuid().optional(),
 	page: z.number().int().positive().default(1).optional(),
 	pageSize: z.number().int().positive().max(100).default(20).optional(),
-	sortBy: z.string().optional(),
+	sortBy: z.enum(['created_at', 'name', 'slug', 'approval_status']).optional(),
 	sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
 });
 

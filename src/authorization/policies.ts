@@ -1,7 +1,7 @@
 import type { Actor, ResourceType, Action, Role } from './types';
 
 export const policies: Record<string, Record<string, Actor[]>> = {
-  church:  { update: ['Owner'],                    delete: ['Owner'] },
+  church:  { create: ['*'],                        update: ['Owner'],                    delete: ['Owner'] },
   post:    { create: ['Owner', 'Manager'],         read: ['*'],      update: ['Owner', 'Manager', 'author'], delete: ['Owner', 'author'] },
   series:  { create: ['Owner', 'Manager'],         read: ['*'],      update: ['Owner', 'Manager', 'author'], delete: ['Owner', 'author'] },
   gallery: { create: ['Owner', 'Manager'],         read: ['*'],      update: ['Owner', 'Manager'],           delete: ['Owner'] },

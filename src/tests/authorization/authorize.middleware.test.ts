@@ -172,4 +172,58 @@ describe('Authorize Middleware', () => {
     expect(mockMemberLookup).toHaveBeenCalledWith('church-1', 'user-1');
     expect(next).toHaveBeenCalled();
   });
+
+  it('should call next with InternalServerError when role lookup fails on create', async () => {
+    const req = createMockReq('user-1', {}, { churchId: 'church-1' });
+    const res = createMockRes();
+    const next = vi.fn();
+    mockMemberLookup.mockRejectedValue(new Error('DB connection failed'));
+
+    const middleware = authorize({ resource: 'post', action: 'create' });
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'Authorization check failed' }));
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('should call next with InternalServerError when resolver fails', async () => {
+    const req = createMockReq('user-1', { id: 'post-1' });
+    const res = createMockRes();
+    const next = vi.fn();
+    (mockResolvers.post as any).mockRejectedValue(new Error('DB connection failed'));
+
+    const middleware = authorize({ resource: 'post', action: 'update' });
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'Authorization check failed' }));
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('should call next with InternalServerError when role lookup fails on update', async () => {
+    const req = createMockReq('user-1', { id: 'post-1' });
+    const res = createMockRes();
+    const next = vi.fn();
+    (mockResolvers.post as any).mockResolvedValue({ authorId: 'user-2', churchId: 'church-1' });
+    mockMemberLookup.mockRejectedValue(new Error('DB connection failed'));
+
+    const middleware = authorize({ resource: 'post', action: 'update' });
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'Authorization check failed' }));
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('should use paramName to extract resource ID when provided', async () => {
+    const req = createMockReq('user-1', { postId: 'post-1' });
+    const res = createMockRes();
+    const next = vi.fn();
+    (mockResolvers.post as any).mockResolvedValue({ authorId: 'user-1', churchId: 'church-1' });
+    mockMemberLookup.mockResolvedValue('Member');
+
+    const middleware = authorize({ resource: 'post', action: 'update', paramName: 'postId' });
+    await middleware(req, res, next);
+
+    expect(mockResolvers.post).toHaveBeenCalledWith('post-1');
+    expect(next).toHaveBeenCalled();
+  });
 });

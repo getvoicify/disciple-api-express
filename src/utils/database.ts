@@ -22,9 +22,11 @@ export function getRawDb(env: DbConfig) {
         password,
         host,
         port: port ? parseInt(port, 10) : 5432,
-        max: 5,
+        max: parseInt(process.env.DB_POOL_MAX || '20', 10),
         fetch_types: false,
-        ssl: false,
+        ssl: process.env.DB_SSL !== 'false',
+        connect_timeout: 5,
+        idle_timeout: 30,
     });
 }
 

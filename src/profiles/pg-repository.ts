@@ -82,12 +82,12 @@ export class PostgresProfileRepository implements ProfileRepository {
       const [error, sharedChurches] = await safeExecute(
         this.db<Array<{ church_id: string }>>`
           SELECT cm1.church_id
-          FROM church_memberships cm1
-          INNER JOIN church_memberships cm2 ON cm1.church_id = cm2.church_id
+          FROM church_members cm1
+          INNER JOIN church_members cm2 ON cm1.church_id = cm2.church_id
           WHERE cm1.user_id = ${userId}
             AND cm2.user_id = ${requestingUserId}
-            AND cm1.left_at IS NULL
-            AND cm2.left_at IS NULL
+            AND cm1.status = 'Active'
+            AND cm2.status = 'Active'
         `
       );
 

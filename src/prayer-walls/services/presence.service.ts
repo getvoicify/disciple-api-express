@@ -175,6 +175,8 @@ export class PresenceService implements IPresenceService {
   /**
    * Get list of users currently typing in a prayer wall or specific prayer
    * Returns user IDs that have active typing indicators
+   *
+   * Uses cursor-based SCAN instead of KEYS to avoid blocking the Redis server
    */
   async getTypingUsers(wallId: string, prayerId?: string): Promise<[Error] | [undefined, string[]]> {
     const pattern = prayerId
@@ -185,7 +187,16 @@ export class PresenceService implements IPresenceService {
 
     const [error, keys] = await safeExecute(async () => {
       const redis = (this.redis as any).redis;
-      return await redis.keys(pattern);
+      const collectedKeys: string[] = [];
+      let cursor = '0';
+
+      do {
+        const [nextCursor, batch] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        cursor = nextCursor;
+        collectedKeys.push(...batch);
+      } while (cursor !== '0');
+
+      return collectedKeys;
     });
 
     if (error) {
