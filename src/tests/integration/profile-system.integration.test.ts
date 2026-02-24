@@ -4,7 +4,6 @@ import { ProfileServiceImpl } from '../../profiles/service';
 import { CreateProfileInput, UpdateProfileInput } from '../../profiles/schemas';
 import type { Profile, ProfileStatistics } from '../../profiles/schemas';
 import type { RawDb } from '../../utils/database';
-import type { KeycloakAdminClient } from '../../keycloak/types';
 import type { CacheRepository } from '../../cache/cache.repository';
 
 /**
@@ -35,7 +34,6 @@ describe('Profile System - Integration Tests', () => {
   let mockTx: any;
   let repository: PostgresProfileRepository;
   let service: ProfileServiceImpl;
-  let mockKeycloakClient: any;
   let mockCacheRepository: any;
 
   const TEST_USER_ID = '550e8400-e29b-41d4-a716-446655440001';
@@ -68,21 +66,6 @@ describe('Profile System - Integration Tests', () => {
       unsafe: vi.fn().mockResolvedValue([]),
     });
 
-    // Mock Keycloak client
-    mockKeycloakClient = {
-      getUserAttributes: vi.fn().mockResolvedValue({
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-      }),
-      updateUserAttributes: vi.fn().mockResolvedValue(undefined),
-      createResource: vi.fn().mockResolvedValue(undefined),
-      updateResource: vi.fn().mockResolvedValue(undefined),
-      deleteResource: vi.fn().mockResolvedValue(undefined),
-      getResourcesByIds: vi.fn().mockResolvedValue([]),
-      getUserPermissions: vi.fn().mockResolvedValue([]),
-    };
-
     // Mock cache repository
     mockCacheRepository = {
       write: vi.fn().mockResolvedValue(undefined),
@@ -97,7 +80,6 @@ describe('Profile System - Integration Tests', () => {
     repository = new PostgresProfileRepository(mockDb as unknown as RawDb);
     service = new ProfileServiceImpl(
       repository,
-      mockKeycloakClient as unknown as KeycloakAdminClient,
       mockCacheRepository as unknown as CacheRepository,
       mockDb as unknown as RawDb
     );

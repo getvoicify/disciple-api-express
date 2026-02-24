@@ -45,9 +45,6 @@ import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer
 import {FlaggedContentRepository} from "./prayer-walls/repositories/flagged-content.repository";
 import {initializeSocketServer} from "./websocket/socket.server";
 import {getUserIdFromRequest} from "./utils/get-user-id";
-import {createChurchMembershipSyncQueue} from "./queues/church-membership-sync/queue";
-import {setupChurchMembershipOutboxAdapter} from "./churches/church-membership-outbox.setup";
-import type { ChurchMembershipOutboxAdapter } from "./churches/church-membership-outbox.adapter";
 import {createAuthorizeMiddleware} from './authorization';
 import {createResolvers} from './authorization/resolvers';
 
@@ -96,22 +93,6 @@ const churchMemberRepository = new PostgresChurchMemberRepository(db);
 const churchService = new ChurchServiceImpl(churchRepository);
 const churchMemberService = new ChurchMembershipServiceImpl(churchRepository, churchMemberRepository);
 const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
-
-// Church Membership Sync Queue and Outbox setup
-// Only create the queue if Redis URL is configured (production/staging)
-let churchMembershipOutboxAdapter:
-	ChurchMembershipOutboxAdapter | undefined;
-if (redisUrl) {
-	const churchMembershipSyncQueue = createChurchMembershipSyncQueue({
-		connection: {
-			url: redisUrl,
-		},
-	});
-	churchMembershipOutboxAdapter = setupChurchMembershipOutboxAdapter(db, churchMembershipSyncQueue);
-	logger.info('Church membership sync queue and outbox adapter initialized');
-} else {
-	logger.warn('Redis URL not configured - church membership sync events will not be emitted');
-}
 
 const mediaRepository = new PostgresMediaRepository(db);
 const r2Service = new CloudflareR2ServiceImpl();
@@ -336,7 +317,7 @@ app.get('/api/openapi.yaml', (req, res) => {
 	res.send(yaml.dump(swaggerSpec));
 });
 
-app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService, churchMembershipOutboxAdapter));
+app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService));
 // Initialize Socket.io server with JWT authentication
 // Must be initialized before registering routes that use WebSocket broadcasting
 const io = initializeSocketServer(httpServer, {

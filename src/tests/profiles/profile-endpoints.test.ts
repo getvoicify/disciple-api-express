@@ -59,7 +59,7 @@ describe('Profile Endpoints', () => {
   });
 
   describe('POST /profiles - Create Profile', () => {
-    it('should create a profile successfully with Keycloak auto-population and return 201', async () => {
+    it('should create a profile successfully with JWT claims auto-population and return 201', async () => {
       req.body = {
         bio: 'My bio',
         testimony: 'My testimony',
@@ -71,7 +71,7 @@ describe('Profile Endpoints', () => {
       await handler(req as EndpointRequest, res as Response);
 
       // Zod schemas add defaults for fieldVisibilitySettings and notificationPreferences
-      // Third argument is keycloakClaims (object with undefined values if no claims in JWT)
+      // Third argument is jwtClaims (object with undefined values if no claims in JWT)
       expect(mockService.createProfile).toHaveBeenCalledWith(
         mockUserId,
         expect.objectContaining({

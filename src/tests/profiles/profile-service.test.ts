@@ -4,7 +4,6 @@ import { ProfileServiceImpl } from '../../profiles/service';
 import type { ProfileRepository } from '../../profiles/repository';
 import type { CreateProfileInput, UpdateProfileInput, Profile, ProfileStatistics } from '../../profiles/schemas';
 import { ProfileNotFoundError, ProfileUnauthorizedError } from '../../profiles/errors';
-import type { KeycloakAdminClient } from '../../keycloak/types';
 import type { CacheRepository } from '../../cache/cache.repository';
 import type { RawDb } from '../../utils/database';
 
@@ -17,17 +16,6 @@ const createMockRepository = () => ({
   getStatistics: vi.fn(),
   getCachedMetrics: vi.fn(),
   updateCachedMetrics: vi.fn(),
-});
-
-// Mock Keycloak admin client
-const createMockKeycloakAdminClient = () => ({
-  getUserAttributes: vi.fn(),
-  updateUserAttributes: vi.fn(),
-  createResource: vi.fn(),
-  updateResource: vi.fn(),
-  deleteResource: vi.fn(),
-  getResourcesByIds: vi.fn(),
-  getUserPermissions: vi.fn(),
 });
 
 // Mock cache repository
@@ -49,7 +37,6 @@ const createMockDb = () => ({
 
 describe('ProfileService', () => {
   let mockRepository: ReturnType<typeof createMockRepository>;
-  let mockKeycloakClient: ReturnType<typeof createMockKeycloakAdminClient>;
   let mockCacheRepository: ReturnType<typeof createMockCacheRepository>;
   let mockDb: ReturnType<typeof createMockDb>;
   let service: ProfileService;
@@ -59,29 +46,27 @@ describe('ProfileService', () => {
 
   beforeEach(() => {
     mockRepository = createMockRepository();
-    mockKeycloakClient = createMockKeycloakAdminClient();
     mockCacheRepository = createMockCacheRepository();
     mockDb = createMockDb();
 
     service = new ProfileServiceImpl(
       mockRepository as unknown as ProfileRepository,
-      mockKeycloakClient as unknown as KeycloakAdminClient,
       mockCacheRepository as unknown as CacheRepository,
       mockDb as unknown as RawDb
     );
   });
 
   describe('createProfile', () => {
-    it('should create profile with Keycloak data sync', async () => {
+    it('should create profile with JWT claims data', async () => {
       const input: CreateProfileInput = {
         bio: 'Test bio',
         testimony: 'Test testimony',
         privacyMode: 'church_only',
       };
 
-      const mockKeycloakAttributes = {
-        firstName: 'John',
-        lastName: 'Doe',
+      const jwtClaims = {
+        given_name: 'John',
+        family_name: 'Doe',
         email: 'john.doe@example.com',
       };
 
@@ -99,12 +84,10 @@ describe('ProfileService', () => {
         updatedAt: new Date(),
       };
 
-      mockKeycloakClient.getUserAttributes.mockResolvedValue(mockKeycloakAttributes);
       mockRepository.create.mockResolvedValue(mockProfile);
 
-      const result = await service.createProfile(TEST_USER_ID, input);
+      const result = await service.createProfile(TEST_USER_ID, input, jwtClaims);
 
-      expect(mockKeycloakClient.getUserAttributes).toHaveBeenCalledWith(TEST_USER_ID);
       // Zod adds default values, so we need to match the validated input
       expect(mockRepository.create).toHaveBeenCalledWith(
         TEST_USER_ID,
@@ -117,7 +100,7 @@ describe('ProfileService', () => {
       expect(result).toEqual(mockProfile);
     });
 
-    it('should create profile even if Keycloak sync fails', async () => {
+    it('should create profile without JWT claims', async () => {
       const input: CreateProfileInput = {
         bio: 'Test bio',
         privacyMode: 'church_only',
@@ -137,8 +120,6 @@ describe('ProfileService', () => {
         updatedAt: new Date(),
       };
 
-      // Simulate Keycloak failure
-      mockKeycloakClient.getUserAttributes.mockRejectedValue(new Error('Keycloak error'));
       mockRepository.create.mockResolvedValue(mockProfile);
 
       const result = await service.createProfile(TEST_USER_ID, input);

@@ -13,7 +13,7 @@ import {
   CursorPaginationQuery,
 } from '../schemas/prayer.schemas';
 import { logger } from '../../logging';
-import { KeycloakUserInfoExtractor } from '../../websocket/services/user-info-extractor.service';
+import { JwtUserInfoExtractor } from '../../websocket/services/user-info-extractor.service';
 
 // Import individual endpoint handlers
 import { prayerCreateEndpoint } from './endpoints/prayer-create.endpoint';
@@ -51,7 +51,7 @@ export const prayersRouter = (service: IPrayerRequestService, io?: SocketServer)
   const tokenVerifier = validateToken(jwtVerify, IAM_ENDPOINT, IAM_REALM);
 
   // Initialize user info extractor for extracting author names from JWT tokens
-  const userInfoExtractor = new KeycloakUserInfoExtractor(logger);
+  const userInfoExtractor = new JwtUserInfoExtractor(logger);
 
   // GET /prayer-walls/:wallId/prayers - List prayers (paginated, 20 per page)
   router.get(
