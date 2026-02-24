@@ -432,10 +432,9 @@ describe('PostService', () => {
 
       await service.listPosts(filters);
 
-      // Zod schema adds default authorizedIds: []
+      // PostFiltersSchema validates and passes through the filters
       expect(mockRepository.findAll).toHaveBeenCalledWith({
-        ...filters,
-        authorizedIds: []
+        ...filters
       });
     });
   });
