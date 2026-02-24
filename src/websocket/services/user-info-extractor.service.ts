@@ -1,11 +1,11 @@
 import type { ILogger } from '../../logging';
 import type { IUserInfoExtractor, SocketUserData } from '../types/user-info.types';
 
-export class KeycloakUserInfoExtractor implements IUserInfoExtractor {
+export class JwtUserInfoExtractor implements IUserInfoExtractor {
   constructor(private readonly logger: ILogger) {}
 
   /**
-   * Extracts the full name from the Keycloak user payload.
+   * Extracts the full name from the JWT user payload.
    * Priority order:
    * 1. payload.name (if present and not empty/whitespace)
    * 2. Constructed from payload.given_name + ' ' + payload.family_name
@@ -51,7 +51,7 @@ export class KeycloakUserInfoExtractor implements IUserInfoExtractor {
   }
 
   /**
-   * Extracts the first name from the Keycloak user payload.
+   * Extracts the first name from the JWT user payload.
    * Returns payload.given_name if present and not empty/whitespace.
    * Returns 'Unknown' if missing/empty/whitespace or user is null/undefined.
    */
@@ -74,7 +74,7 @@ export class KeycloakUserInfoExtractor implements IUserInfoExtractor {
   }
 
   /**
-   * Extracts the last name from the Keycloak user payload.
+   * Extracts the last name from the JWT user payload.
    * Returns payload.family_name if present and not empty/whitespace.
    * Returns empty string if missing/empty/whitespace or user is null/undefined.
    */
@@ -97,7 +97,7 @@ export class KeycloakUserInfoExtractor implements IUserInfoExtractor {
   }
 
   /**
-   * Extracts the user ID from the Keycloak user payload.
+   * Extracts the user ID from the JWT user payload.
    * Returns payload.sub if present, undefined otherwise.
    */
   getUserId(user: SocketUserData | undefined | null): string | undefined {

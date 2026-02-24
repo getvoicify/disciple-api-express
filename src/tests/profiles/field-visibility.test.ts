@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProfileServiceImpl } from '../../profiles/service';
 import type { ProfileRepository } from '../../profiles/repository';
 import type { Profile } from '../../profiles/schemas';
-import type { KeycloakAdminClient } from '../../keycloak/types';
 import type { CacheRepository } from '../../cache/cache.repository';
 import type { RawDb } from '../../utils/database';
 
@@ -15,17 +14,6 @@ const createMockRepository = () => ({
   getStatistics: vi.fn(),
   getCachedMetrics: vi.fn(),
   updateCachedMetrics: vi.fn(),
-});
-
-// Mock Keycloak admin client
-const createMockKeycloakAdminClient = () => ({
-  getUserAttributes: vi.fn(),
-  updateUserAttributes: vi.fn(),
-  createResource: vi.fn(),
-  updateResource: vi.fn(),
-  deleteResource: vi.fn(),
-  getResourcesByIds: vi.fn(),
-  getUserPermissions: vi.fn(),
 });
 
 // Mock cache repository
@@ -53,7 +41,6 @@ const createMockDb = () => ({
  */
 describe('Field-Level Visibility Enforcement', () => {
   let mockRepository: ReturnType<typeof createMockRepository>;
-  let mockKeycloakClient: ReturnType<typeof createMockKeycloakAdminClient>;
   let mockCacheRepository: ReturnType<typeof createMockCacheRepository>;
   let mockDb: ReturnType<typeof createMockDb>;
   let service: ProfileServiceImpl;
@@ -63,7 +50,6 @@ describe('Field-Level Visibility Enforcement', () => {
 
   beforeEach(() => {
     mockRepository = createMockRepository();
-    mockKeycloakClient = createMockKeycloakAdminClient();
     mockCacheRepository = createMockCacheRepository();
     mockDb = createMockDb();
 
@@ -72,7 +58,6 @@ describe('Field-Level Visibility Enforcement', () => {
 
     service = new ProfileServiceImpl(
       mockRepository as unknown as ProfileRepository,
-      mockKeycloakClient as unknown as KeycloakAdminClient,
       mockCacheRepository as unknown as CacheRepository,
       mockDb as unknown as RawDb
     );

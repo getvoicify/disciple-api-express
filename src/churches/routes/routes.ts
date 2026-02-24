@@ -45,8 +45,6 @@ import type {CacheRepository} from "../../cache";
 import {cacheResponseMiddleware} from "../../middleware/cache-response.middleware/cache-response.middleware";
 import {keyGenerator} from "../../middleware/key-generator.middleware";
 import {extractFiltersMiddleware} from "../../middleware/extract-filters.middleware";
-import type {ChurchMembershipOutboxAdapter} from "../church-membership-outbox.adapter";
-import {canAccessMiddleware} from "../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware";
 
 
 export const churchesRouter = (
@@ -56,7 +54,6 @@ export const churchesRouter = (
 	postService: PostService,
 	cacheRepo: CacheRepository,
 	galleryService?: GalleryService,
-	outboxAdapter?: ChurchMembershipOutboxAdapter
 ) => {
 	const router = Router();
 	const {
@@ -83,19 +80,11 @@ export const churchesRouter = (
 
 	router.post('/:churchId/approve', [
 		tokenVerifier(true),
-		canAccessMiddleware({
-			scope: 'update',
-			resource: 'churchApproval',
-		}),
 		validate(ChurchIdInput, 'params'),
 	], churchApproveEndpoint(approvalService));
 
 	router.post('/:churchId/reject', [
 		tokenVerifier(true),
-		canAccessMiddleware({
-			scope: 'update',
-			resource: 'churchApproval',
-		}),
 		validate(ChurchIdInput, 'params'),
 		validate(RejectionInput, 'body'),
 	], churchRejectEndpoint(approvalService));
@@ -110,7 +99,7 @@ export const churchesRouter = (
 	router.post('/:churchId/leave', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
-	], churchMembershipLeaveEndpoint(membershipService, outboxAdapter));
+	], churchMembershipLeaveEndpoint(membershipService));
 
 	router.get('/:churchId/members', [
 		tokenVerifier(false),
@@ -125,7 +114,7 @@ export const churchesRouter = (
 	router.post('/:churchId/accept-invitation', [
 		tokenVerifier(true),
 		validate(ChurchIdInput, 'params')
-	], churchMembershipAcceptInviteEndpoint(membershipService, outboxAdapter));
+	], churchMembershipAcceptInviteEndpoint(membershipService));
 
 	router.post('/:churchId/decline-invitation', [
 		tokenVerifier(true),
@@ -186,7 +175,7 @@ export const churchesRouter = (
 	router.post('/', [
 		tokenVerifier(true),
 		validate(CreateChurchInput, 'body'),
-	], churchCreateEndpoint(churchService, outboxAdapter));
+	], churchCreateEndpoint(churchService));
 
 	router.get('/', [
 		tokenVerifier(false),

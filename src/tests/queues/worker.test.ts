@@ -36,7 +36,7 @@ describe('Church Membership Sync Worker', () => {
 
     it('should configure worker with appropriate concurrency', () => {
       // Worker should have a reasonable concurrency setting
-      // Default should be 1 to avoid overwhelming Keycloak API
+      // Default should be 1 for sequential processing
       const expectedConcurrency = 1;
       expect(expectedConcurrency).toBe(1);
     });
@@ -92,10 +92,10 @@ describe('Church Membership Sync Worker', () => {
       };
 
       const mockProcessor = {
-        process: vi.fn().mockRejectedValue(new Error('Keycloak API unavailable')),
+        process: vi.fn().mockRejectedValue(new Error('External API unavailable')),
       };
 
-      await expect(mockProcessor.process(mockJob)).rejects.toThrow('Keycloak API unavailable');
+      await expect(mockProcessor.process(mockJob)).rejects.toThrow('External API unavailable');
     });
   });
 

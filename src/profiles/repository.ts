@@ -3,7 +3,7 @@ import type { CreateProfileInput, UpdateProfileInput, Profile, ProfileStatistics
 export interface ProfileRepository {
   /**
    * Create a new user profile
-   * @param userId - The UUID of the user (from Keycloak)
+   * @param userId - The UUID of the user
    * @param input - The profile data to create
    * @returns The created profile
    */

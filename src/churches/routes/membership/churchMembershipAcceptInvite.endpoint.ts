@@ -3,8 +3,6 @@ import {type EndpointHandler} from "../../../types/endpoint-handler";
 import {ChurchIdInput} from "../../schemas";
 import {safeExecute} from "../../../utils/handle-async";
 import errorCodeFactory from "../../../utils/error-code.factory";
-import type {ChurchMembershipOutboxAdapter} from "../../church-membership-outbox.adapter";
-import {logger} from "../../../logging";
 
 /**
  * @openapi
@@ -56,7 +54,6 @@ import {logger} from "../../../logging";
  */
 export const churchMembershipAcceptInviteEndpoint = (
 	service: ChurchMembershipService,
-	outboxAdapter?: ChurchMembershipOutboxAdapter
 ): EndpointHandler => async (req, res) => {
 	const user = req.user?.[1]?.payload;
 	const userId = user?.sub;
@@ -71,30 +68,6 @@ export const churchMembershipAcceptInviteEndpoint = (
 			success: false,
 		});
 		return;
-	}
-
-	// Emit member-joined event AFTER successful invitation acceptance
-	if (outboxAdapter) {
-		const [eventErr] = await safeExecute(
-			outboxAdapter.enqueueMemberJoined(
-				churchId,
-				userId,
-				membership.role,
-				{
-					membershipId: membership.id,
-					timestamp: Date.now(),
-				}
-			)
-		);
-
-		if (eventErr) {
-			logger.error(
-				{ error: eventErr, churchId, userId, role: membership.role },
-				'Failed to enqueue member-joined event'
-			);
-			// Don't fail the request if event emission fails
-			// The invitation was accepted successfully
-		}
 	}
 
 	res.json({

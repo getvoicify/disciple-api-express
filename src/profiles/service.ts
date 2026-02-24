@@ -1,8 +1,7 @@
 import type { ProfileRepository } from './repository';
-import type { CreateProfileInput, UpdateProfileInput, Profile, ProfileStatistics, KeycloakClaims } from './schemas';
+import type { CreateProfileInput, UpdateProfileInput, Profile, ProfileStatistics, JwtClaims } from './schemas';
 import { CreateProfileInput as CreateProfileSchema, UpdateProfileInput as UpdateProfileSchema } from './schemas';
 import { ProfileNotFoundError, ProfileUnauthorizedError } from './errors';
-import type { KeycloakAdminClient } from '../keycloak/types';
 import type { CacheRepository } from '../cache';
 import type { RawDb } from '../utils/database';
 import { safeExecute } from '../utils/handle-async';
@@ -42,13 +41,13 @@ export interface DashboardData {
  */
 export interface ProfileService {
   /**
-   * Create a new profile with Keycloak data sync
-   * @param userId - The user ID from Keycloak
+   * Create a new profile
+   * @param userId - The user ID
    * @param input - Profile creation data
-   * @param keycloakClaims - Optional Keycloak claims to sync (given_name, family_name, email)
+   * @param jwtClaims - Optional JWT claims to populate profile fields (given_name, family_name, email)
    * @returns The created profile
    */
-  createProfile(userId: string, input: CreateProfileInput, keycloakClaims?: KeycloakClaims): Promise<Profile>;
+  createProfile(userId: string, input: CreateProfileInput, jwtClaims?: JwtClaims): Promise<Profile>;
 
   /**
    * Update an existing profile and invalidate cache
@@ -95,27 +94,20 @@ export class ProfileServiceImpl implements ProfileService {
 
   constructor(
     private readonly repository: ProfileRepository,
-    private readonly keycloakClient: KeycloakAdminClient,
     private readonly cacheRepository: CacheRepository,
     private readonly db: RawDb
   ) {}
 
-  async createProfile(userId: string, input: CreateProfileInput, keycloakClaims?: KeycloakClaims): Promise<Profile> {
+  async createProfile(userId: string, input: CreateProfileInput, jwtClaims?: JwtClaims): Promise<Profile> {
     // Validate input
     const validated = CreateProfileSchema.parse(input);
 
-    // Try to sync with Keycloak (non-blocking)
-    const [keycloakError] = await safeExecute(this.keycloakClient.getUserAttributes(userId));
-    if (keycloakError) {
-      logger.warn({ error: keycloakError, userId }, 'Failed to fetch Keycloak attributes during profile creation');
-    }
-
-    // Extract and sync Keycloak claims if provided
+    // Extract JWT claims if provided (given_name, family_name, email from token)
     let profileData = { ...validated };
-    if (keycloakClaims) {
-      const syncedData = this.syncKeycloakClaims(keycloakClaims);
+    if (jwtClaims) {
+      const syncedData = this.syncJwtClaims(jwtClaims);
       profileData = { ...profileData, ...syncedData };
-      logger.info({ userId, syncedData }, 'Syncing Keycloak claims to profile');
+      logger.info({ userId, syncedData }, 'Populating profile from JWT claims');
     }
 
     // Create profile in database
@@ -196,12 +188,10 @@ export class ProfileServiceImpl implements ProfileService {
   }
 
   /**
-   * Sync Keycloak claims to profile data
-   * @param claims - Keycloak claims (given_name, family_name, email)
-   * @returns Profile data with synced Keycloak fields
+   * Extract standard OIDC claims from JWT and map to profile fields
    * @private
    */
-  private syncKeycloakClaims(claims: KeycloakClaims): Partial<CreateProfileInput> {
+  private syncJwtClaims(claims: JwtClaims): Partial<CreateProfileInput> {
     const firstName = (claims.given_name || '').trim();
     const lastName = (claims.family_name || '').trim();
 

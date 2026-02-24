@@ -2,8 +2,6 @@ import type {ChurchService} from "../service";
 import type {EndpointHandler} from "../../types/endpoint-handler";
 import {CreateChurchInput} from "../schemas";
 import {safeExecute} from "../../utils/handle-async";
-import type {ChurchMembershipOutboxAdapter} from "../church-membership-outbox.adapter";
-import {logger} from "../../logging";
 
 /**
  * @openapi
@@ -78,7 +76,6 @@ import {logger} from "../../logging";
  */
 export const churchCreateEndpoint = (
 	service: ChurchService,
-	outboxAdapter?: ChurchMembershipOutboxAdapter
 ): EndpointHandler => async (req, res) => {
 	const churchToCreate = CreateChurchInput.parse(req.body);
 	const user = req['user']?.[1].payload as any;
@@ -100,29 +97,6 @@ export const churchCreateEndpoint = (
 			success: false,
 		});
 		return;
-	}
-
-	// Emit owner-created event AFTER successful church creation
-	if (outboxAdapter) {
-		const [eventErr] = await safeExecute(
-			outboxAdapter.enqueueOwnerCreated(
-				createdChurch.id,
-				ownerId,
-				{
-					churchName: createdChurch.name,
-					timestamp: Date.now(),
-				}
-			)
-		);
-
-		if (eventErr) {
-			logger.error(
-				{ error: eventErr, churchId: createdChurch.id, userId: ownerId },
-				'Failed to enqueue owner-created event'
-			);
-			// Don't fail the request if event emission fails
-			// The church was created successfully
-		}
 	}
 
 	res.status(201).json({

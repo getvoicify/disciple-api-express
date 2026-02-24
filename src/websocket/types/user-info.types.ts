@@ -1,4 +1,4 @@
-export interface KeycloakUserPayload {
+export interface JwtUserPayload {
   sub?: string;
   name?: string;
   given_name?: string;
@@ -8,7 +8,7 @@ export interface KeycloakUserPayload {
 }
 
 export interface SocketUserData {
-  payload?: KeycloakUserPayload;
+  payload?: JwtUserPayload;
 }
 
 export interface IUserInfoExtractor {

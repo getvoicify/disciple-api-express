@@ -21,8 +21,8 @@ export const CachedMetrics = z.object({
   lastCalculated: z.iso.datetime().optional(),
 }).loose().default({});
 
-// Keycloak claims schema (for profile creation)
-export const KeycloakClaims = z.object({
+// Standard OIDC JWT claims (for profile creation)
+export const JwtClaims = z.object({
   given_name: z.string().optional(),
   family_name: z.string().optional(),
   email: z.email().optional(),
@@ -93,7 +93,7 @@ export type PrivacyMode = z.infer<typeof PrivacyModeEnum>;
 export type FieldVisibilitySettings = z.infer<typeof FieldVisibilitySettings>;
 export type NotificationPreferences = z.infer<typeof NotificationPreferences>;
 export type CachedMetrics = z.infer<typeof CachedMetrics>;
-export type KeycloakClaims = z.infer<typeof KeycloakClaims>;
+export type JwtClaims = z.infer<typeof JwtClaims>;
 export type Profile = z.infer<typeof Profile>;
 export type CreateProfileInput = z.infer<typeof CreateProfileInput>;
 export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;

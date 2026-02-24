@@ -5,7 +5,7 @@ import type {PostService} from '../service';
 import type {SeriesService} from '../../series/service';
 import {validate} from '../../utils/validate.middleware';
 import {validateToken} from '../../utils/validate-token.middleware';
-import {canAccessMiddleware} from '../../middleware/get-authorized-ids.middleware/get-authorized-ids.middleware';
+import type {AuthorizeOptions} from '../../authorization';
 import {postCreateEndpoint} from './postCreate.endpoint';
 import {postFetchEndpoint} from './postFetch.endpoint';
 import {postUpdateEndpoint} from './postUpdate.endpoint';
@@ -23,7 +23,7 @@ export const PublishActionInput = z.object({
 	action: z.enum(['publish', 'unpublish'])
 });
 
-export const postsRouter = (service: PostService, seriesService: SeriesService) => {
+export const postsRouter = (service: PostService, seriesService: SeriesService, authorize?: (options: AuthorizeOptions) => any) => {
 	const router = Router();
 	const {
 		IAM_ENDPOINT,
@@ -72,10 +72,7 @@ export const postsRouter = (service: PostService, seriesService: SeriesService) 
 	router.post('/', [
 		tokenVerifier(),
 		validate(CreatePostInput),
-		canAccessMiddleware({
-			scope: 'create',
-			resource: 'post',
-		})
+		...(authorize ? [authorize({ resource: 'post', action: 'create' })] : [])
 	], postCreateEndpoint(service));
 
 	return router;

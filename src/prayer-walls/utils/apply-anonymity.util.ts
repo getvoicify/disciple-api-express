@@ -60,7 +60,7 @@ export function applyAnonymityToPrayers(
  * Helper to extract user role information from an Express request by querying church membership.
  *
  * Determines if a user is a pastor (Owner or Manager with Active status) for a specific church
- * by querying the church membership service instead of relying on Keycloak realm roles.
+ * by querying the church membership service.
  *
  * @param req - Express request with authenticated user
  * @param churchId - The church ID to check membership for

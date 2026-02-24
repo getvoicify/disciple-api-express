@@ -16,7 +16,7 @@ import {
 } from './handlers/presence.handler';
 import { PresenceService } from '../prayer-walls/services/presence.service';
 import { RedisCacheRepository } from '../cache';
-import { KeycloakUserInfoExtractor } from './services/user-info-extractor.service';
+import { JwtUserInfoExtractor } from './services/user-info-extractor.service';
 
 /**
  * Configuration options for initializing the Socket.io server
@@ -46,7 +46,7 @@ interface AuthenticatedSocket extends Socket {
  * Redis adapter for horizontal scaling, and room management for prayer walls.
  *
  * Features:
- * - Keycloak JWT authentication middleware
+ * - JWT authentication middleware
  * - Redis pub/sub adapter for multi-server deployments
  * - Room-based communication for prayer walls
  * - Structured logging for all WebSocket events
@@ -118,7 +118,7 @@ export function initializeSocketServer(
   registerPrayerHandlers(io);
 
   // Initialize user info extractor for extracting user names from JWT
-  const userInfoExtractor = new KeycloakUserInfoExtractor(logger);
+  const userInfoExtractor = new JwtUserInfoExtractor(logger);
 
   // Connection handler
   io.on('connection', (socket: AuthenticatedSocket) => {

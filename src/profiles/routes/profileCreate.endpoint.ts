@@ -1,7 +1,7 @@
 import type { ProfileService } from '../service';
 import type { Response } from 'express';
 import type { EndpointRequest } from '../../types/endpoint-handler';
-import { CreateProfileInput, KeycloakClaims } from '../schemas';
+import { CreateProfileInput, JwtClaims } from '../schemas';
 import { safeExecute } from '../../utils/handle-async';
 import errorCodeFactory from '../../utils/error-code.factory';
 
@@ -10,7 +10,7 @@ import errorCodeFactory from '../../utils/error-code.factory';
  * /profiles:
  *   post:
  *     summary: Create a new user profile
- *     description: Create a user profile with auto-population from Keycloak authentication data
+ *     description: Create a user profile with auto-population from JWT authentication claims
  *     tags: [Profiles]
  *     security:
  *       - bearerAuth: []
@@ -80,27 +80,27 @@ export const profileCreateEndpoint = (service: ProfileService) =>
       return;
     }
 
-    // Extract Keycloak claims from JWT payload for syncing user info
+    // Extract standard OIDC claims from JWT payload for populating profile
     const jwtPayload = req.user?.[1]?.payload;
-    const [keycloakParseError, keycloakClaims] = await safeExecute(() =>
-      KeycloakClaims.parse({
+    const [claimsParseError, jwtClaims] = await safeExecute(() =>
+      JwtClaims.parse({
         given_name: jwtPayload?.given_name,
         family_name: jwtPayload?.family_name,
         email: jwtPayload?.email,
       })
     );
 
-    // Log if Keycloak claims parsing fails (non-blocking)
-    if (keycloakParseError) {
-      (req as any).log?.warn({ error: keycloakParseError, userId }, 'Failed to parse Keycloak claims');
+    // Log if JWT claims parsing fails (non-blocking)
+    if (claimsParseError) {
+      (req as any).log?.warn({ error: claimsParseError, userId }, 'Failed to parse JWT claims');
     }
 
-    // Create profile with Keycloak claims sync
+    // Create profile with JWT claims
     const [error, profile] = await safeExecute(
       service.createProfile(
         userId as string,
         profileInput,
-        keycloakParseError ? undefined : keycloakClaims
+        claimsParseError ? undefined : jwtClaims
       )
     );
 

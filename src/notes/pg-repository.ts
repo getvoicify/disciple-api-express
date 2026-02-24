@@ -1,35 +1,30 @@
 import type {RawDb} from "../utils/database";
 import type {NoteRepository} from './repository';
 import type {CreateNoteInput, Note, NoteFilters, UpdateNoteInput} from './schemas';
-import {type GeneralizedKeycloakOutboxAdapter} from "../keycloak/generalized-outbox.adapter";
 
 export class PostgresNoteRepository implements NoteRepository {
-	private static ResourceType = 'notes' as const;
 	constructor(
 		private readonly db: RawDb,
-		private readonly keycloakAdapter: GeneralizedKeycloakOutboxAdapter,
 	) {
 	}
 
 	async create(input: CreateNoteInput, ownerId: string): Promise<Note> {
-		return this.db.begin(async (tx) => {
-			const id = crypto.randomUUID();
-			const now = new Date();
+		const id = crypto.randomUUID();
+		const now = new Date();
 
-			const result = await tx`
+		const result = await this.db`
           INSERT INTO notes (id, title, content, date,
                              scripture_references, images,
+                             owner_id,
                              created_at, updated_at)
           VALUES (${id}, ${input.title}, ${input.content}, ${now},
                   ${JSON.stringify(input.scriptureReferences || [])},
                   ${JSON.stringify(input.images || [])},
+                  ${ownerId},
                   ${now}, ${now})
           RETURNING *
-			`;
-			const note = this.mapRowToNote(result[0]);
-			await this.keycloakAdapter.enqueueResourceCreate(note, PostgresNoteRepository.ResourceType, ownerId);
-			return note;
-		});
+		`;
+		return this.mapRowToNote(result[0]);
 	}
 
 	async update(id: string, input: UpdateNoteInput): Promise<Note | null> {
@@ -75,21 +70,12 @@ export class PostgresNoteRepository implements NoteRepository {
 	}
 
 	async delete(id: string): Promise<boolean> {
-		return this.db.begin(async (tx) => {
-			const result = await tx`DELETE
-                              FROM notes
-                              WHERE id = ${id}
-                              RETURNING id`;
+		const result = await this.db`DELETE
+                                  FROM notes
+                                  WHERE id = ${id}
+                                  RETURNING id`;
 
-			if (result.length === 0) {
-				return false;
-			}
-
-			// Queue Keycloak resource deletion event
-			await this.keycloakAdapter.enqueueResourceDelete(id, PostgresNoteRepository.ResourceType);
-
-			return true;
-		});
+		return result.length > 0;
 	}
 
 	async findById(id: string): Promise<Note | null> {
@@ -118,17 +104,9 @@ export class PostgresNoteRepository implements NoteRepository {
 			const conditions = [];
 			const values: any[] = [];
 
-			// Authorization filter - always apply if provided
-			if (filters.authorizedIds) {
-				if (filters.authorizedIds.length === 0) {
-					// User has no authorized resources, return empty result
-					return [];
-				}
-				// Convert JavaScript array to PostgreSQL array format for unsafe query
-				// PostgreSQL expects array literal like: {uuid1,uuid2,uuid3}
-				const pgArray = `{${filters.authorizedIds.join(',')}}`;
-				conditions.push(`id = ANY($${values.length + 1}::uuid[])`);
-				values.push(pgArray);
+			if (filters.ownerId) {
+				conditions.push(`owner_id = $${values.length + 1}`);
+				values.push(filters.ownerId);
 			}
 
 			if (filters.title) {
@@ -201,6 +179,7 @@ export class PostgresNoteRepository implements NoteRepository {
 			images: typeof row.images === 'string'
 				? JSON.parse(row.images)
 				: row.images || [],
+			ownerId: row.owner_id,
 			createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt || row.created_at),
 			updatedAt: row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt || row.updated_at)
 		};

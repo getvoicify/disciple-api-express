@@ -180,12 +180,8 @@ describe('NoteService', () => {
 
 			await service.listNotes(filters);
 
-			// NoteFiltersSchema transforms ownerId input to authorizedIds output
-			// The schema sets authorizedIds to empty array by default
-			// Actual authorization logic happens in the repository layer
-			expect(mockRepository.findAll).toHaveBeenCalledWith({
-				authorizedIds: []
-			});
+			// Authorization is handled by middleware, service just passes validated filters
+			expect(mockRepository.findAll).toHaveBeenCalledWith({});
 		});
 	});
 });

@@ -103,7 +103,6 @@ export const ChurchFilters = z.object({
 	pageSize: z.number().int().positive().max(100).default(20).optional(),
 	sortBy: z.string().optional(),
 	sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
-	authorizedIds: z.array(z.uuid()).optional() // For authorization filtering
 });
 
 // Church Member schema

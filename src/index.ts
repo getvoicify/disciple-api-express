@@ -31,8 +31,6 @@ import {SeriesServiceImpl} from "./series/service";
 import {devotionalRouter} from "./series/routes/routes";
 import {errorHandler, notFoundHandler} from "./middleware/error-handler.middleware";
 import {usersRouter} from "./users/router";
-import {setupKeycloakAdapter} from "./keycloak/setup";
-import {type KeycloakAdminConfig} from "./keycloak/admin-client";
 import {createCacheRepository, CacheInvalidationService, type ICacheInvalidationService} from "./cache";
 import {logger, loggerFactory, createRequestLoggingMiddleware} from "./logging";
 import {wallsRouter} from "./prayer-walls/routes/walls.routes";
@@ -47,9 +45,8 @@ import {PrayerWallMembershipRepository} from "./prayer-walls/repositories/prayer
 import {FlaggedContentRepository} from "./prayer-walls/repositories/flagged-content.repository";
 import {initializeSocketServer} from "./websocket/socket.server";
 import {getUserIdFromRequest} from "./utils/get-user-id";
-import {createChurchMembershipSyncQueue} from "./queues/church-membership-sync/queue";
-import {setupChurchMembershipOutboxAdapter} from "./churches/church-membership-outbox.setup";
-import type { ChurchMembershipOutboxAdapter } from "./churches/church-membership-outbox.adapter";
+import {createAuthorizeMiddleware} from './authorization';
+import {createResolvers} from './authorization/resolvers';
 
 dotenv.config();
 
@@ -63,7 +60,9 @@ const {
 	GB_API_HOST: apiHost,
 	GB_CLIENT_KEY: clientKey,
 	NODE_ENV: env,
-	REDIS_URL: redisUrl
+	REDIS_URL: redisUrl,
+	IAM_ENDPOINT,
+	IAM_REALM,
 } = process.env;
 
 const gb = new GrowthBookClient({
@@ -76,28 +75,17 @@ gb.init({timeout: 3000}).catch((e) => {
 	logger.error({error: e}, 'GrowthBook initialization failed');
 });
 
-const {
-	IAM_ENDPOINT,
-	IAM_REALM,
-} = process.env;
+const resolvers = createResolvers(db);
+const memberRoleLookup = async (churchId: string, userId: string) => {
+	const result = await db`
+		SELECT role FROM church_members
+		WHERE church_id = ${churchId} AND user_id = ${userId} AND status = 'Active'
+	`;
+	return result.length > 0 ? result[0].role : null;
+};
+const authorize = createAuthorizeMiddleware(resolvers, memberRoleLookup);
 
-const keycloakConfig = {
-	realm: IAM_REALM,
-	keycloakUrl: IAM_ENDPOINT.replace('realms', ''),
-	clientId: process.env.KEYCLOAK_CLIENT_ID,
-	clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
-} satisfies KeycloakAdminConfig;
-
-const {adapter: keycloakAdapter, queue: keycloakOutboxQueue} = setupKeycloakAdapter(db, keycloakConfig, redisUrl);
-
-// Log Keycloak outbox queue initialization status
-if (keycloakOutboxQueue) {
-	logger.info('Keycloak outbox queue initialized');
-} else {
-	logger.warn('Redis URL not configured - Keycloak outbox queue will use fallback polling');
-}
-
-const notesPgRepo = new PostgresNoteRepository(db, keycloakAdapter);
+const notesPgRepo = new PostgresNoteRepository(db);
 
 const churchRepository = new PostgresChurchRepository(db);
 const churchMemberRepository = new PostgresChurchMemberRepository(db);
@@ -106,23 +94,7 @@ const churchService = new ChurchServiceImpl(churchRepository);
 const churchMemberService = new ChurchMembershipServiceImpl(churchRepository, churchMemberRepository);
 const churchApprovalService = new ChurchApprovalServiceImpl(churchRepository);
 
-// Church Membership Sync Queue and Outbox setup
-// Only create the queue if Redis URL is configured (production/staging)
-let churchMembershipOutboxAdapter:
-	ChurchMembershipOutboxAdapter | undefined;
-if (redisUrl) {
-	const churchMembershipSyncQueue = createChurchMembershipSyncQueue({
-		connection: {
-			url: redisUrl,
-		},
-	});
-	churchMembershipOutboxAdapter = setupChurchMembershipOutboxAdapter(db, churchMembershipSyncQueue);
-	logger.info('Church membership sync queue and outbox adapter initialized');
-} else {
-	logger.warn('Redis URL not configured - church membership sync events will not be emitted');
-}
-
-const mediaRepository = new PostgresMediaRepository(db, keycloakAdapter);
+const mediaRepository = new PostgresMediaRepository(db);
 const r2Service = new CloudflareR2ServiceImpl();
 const mediaUploadService = new MediaUploadService(mediaRepository, r2Service);
 
@@ -138,7 +110,7 @@ const cacheInvalidationService: ICacheInvalidationService = new CacheInvalidatio
 
 const noteService = new NoteServiceImpl(notesPgRepo, cacheInvalidationService);
 
-const postRepository = new PostgresPostRepository(db, keycloakAdapter);
+const postRepository = new PostgresPostRepository(db);
 const postService = new PostServiceImpl(postRepository, churchMemberService, cacheInvalidationService);
 
 const seriesRepository = new PostgresSeriesRepository(db);
@@ -345,8 +317,8 @@ app.get('/api/openapi.yaml', (req, res) => {
 	res.send(yaml.dump(swaggerSpec));
 });
 
-app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService, churchMembershipOutboxAdapter));
-// Initialize Socket.io server with Keycloak JWT authentication
+app.use('/api/churches', churchesRouter(churchService, churchApprovalService, churchMemberService, postService, cacheRepository, galleryService));
+// Initialize Socket.io server with JWT authentication
 // Must be initialized before registering routes that use WebSocket broadcasting
 const io = initializeSocketServer(httpServer, {
 	redisUrl: process.env.REDIS_URL,
@@ -354,11 +326,11 @@ const io = initializeSocketServer(httpServer, {
 	iamRealm: IAM_REALM
 });
 
-app.use('/api/notes', notesRouter(noteService));
+app.use('/api/notes', notesRouter(noteService, authorize));
 app.use('/api/users', usersRouter(churchMemberService));
 app.use('/api/media', mediaRouter(mediaRepository, mediaUploadService));
-app.use('/api/posts', postsRouter(postService, seriesService));
-app.use('/api/devotional', devotionalRouter(seriesService));
+app.use('/api/posts', postsRouter(postService, seriesService, authorize));
+app.use('/api/devotional', devotionalRouter(seriesService, authorize));
 app.use('/api', wallsRouter(prayerWallService));
 app.use('/api', prayersRouter(prayerRequestService, io));
 app.use('/api', moderationRouter(moderationService, prayerRequestRepository, io));
@@ -369,21 +341,3 @@ app.use(errorHandler);
 httpServer.listen(PORT, () => {
 	logger.info({port: PORT}, 'Server started with WebSocket support');
 });
-
-// Setup fallback repeatable job for Keycloak outbox processing (every 10 seconds)
-// This catches any events that might have been missed by the event-driven triggers
-if (keycloakOutboxQueue) {
-	keycloakOutboxQueue.upsertJobScheduler(
-		'keycloak-outbox-fallback',
-		{ pattern: '*/10 * * * * *' }, // Every 10 seconds
-		{
-			data: {
-				triggeredAt: Date.now(),
-			},
-		}
-	).then(() => {
-		logger.info('Keycloak outbox fallback job scheduled (every 10 seconds)');
-	}).catch((error) => {
-		logger.error({ error: error.message }, 'Failed to schedule fallback job');
-	});
-}

@@ -168,7 +168,7 @@ describe('Church Membership Query Service', () => {
         status: 'Active',
       });
 
-      // Verify the format matches what Keycloak expects
+      // Verify the format of serialized memberships
       const formatted = memberships.map((m) => ({
         churchId: m.churchId,
         role: m.role,

@@ -1,13 +1,10 @@
 import type { RawDb } from "../utils/database";
 import type { PostRepository } from './repository';
 import type { CreatePostInput, Post, PostFilters, UpdatePostInput } from './schemas';
-import { type GeneralizedKeycloakOutboxAdapter } from "../keycloak/generalized-outbox.adapter";
 
 export class PostgresPostRepository implements PostRepository {
-	private static ResourceType = 'posts' as const;
 	constructor(
 		private readonly db: RawDb,
-		private readonly keycloakAdapter: GeneralizedKeycloakOutboxAdapter,
 	) {
 	}
 
@@ -31,9 +28,7 @@ export class PostgresPostRepository implements PostRepository {
                   ${now}, ${now})
           RETURNING *
 			`;
-			const post = this.mapRowToPost(result[0]);
-			await this.keycloakAdapter.enqueueResourceCreate(post, PostgresPostRepository.ResourceType, authorId);
-			return post;
+			return this.mapRowToPost(result[0]);
 		});
 	}
 
@@ -99,21 +94,12 @@ export class PostgresPostRepository implements PostRepository {
 	}
 
 	async delete(id: string): Promise<boolean> {
-		return this.db.begin(async (tx) => {
-			const result = await tx`DELETE
-                              FROM posts
-                              WHERE id = ${id}
-                              RETURNING id`;
+		const result = await this.db`DELETE
+                                  FROM posts
+                                  WHERE id = ${id}
+                                  RETURNING id`;
 
-			if (result.length === 0) {
-				return false;
-			}
-
-			// Queue Keycloak resource deletion event
-			await this.keycloakAdapter.enqueueResourceDelete(id, PostgresPostRepository.ResourceType);
-
-			return true;
-		});
+		return result.length > 0;
 	}
 
 	async findById(id: string): Promise<Post | null> {
@@ -141,18 +127,6 @@ export class PostgresPostRepository implements PostRepository {
 			// Build dynamic query based on filters
 			const conditions = [];
 			const values: any[] = [];
-
-			// Authorization filter - always apply if provided
-			if (filters.authorizedIds) {
-				if (filters.authorizedIds.length === 0) {
-					// User has no authorized resources, return empty result
-					return [];
-				}
-				// Convert JavaScript array to PostgreSQL array format for unsafe query
-				const pgArray = `{${filters.authorizedIds.join(',')}}`;
-				conditions.push(`id = ANY($${values.length + 1}::uuid[])`);
-				values.push(pgArray);
-			}
 
 			if (filters.churchId) {
 				conditions.push(`church_id = $${values.length + 1}`);

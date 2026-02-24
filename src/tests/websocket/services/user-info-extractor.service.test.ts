@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { KeycloakUserInfoExtractor } from '../../../websocket/services/user-info-extractor.service';
+import { JwtUserInfoExtractor } from '../../../websocket/services/user-info-extractor.service';
 import type { ILogger } from '../../../logging';
 
-describe('KeycloakUserInfoExtractor', () => {
-  let extractor: KeycloakUserInfoExtractor;
+describe('JwtUserInfoExtractor', () => {
+  let extractor: JwtUserInfoExtractor;
   let mockLogger: ILogger;
 
   beforeEach(() => {
@@ -15,7 +15,7 @@ describe('KeycloakUserInfoExtractor', () => {
       trace: vi.fn(),
       fatal: vi.fn(),
     };
-    extractor = new KeycloakUserInfoExtractor(mockLogger);
+    extractor = new JwtUserInfoExtractor(mockLogger);
   });
 
   describe('getFullName()', () => {
