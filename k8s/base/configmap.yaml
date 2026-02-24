@@ -8,6 +8,7 @@ data:
   PORT: "3000"
   DB_HOST: "95.217.19.4"
   DB_PORT: "5432"
+  DB_SSL: "false"
   R2_ENDPOINT: "https://82817d5a98bd85f4134527e3cfe79b7a.r2.cloudflarestorage.com"
   R2_BUCKET_NAME: "disciple"
   R2_PUBLIC_URL_BASE: "https://storage.pottersville.church"

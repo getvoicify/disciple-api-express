@@ -13,9 +13,10 @@ resources:
 - service.yaml
 - ingress.yaml
 
-commonLabels:
-  app.kubernetes.io/name: disciple-api
-  app.kubernetes.io/part-of: disciple-platform
+labels:
+  - pairs:
+      app.kubernetes.io/name: disciple-api
+      app.kubernetes.io/part-of: disciple-platform
 
 images:
 - name: ghcr.io/getvoicify/disciple-api-express
