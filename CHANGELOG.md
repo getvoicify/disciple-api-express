@@ -1,3 +1,21 @@
+## [2.13.0](https://github.com/getvoicify/disciple-api-express/compare/v2.12.0...v2.13.0) (2026-03-26)
+
+
+### ✨ Features
+
+* **scripts:** add SQL script to seed Nigerian churches and associate owner memberships ([b3b7754](https://github.com/getvoicify/disciple-api-express/commit/b3b775413036e9bd98036cfc0834cd9969023379))
+
+
+### 🐛 Bug Fixes
+
+* **auth:** return false instead of undefined for unauthorized note access ([963542a](https://github.com/getvoicify/disciple-api-express/commit/963542af2f2e3504d70b3401820fb567f50a1bb2))
+* **auth:** streamline policy check logic for actor roles ([af728a1](https://github.com/getvoicify/disciple-api-express/commit/af728a104e28f88f22a82adace4a4e80baa4d42b))
+
+
+### 👷 CI/CD
+
+* add GitLab CI/CD pipeline mirroring GitHub Actions ([a5afa05](https://github.com/getvoicify/disciple-api-express/commit/a5afa05f98f6218d90911ee2143606013fbfc7a4))
+
 ## [2.12.0](https://github.com/getvoicify/disciple-api-express/compare/v2.11.0...v2.12.0) (2026-02-25)
 
 
