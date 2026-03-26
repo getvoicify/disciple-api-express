@@ -22,7 +22,5 @@ export function isActionAllowed(
 
   if (allowedActors.includes('*')) return true;
   if (isAuthor && allowedActors.includes('author')) return true;
-  if (role && allowedActors.includes(role)) return true;
-
-  return false;
+  return role && allowedActors.includes(role);
 }
